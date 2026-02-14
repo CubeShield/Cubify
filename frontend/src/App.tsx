@@ -5,17 +5,6 @@ import { GetInstances, Greet } from '../wailsjs/go/main/App'
 import { github } from '../wailsjs/go/models'
 
 function App() {
-	const [resultText, setResultText] = useState(
-		'Please enter your name below 👇',
-	)
-	const [name, setName] = useState('')
-	const updateName = (e: any) => setName(e.target.value)
-	const updateResultText = (result: string) => setResultText(result)
-
-	function greet() {
-		Greet(name).then(updateResultText)
-	}
-
 	const [instances, setInstances] = useState<github.Instance[]>([])
 	const getInstances = async () => {
 		setInstances(await GetInstances())

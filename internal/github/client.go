@@ -63,14 +63,6 @@ func (c *Client) GetInstance(repo string) (*Instance, error) {
 	}, nil
 }
 
-//func (c *Client) GetLatestRelease(repo string) (*Release, error) {
-//	path := fmt.Sprintf("%s/repos/%s/releases/latest", c.baseUrl, repo)
-//	
-//	var release Release
-//	err := c.sendRequest(path, &release)
-//	return &release, err
-//}
-
 func (c *Client) GetIndex(indexUrl string) (*Index, error) {
 	var index Index
 	err := c.sendRequest(indexUrl, &index)
