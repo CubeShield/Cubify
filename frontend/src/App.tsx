@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import logo from './assets/images/logo-universal.png'
 import './App.css'
-import { Greet } from '../wailsjs/go/main/App'
+import { GetInstances, Greet } from '../wailsjs/go/main/App'
+import { github } from '../wailsjs/go/models'
 
 function App() {
 	const [resultText, setResultText] = useState(
@@ -15,24 +16,21 @@ function App() {
 		Greet(name).then(updateResultText)
 	}
 
+	const [instances, setInstances] = useState<github.Instance[]>([])
+	const getInstances = async () => {
+		setInstances(await GetInstances())
+	}
+	useEffect(() => {
+		getInstances()
+	}, [])
+
 	return (
 		<div id='App'>
 			<img src={logo} id='logo' alt='logo' />
 			<div id='result' className='result'>
-				{resultText}
-			</div>
-			<div id='input' className='input-box'>
-				<input
-					id='name'
-					className='input'
-					onChange={updateName}
-					autoComplete='off'
-					name='input'
-					type='text'
-				/>
-				<button className='btn' onClick={greet}>
-					Greet
-				</button>
+				{instances.map(inst => (
+					<div>{inst.releases[0].name}</div>
+				))}
 			</div>
 		</div>
 	)
