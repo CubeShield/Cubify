@@ -12,6 +12,8 @@ import {
 	SidebarTrigger,
 } from './components/ui/sidebar'
 import { AppSidebar } from './components/sidebar'
+import { Badge } from './components/ui/badge'
+import dayjs from 'dayjs'
 
 function App() {
 	const [instances, setInstances] = useState<github.Instance[]>([])
@@ -40,11 +42,17 @@ function App() {
 							<h2 className='text-3xl font-bold mb-4'>
 								{selectedInstance.releases[0].Meta.name}
 							</h2>
-							{selectedInstance.releases.map((release, index) => (
-								<div>
-									<h2>ss</h2>
-								</div>
-							))}
+							{selectedInstance.releases.map((release, index) => {
+								const date = Date.parse(release.created_at)
+								return (
+									<div className='border rounded-2xl p-3 flex flex-col gap-1'>
+										<h1 className='font-semibold text-2xl'>
+											Обновление {release.name}
+										</h1>
+										<Badge>{dayjs(release.created_at).format('D MMMM')}</Badge>
+									</div>
+								)
+							})}
 						</div>
 					) : (
 						<div className='text-muted-foreground flex items-center justify-center h-full'>

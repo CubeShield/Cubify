@@ -38,7 +38,8 @@ function InstanceCard({ instance, isSelected, onClick }: InstanceCardProps) {
 		<div onClick={onClick} className='cursor-pointer'>
 			<div
 				className={
-					'flex px-3 items-center gap-2 py-3 ' + (isSelected ? 'bg-accent' : '')
+					'flex px-3 items-center gap-2 py-3 hover:bg-accent/50 transition-all ' +
+					(isSelected ? 'bg-accent' : '')
 				}
 			>
 				<img
