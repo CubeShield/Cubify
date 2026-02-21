@@ -6,7 +6,10 @@ import (
 	"Cubify/internal/github"
 	"Cubify/internal/installer"
 	"Cubify/internal/mc"
+	"context"
 	"log"
+
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 
@@ -61,5 +64,43 @@ func (c *Controller) Run(release github.Release) error {
 	// Скачиваем контейнеры итд
 
 	c.mc.Run(release.Meta.Name, release.Meta.Loader, release.Meta.LoaderVersion, release.Meta.MinecraftVersion)
+	return nil
+}
+
+func (c *Controller) StartMicrosoftLogin(ctx context.Context) error {
+	if err := c.installer.RetrievePortableMC(); err != nil {
+		return err
+	}
+
+	bin := c.installer.GetExecutablePath()
+
+	mcInstance := mc.New(bin, c.cfg.InstancesDirectory)
+
+	go func() {
+		err := mcInstance.AuthenticateMicrosoft(
+			func(url, code string) {
+				runtime.EventsEmit(ctx, "auth:code", map[string]string{
+					"url":  url,
+					"code": code,
+				})
+			},
+			func(uuid, username string) {
+				c.cfg.User.Username = username
+				c.cfg.User.UUID = uuid
+				c.cfg.User.AuthType = "microsoft"
+				c.cfg.Save("config.json")
+
+				runtime.EventsEmit(ctx, "auth:success", map[string]string{
+					"username": username,
+					"uuid":     uuid,
+				})
+			},
+		)
+
+		if err != nil {
+			log.Printf("Auth error: %v", err)
+			runtime.EventsEmit(ctx, "auth:error", err.Error())
+		}
+	}()
 	return nil
 }

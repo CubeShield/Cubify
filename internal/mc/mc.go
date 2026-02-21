@@ -1,6 +1,7 @@
 package mc
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 	"os/exec"
@@ -24,6 +25,43 @@ func New(bin, instancesDir string) *Mc {
 
 func getInstanceDirectory(instanceName string) string {
 	return strings.ReplaceAll(strings.ReplaceAll(instanceName, ":", ""), " ", "-")
+}
+
+func (m *Mc) AuthenticateMicrosoft(callbackCode func(string, string), callbackSuccess func(string, string)) error {
+	cmd := exec.Command(m.bin, "--output", "machine", "auth", "login")
+	
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return err
+	}
+
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+
+	scanner := bufio.NewScanner(stdout)
+	for scanner.Scan() {
+		line := scanner.Text()
+		parts := strings.Fields(line)
+
+		if len(parts) == 0 {
+			continue
+		}
+
+		if parts[0] == "auth_device_code" && len(parts) >= 3 {
+			url := parts[1]
+			code := parts[2]
+			callbackCode(url, code)
+		}
+
+		if parts[0] == "auth_account_authenticated" && len(parts) >= 3 {
+			uuid := parts[1]
+			username := parts[2]
+			callbackSuccess(uuid, username)
+		}
+	}
+
+	return cmd.Wait()
 }
 
 func (m *Mc) Prepare(instanceName, loader, loaderVersion, minecraftVersion string) error {

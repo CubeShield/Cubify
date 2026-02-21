@@ -3,6 +3,7 @@ export namespace config {
 	export class User {
 	    username: string;
 	    uuid: string;
+	    auth_type: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new User(source);
@@ -12,6 +13,7 @@ export namespace config {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.username = source["username"];
 	        this.uuid = source["uuid"];
+	        this.auth_type = source["auth_type"];
 	    }
 	}
 	export class Config {

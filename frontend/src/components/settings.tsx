@@ -67,10 +67,12 @@ export function Settings() {
 	const handleUpdate = (key: keyof ConfigModels.Config, value: any) => {
 		if (!cfgData) return
 
-		setConfigData({
-			...cfgData,
-			[key]: value,
-		})
+		setConfigData(
+			new ConfigModels.Config({
+				...cfgData,
+				[key]: value,
+			}),
+		)
 	}
 
 	const handleSave = async () => {

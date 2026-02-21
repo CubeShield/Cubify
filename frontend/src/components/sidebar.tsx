@@ -39,9 +39,9 @@ import {
 	DropdownMenuLabel,
 } from './ui/dropdown-menu'
 import { config as ConfigData, github } from 'wailsjs/go/models'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Button } from './ui/button'
-import { Run } from 'wailsjs/go/main/App'
+import { GetConfig, Run } from 'wailsjs/go/main/App'
 
 function capitalizeFirstLetter(val: string): string {
 	return String(val).charAt(0).toUpperCase() + String(val).slice(1)
@@ -108,6 +108,11 @@ export function AppSidebar({
 	const [currentUser, setCurrentUser] = useState<ConfigData.User | null>(null)
 	const [isRunning, setRunning] = useState<boolean>(false)
 
+	const fetchUser = async () => {
+		const config = await GetConfig()
+		setCurrentUser(config.user)
+	}
+
 	const run = async () => {
 		setRunning(true)
 		if (!selectedInstance || selectedInstance.releases.length < 1) {
@@ -117,6 +122,10 @@ export function AppSidebar({
 		await Run(selectedInstance?.releases[0])
 		setRunning(false)
 	}
+
+	useEffect(() => {
+		fetchUser()
+	}, [])
 
 	return (
 		<Sidebar variant='floating' className=''>
@@ -168,13 +177,13 @@ export function AppSidebar({
 						<>
 							<div className='flex items-center gap-2'>
 								<img
-									src='https://minotar.net/helm/9a076b22676f4273837fded9696875db/512.png'
+									src={`https://minotar.net/helm/${currentUser.username}/512.png`}
 									className='size-8 aspect-square rounded-lg'
 								></img>
 								<div className='flex flex-col justify-center'>
 									<h4 className='text-md font-bold'>{currentUser.username}</h4>
 									<span className='text-xs font-medium text-primary'>
-										{currentUser.uuid == '00000000-0000-0000-0000-000000000000'
+										{currentUser.auth_type == 'offline'
 											? 'Неоффициальный Аккаунт'
 											: 'Microsoft Аккаунт'}
 									</span>

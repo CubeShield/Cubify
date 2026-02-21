@@ -8,6 +8,7 @@ import (
 type User struct {
 	Username string `json:"username"`
 	UUID string `json:"uuid"`
+	AuthType string `json:"auth_type"`
 }
 
 type Config struct {

@@ -54,6 +54,12 @@ func (a *App) SaveConfig(cfg config.Config) {
 	a.cfg.Save("config.json")
 }
 
+func (a *App) StartMicrosoftLogin() {
+	if err := a.controller.StartMicrosoftLogin(a.ctx); err != nil {
+		
+	}
+}
+
 func (a *App) Run(release github.Release) {
 	if err := a.controller.Run(release); err != nil {
 		log.Printf("failed to run instance: %v", err)

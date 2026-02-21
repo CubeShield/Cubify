@@ -12,3 +12,5 @@ export function GetInstances():Promise<Array<github.Instance>>;
 export function Run(arg1:github.Release):Promise<void>;
 
 export function SaveConfig(arg1:config.Config):Promise<void>;
+
+export function StartMicrosoftLogin():Promise<void>;

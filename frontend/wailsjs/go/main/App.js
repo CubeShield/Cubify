@@ -21,3 +21,7 @@ export function Run(arg1) {
 export function SaveConfig(arg1) {
   return window['go']['main']['App']['SaveConfig'](arg1);
 }
+
+export function StartMicrosoftLogin() {
+  return window['go']['main']['App']['StartMicrosoftLogin']();
+}
