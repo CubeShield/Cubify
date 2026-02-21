@@ -28,7 +28,11 @@ func getInstanceDirectory(instanceName string) string {
 }
 
 func (m *Mc) AuthenticateMicrosoft(callbackCode func(string, string), callbackSuccess func(string, string)) error {
-	cmd := exec.Command(m.bin, "--output", "machine", "auth", "login")
+	cmd := exec.Command(m.bin, 
+		"--msa-db-file", "./msa-db.json",
+		"--output", "machine", 
+		"auth", 
+		"login")
 	
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
@@ -79,13 +83,17 @@ func (m *Mc) Prepare(instanceName, loader, loaderVersion, minecraftVersion strin
 }
 
 
-func (m *Mc) Run(instanceName, loader, loaderVersion, minecraftVersion string) error {
+func (m *Mc) Run(instanceName, loader, loaderVersion, minecraftVersion, uuid, username string) error {
 	path := fmt.Sprintf("%s/%s", m.instancesDir, getInstanceDirectory(instanceName))
 	version := fmt.Sprintf("%s:%s", loader, minecraftVersion)
+
 	cmd := exec.Command(m.bin,
 		"--main-dir", path,
+		"--msa-db-file", "./msa-db.json",
 		"start",
-		"--username", "Lyroq1s",
+		"--username", username,
+		"--uuid", uuid,
+		"--auth",
 		version)
 	cmd.Stdout = os.Stdout
 	if err := cmd.Run(); err != nil {
