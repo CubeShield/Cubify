@@ -5,6 +5,9 @@ export namespace config {
 	    index_url: string;
 	    base_url: string;
 	    auth_token: string;
+	    cache_directory: string;
+	    instances_directory: string;
+	    bin_directory: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new Config(source);
@@ -16,6 +19,9 @@ export namespace config {
 	        this.index_url = source["index_url"];
 	        this.base_url = source["base_url"];
 	        this.auth_token = source["auth_token"];
+	        this.cache_directory = source["cache_directory"];
+	        this.instances_directory = source["instances_directory"];
+	        this.bin_directory = source["bin_directory"];
 	    }
 	}
 
