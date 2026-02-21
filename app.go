@@ -37,9 +37,7 @@ func (a *App) FetchInstances() []github.Instance {
 		log.Printf("Error while fetch instances: %v", err)
 		return a.instances
 	}
-	log.Printf("Fetched!")
 	a.instances = instances
-	log.Println(instances)
 	return a.instances
 }
 

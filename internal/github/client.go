@@ -89,7 +89,7 @@ func (c *Client) GetInstance(repo string) (*Instance, error) {
 			}
 		}
 		if metaURL == "" {
-			log.Printf("Error while getting meta url")
+			log.Printf("Error while getting meta url for %s", release.URL)
 			continue
 		}
 		var meta Meta

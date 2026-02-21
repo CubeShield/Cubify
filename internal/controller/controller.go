@@ -4,7 +4,6 @@ import (
 	"Cubify/internal/cache"
 	"Cubify/internal/config"
 	"Cubify/internal/github"
-	"fmt"
 	"log"
 )
 
@@ -34,7 +33,6 @@ func (c *Controller) Fetch() ([]github.Instance, error) {
 
 	instances := []github.Instance{}
 	for _, instanceRepo := range index.Instances {
-		fmt.Println(instanceRepo)
 		instance, err := c.ghClient.GetInstance(instanceRepo)
 		if err != nil {
 			log.Printf("Error while getting instance %s: %v", instanceRepo, err)
