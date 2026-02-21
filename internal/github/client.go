@@ -1,10 +1,12 @@
 package github
 
 import (
+	"Cubify/internal/cache"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -13,6 +15,7 @@ type Client struct {
 	authorizationToken string
 	httpClient *http.Client
 	UserAgent  string
+	cm *cache.CacheManager
 }
 
 func New(baseUrl, authorizationToken string) *Client {
@@ -23,6 +26,7 @@ func New(baseUrl, authorizationToken string) *Client {
 		httpClient: &http.Client{
 			Timeout: 10 * time.Second,
 		},
+		cm: cache.New(),
 	}
 }
 
@@ -64,6 +68,10 @@ func (c *Client) GetMeta(url string) (Meta, error) {
 	return meta, nil
 }
 
+func getCacheKey(instanceRepo, version string) string {
+	return fmt.Sprintf("%s.%s", strings.ReplaceAll(instanceRepo, "/", "."), version)
+}
+
 func (c *Client) GetInstance(repo string) (*Instance, error) {
 	path := fmt.Sprintf("%s/repos/%s/releases", c.baseUrl, repo)
 	
@@ -84,13 +92,19 @@ func (c *Client) GetInstance(repo string) (*Instance, error) {
 			log.Printf("Error while getting meta url")
 			continue
 		}
-
-		meta, err := c.GetMeta(metaURL)
-		if err != nil {
-			log.Printf("Error while getting meta: %v", err)
-			continue
+		var meta Meta
+		cacheKey := getCacheKey(repo, release.Name)
+		if err := c.cm.Get(cacheKey, &meta); err != nil {
+			meta, err = c.GetMeta(metaURL)
+			if err != nil {
+				log.Printf("Error while getting meta: %v", err)
+				continue
+			}
+			if err := c.cm.Put(cacheKey, meta); err != nil {
+				log.Printf("failed to cache: %v", err)
+			}
 		}
-		
+
 		release.Meta = meta
 		updatedReleases = append(updatedReleases, release)
 	}

@@ -1,8 +1,10 @@
 package controller
 
 import (
+	"Cubify/internal/cache"
 	"Cubify/internal/config"
 	"Cubify/internal/github"
+	"fmt"
 	"log"
 )
 
@@ -11,14 +13,17 @@ import (
 type Controller struct {
 	cfg *config.Config
 	ghClient *github.Client
+	cm *cache.CacheManager
 }
 
 func New(cfg *config.Config) *Controller {
 	return &Controller{
 		cfg: cfg,
 		ghClient: github.New(cfg.BaseURL, cfg.AuthToken),
+		cm: cache.New(),
 	}
 }
+
 
 
 func (c *Controller) Fetch() ([]github.Instance, error) {
@@ -29,6 +34,7 @@ func (c *Controller) Fetch() ([]github.Instance, error) {
 
 	instances := []github.Instance{}
 	for _, instanceRepo := range index.Instances {
+		fmt.Println(instanceRepo)
 		instance, err := c.ghClient.GetInstance(instanceRepo)
 		if err != nil {
 			log.Printf("Error while getting instance %s: %v", instanceRepo, err)
