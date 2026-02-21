@@ -21,9 +21,16 @@ function App() {
 	const [instances, setInstances] = useState<github.Instance[]>([])
 	const [selectedInstance, setSelectedInstance] =
 		useState<github.Instance | null>(null)
+	const [isRefreshing, setIsRefreshing] = useState<boolean>(false)
+
+	const [currentPage, setCurrentPage] = useState<'detail' | 'settings'>(
+		'detail',
+	)
 
 	const getInstances = async () => {
+		setIsRefreshing(true)
 		setInstances(await FetchInstances())
+		setIsRefreshing(false)
 	}
 	useEffect(() => {
 		getInstances()
@@ -37,6 +44,7 @@ function App() {
 					selectedInstance={selectedInstance}
 					onSelect={setSelectedInstance}
 					onRefresh={getInstances}
+					isRefreshing={isRefreshing}
 				/>
 				<main className='flex-1 p-6'>
 					{selectedInstance ? (

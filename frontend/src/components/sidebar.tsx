@@ -10,7 +10,15 @@ import {
 } from '@/components/ui/sidebar'
 import { Card, CardContent, CardHeader } from './ui/card'
 import { Badge } from './ui/badge'
-import { ChevronDown, RefreshCwIcon } from 'lucide-react'
+import {
+	BoxesIcon,
+	BoxIcon,
+	ChevronDown,
+	ListIcon,
+	PlayIcon,
+	RefreshCwIcon,
+	Settings2Icon,
+} from 'lucide-react'
 import {
 	DropdownMenuTrigger,
 	DropdownMenu,
@@ -26,6 +34,7 @@ interface AppSidebarProps {
 	selectedInstance: github.Instance | null
 	onSelect: (instance: github.Instance) => void
 	onRefresh?: () => void
+	isRefreshing: boolean
 }
 
 interface InstanceCardProps {
@@ -68,13 +77,18 @@ export function AppSidebar({
 	selectedInstance,
 	onSelect,
 	onRefresh,
+	isRefreshing,
 }: AppSidebarProps) {
 	return (
 		<Sidebar variant='floating' className=''>
 			<SidebarHeader>
-				<Button className='cursor-pointer' onClick={onRefresh}>
-					<RefreshCwIcon /> Обновить список
-				</Button>
+				<div className='flex items-center justify-center gap-2'>
+					<div className='flex border min-h-10 min-w-10 size-10 rounded-xl items-center justify-center'>
+						<BoxesIcon />
+					</div>
+
+					<h1 className='font-bold'>Доступные сборки</h1>
+				</div>
 			</SidebarHeader>
 			<SidebarContent className='flex gap-0'>
 				{instances.map((instance, index) => {
@@ -88,7 +102,21 @@ export function AppSidebar({
 					)
 				})}
 			</SidebarContent>
-			<SidebarFooter />
+			<SidebarFooter>
+				<Button className='cursor-pointer'>
+					<PlayIcon /> Играть
+				</Button>
+				<Button className='cursor-pointer'>
+					<Settings2Icon /> Настройки
+				</Button>
+				<Button
+					className='cursor-pointer'
+					onClick={onRefresh}
+					disabled={isRefreshing}
+				>
+					<RefreshCwIcon /> Обновить список
+				</Button>
+			</SidebarFooter>
 		</Sidebar>
 	)
 }
