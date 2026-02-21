@@ -9,6 +9,6 @@ export function GetConfig():Promise<config.Config>;
 
 export function GetInstances():Promise<Array<github.Instance>>;
 
-export function Run():Promise<void>;
+export function Run(arg1:github.Release):Promise<void>;
 
 export function SaveConfig(arg1:config.Config):Promise<void>;

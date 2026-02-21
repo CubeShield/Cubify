@@ -14,8 +14,8 @@ export function GetInstances() {
   return window['go']['main']['App']['GetInstances']();
 }
 
-export function Run() {
-  return window['go']['main']['App']['Run']();
+export function Run(arg1) {
+  return window['go']['main']['App']['Run'](arg1);
 }
 
 export function SaveConfig(arg1) {

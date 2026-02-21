@@ -23,7 +23,7 @@ export function InstanceDetail({ instance }: InstanceDetailProps) {
 				{instance.releases[0].Meta.containers.map(container => (
 					<div className='flex items-center gap-1 p-2 border rounded-xl'>
 						<BoxIcon className='size-4' />
-						{/*CONTAINERS[container.content_type]*/}
+						{CONTAINERS[container.content_type as keyof typeof CONTAINERS]}
 						<Badge className=''>{container.content.length}</Badge>
 					</div>
 				))}
@@ -37,7 +37,7 @@ export function InstanceDetail({ instance }: InstanceDetailProps) {
 									Обновление {release.name}
 								</h1>
 								<Badge>
-									{dayjs(release.created_at).format('D MMMM HH:MM')}
+									{dayjs(release.created_at).format('D MMMM HH:mm')}
 								</Badge>
 							</div>
 							<span>{release.body}</span>

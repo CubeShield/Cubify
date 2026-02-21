@@ -5,6 +5,7 @@ import (
 	"Cubify/internal/config"
 	"Cubify/internal/github"
 	"Cubify/internal/installer"
+	"Cubify/internal/mc"
 	"log"
 )
 
@@ -15,6 +16,7 @@ type Controller struct {
 	ghClient *github.Client
 	cm *cache.CacheManager
 	installer *installer.Installer
+	mc *mc.Mc
 }
 
 func New(cfg *config.Config) *Controller {
@@ -48,9 +50,13 @@ func (c *Controller) Fetch() ([]github.Instance, error) {
 	return instances, nil
 }
 
-func (c *Controller) Run() error {
+func (c *Controller) Run(release github.Release) error {
 	if err := c.installer.RetrievePortableMC(); err != nil {
 		return err
 	}
+
+	bin := c.installer.GetExecutablePath()
+	c.mc = mc.New(bin, c.cfg.InstancesDirectory)
+	c.mc.Prepare(release.Meta.Name, release.Meta.MinecraftVersion)
 	return nil
 }

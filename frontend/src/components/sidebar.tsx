@@ -105,7 +105,11 @@ export function AppSidebar({
 
 	const run = async () => {
 		setRunning(true)
-		await Run()
+		if (!selectedInstance || selectedInstance.releases.length < 1) {
+			setRunning(false)
+			return
+		}
+		await Run(selectedInstance?.releases[0])
 		setRunning(false)
 	}
 
