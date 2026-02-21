@@ -1,7 +1,7 @@
 package updater
 
 import (
-	"Cubify/filesystem"
+	"Cubify/internal/filesystem"
 	"Cubify/internal/github"
 	"fmt"
 	"log"

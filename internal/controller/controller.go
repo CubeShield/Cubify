@@ -3,11 +3,18 @@ package controller
 import (
 	"Cubify/internal/cache"
 	"Cubify/internal/config"
+	"Cubify/internal/filesystem"
 	"Cubify/internal/github"
 	"Cubify/internal/installer"
 	"Cubify/internal/mc"
+	"Cubify/internal/updater"
 	"context"
+	"encoding/json"
+	"fmt"
 	"log"
+	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
@@ -31,6 +38,9 @@ func New(cfg *config.Config) *Controller {
 	}
 }
 
+func getInstanceDirectoryName(instanceName string) string {
+	return strings.ReplaceAll(strings.ReplaceAll(instanceName, ":", ""), " ", "-")
+}
 
 
 func (c *Controller) Fetch() ([]github.Instance, error) {
@@ -60,12 +70,58 @@ func (c *Controller) Run(release github.Release) error {
 
 	bin := c.installer.GetExecutablePath()
 	c.mc = mc.New(bin, c.cfg.InstancesDirectory)
+	log.Println("Preparing minecraft...")
 	c.mc.Prepare(release.Meta.Name, release.Meta.Loader, release.Meta.LoaderVersion, release.Meta.MinecraftVersion)
+	log.Println("Checking for updates...")
+	instanceDirectory := getInstanceDirectoryName(release.Meta.Name)
+	fullInstancePath := filepath.Join(c.cfg.InstancesDirectory, instanceDirectory)
+	if err := c.updateInstanceContent(fullInstancePath, release.Meta.Containers); err != nil {
+		log.Printf("Update warning: %v", err)
+		return fmt.Errorf("failed to update instance: %w", err)
+	}
 	
-	
-
-
+	log.Println("Launch minecraft...")
 	c.mc.Run(release.Meta.Name, release.Meta.Loader, release.Meta.LoaderVersion, release.Meta.MinecraftVersion, c.cfg.User.UUID, c.cfg.Nickname)
+	return nil
+}
+
+
+func (c *Controller) updateInstanceContent(instancePath string, releaseContainers []github.Container) error {
+	fm, _ := filesystem.NewFileManager(instancePath)
+	installedJSONPath := filepath.Join(instancePath, "installed.json")
+
+	var installedContainers []github.Container
+	if data, err := os.ReadFile(installedJSONPath); err == nil {
+		_ = json.Unmarshal(data, &installedContainers)
+	}
+
+	findInstalled := func(contentType string) github.Container {
+		for _, cont := range installedContainers {
+			if cont.ContentType == contentType {
+				return cont
+			}
+		}
+		return github.Container{ContentType: contentType, Content: []github.Content{}}
+	}
+
+	for _, newContainer := range releaseContainers {
+		oldContainer := findInstalled(newContainer.ContentType)
+		
+		processor := updater.NewContentProcessor(newContainer, oldContainer, fm)
+		if err := processor.Process(); err != nil {
+			return err
+		}
+	}
+
+	newData, err := json.MarshalIndent(releaseContainers, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal installed state: %w", err)
+	}
+
+	if err := os.WriteFile(installedJSONPath, newData, 0644); err != nil {
+		return fmt.Errorf("failed to save installed.json: %w", err)
+	}
+
 	return nil
 }
 
