@@ -42,7 +42,18 @@ type Container struct {
 	Content []Content `json:"content"`
 }
 
+type Type string
+
+const (
+	TypeServer Type = "server"
+	TypeClient Type = "client"
+	TypeBoth Type = "both"
+)
+
 type Content struct {
+	Name string `json:"name"`
+	ImageURL string `json:"image_url"`
+	Type Type `json:"type"`
 	File string `json:"file"`
 	Url string `json:"url"`
 }

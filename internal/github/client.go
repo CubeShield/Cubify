@@ -73,7 +73,6 @@ func (c *Client) GetInstance(repo string) (*Instance, error) {
 	}
 
 	var updatedReleases []Release
-	fmt.Println("sss")
 	for _, release := range releases {
 		metaURL := ""
 		for _, asset := range release.Assets {

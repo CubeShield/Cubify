@@ -19,7 +19,7 @@ function App() {
 			<div id='result' className='result'>
 				{instances.map(inst => (
 					<div key={inst.releases[0].url}>
-						{inst.releases[0].name} {inst.releases[0].url}
+						{inst.releases[0].Meta.name} {inst.releases[0].name}
 					</div>
 				))}
 			</div>

@@ -19,6 +19,9 @@ export namespace github {
 	    }
 	}
 	export class Content {
+	    name: string;
+	    image_url: string;
+	    type: string;
 	    file: string;
 	    url: string;
 	
@@ -28,6 +31,9 @@ export namespace github {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.name = source["name"];
+	        this.image_url = source["image_url"];
+	        this.type = source["type"];
 	        this.file = source["file"];
 	        this.url = source["url"];
 	    }
