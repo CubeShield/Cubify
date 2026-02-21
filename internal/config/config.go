@@ -24,9 +24,9 @@ func Load(filename string) (*Config, error) {
 			IndexURL: "https://raw.githubusercontent.com/CubeShield/CubeInstances/refs/heads/main/index.json",
 			BaseURL: "https://api.github.com",
 			AuthToken: "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",
-			CacheDirectory: "./cache",
-			InstancesDirectory: "./instances",
-			BinDirectory: "./bin",
+			CacheDirectory: ".cache",
+			InstancesDirectory: ".instances",
+			BinDirectory: "bin",
 		}
 		
 		if err := defaultConfig.Save(filename); err != nil {
