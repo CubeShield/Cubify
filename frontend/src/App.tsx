@@ -17,6 +17,7 @@ import dayjs from 'dayjs'
 import { BoxIcon } from 'lucide-react'
 import { InstanceDetail } from './components/detail'
 import { Settings } from './components/settings'
+import { User } from './components/user'
 
 function App() {
 	const [instances, setInstances] = useState<github.Instance[]>([])
@@ -24,9 +25,9 @@ function App() {
 		useState<github.Instance | null>(null)
 	const [isRefreshing, setIsRefreshing] = useState<boolean>(false)
 
-	const [currentPage, setCurrentPage] = useState<'detail' | 'settings'>(
-		'detail',
-	)
+	const [currentPage, setCurrentPage] = useState<
+		'detail' | 'settings' | 'account'
+	>('detail')
 
 	const getInstances = async () => {
 		setIsRefreshing(true)
@@ -51,6 +52,9 @@ function App() {
 				/>
 				<main className='flex-1 p-6'>
 					{currentPage === 'settings' && <Settings />}
+					{currentPage === 'account' && (
+						<User setCurrentPage={setCurrentPage} />
+					)}
 					{currentPage === 'detail' &&
 						(selectedInstance ? (
 							<InstanceDetail instance={selectedInstance} />

@@ -53,8 +53,8 @@ interface AppSidebarProps {
 	onSelect: (instance: github.Instance) => void
 	onRefresh?: () => void
 	isRefreshing: boolean
-	currentPage: 'detail' | 'settings'
-	setCurrentPage: (page: 'detail' | 'settings') => void
+	currentPage: 'detail' | 'settings' | 'account'
+	setCurrentPage: (page: 'detail' | 'settings' | 'account') => void
 }
 
 interface InstanceCardProps {
@@ -152,6 +152,9 @@ export function AppSidebar({
 								size='icon'
 								className='rounded-xl cursor-pointer'
 								variant='outline'
+								onClick={() => {
+									setCurrentPage('account')
+								}}
 							>
 								<PlusIcon className='stroke-zinc-500' />
 							</Button>
@@ -177,7 +180,13 @@ export function AppSidebar({
 									</span>
 								</div>
 							</div>
-							<Button size='icon' className='rounded-xl cursor-pointer'>
+							<Button
+								size='icon'
+								className='rounded-xl cursor-pointer'
+								onClick={() => {
+									setCurrentPage('account')
+								}}
+							>
 								<PencilIcon />
 							</Button>
 						</>

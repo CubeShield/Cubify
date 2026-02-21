@@ -1,5 +1,5 @@
 import { config as ConfigModels } from 'wailsjs/go/models'
-import { Input } from './ui/input' // Твои компоненты
+import { Input } from './ui/input'
 import {
 	Field,
 	FieldDescription,
@@ -7,19 +7,17 @@ import {
 	FieldLabel,
 	FieldLegend,
 } from './ui/field'
-import { Button } from './ui/button' // Добавь кнопку, если есть
+import { Button } from './ui/button'
 import { useEffect, useState } from 'react'
-import { GetConfig, SaveConfig } from 'wailsjs/go/main/App' // Предполагаем, что есть SaveConfig
+import { GetConfig, SaveConfig } from 'wailsjs/go/main/App'
 import { SaveIcon } from 'lucide-react'
 
-// 1. Улучшаем типизацию пропсов
 interface ConfigInputProps {
-	value: string | number | undefined // Значение может быть undefined, пока грузится
-	fieldKey: keyof ConfigModels.Config // Ключ поля (для типизации)
+	value: string | number | undefined
+	fieldKey: keyof ConfigModels.Config
 	label: string
 	type?: string
 	description?: string
-	// Функция изменения принимает ключ поля и новое значение
 	onChange: (key: keyof ConfigModels.Config, value: any) => void
 }
 
