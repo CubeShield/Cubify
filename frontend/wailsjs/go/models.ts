@@ -18,6 +18,87 @@ export namespace github {
 	        this.content_type = source["content_type"];
 	    }
 	}
+	export class Content {
+	    file: string;
+	    url: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Content(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.file = source["file"];
+	        this.url = source["url"];
+	    }
+	}
+	export class Container {
+	    content_type: string;
+	    content: Content[];
+	
+	    static createFrom(source: any = {}) {
+	        return new Container(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.content_type = source["content_type"];
+	        this.content = this.convertValues(source["content"], Content);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	
+	export class Meta {
+	    name: string;
+	    version: string;
+	    containers: Container[];
+	
+	    static createFrom(source: any = {}) {
+	        return new Meta(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.name = source["name"];
+	        this.version = source["version"];
+	        this.containers = this.convertValues(source["containers"], Container);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class Release {
 	    url: string;
 	    tag_name: string;
@@ -26,6 +107,7 @@ export namespace github {
 	    // Go type: time
 	    created_at: any;
 	    assets: Asset[];
+	    Meta: Meta;
 	
 	    static createFrom(source: any = {}) {
 	        return new Release(source);
@@ -39,6 +121,7 @@ export namespace github {
 	        this.body = source["body"];
 	        this.created_at = this.convertValues(source["created_at"], null);
 	        this.assets = this.convertValues(source["assets"], Asset);
+	        this.Meta = this.convertValues(source["Meta"], Meta);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -89,6 +172,7 @@ export namespace github {
 		    return a;
 		}
 	}
+	
 
 }
 

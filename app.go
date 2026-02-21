@@ -5,6 +5,7 @@ import (
 	"Cubify/internal/controller"
 	"Cubify/internal/github"
 	"context"
+	"log"
 )
 
 type App struct {
@@ -33,9 +34,12 @@ func (a *App) shutdown(ctx context.Context) {
 func (a *App) FetchInstances() []github.Instance {
 	instances, err := a.controller.Fetch()
 	if err != nil {
+		log.Printf("Error while fetch instances: %v", err)
 		return a.instances
 	}
+	log.Printf("Fetched!")
 	a.instances = instances
+	log.Println(instances)
 	return a.instances
 }
 

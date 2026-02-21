@@ -3,6 +3,7 @@ package controller
 import (
 	"Cubify/internal/config"
 	"Cubify/internal/github"
+	"log"
 )
 
 
@@ -15,7 +16,7 @@ type Controller struct {
 func New(cfg *config.Config) *Controller {
 	return &Controller{
 		cfg: cfg,
-		ghClient: github.New(cfg.BaseURL),
+		ghClient: github.New(cfg.BaseURL, cfg.AuthToken),
 	}
 }
 
@@ -30,6 +31,7 @@ func (c *Controller) Fetch() ([]github.Instance, error) {
 	for _, instanceRepo := range index.Instances {
 		instance, err := c.ghClient.GetInstance(instanceRepo)
 		if err != nil {
+			log.Printf("Error while getting instance %s: %v", instanceRepo, err)
 			continue
 		}
 

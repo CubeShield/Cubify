@@ -1,6 +1,8 @@
 package github
 
-import "time"
+import (
+	"time"
+)
 
 type Index struct {
 	ProviderName string `json:"provider_name"`
@@ -21,8 +23,26 @@ type Release struct {
 	Body string `json:"body"`
 	CreatedAt time.Time `json:"created_at"`
 	Assets      []Asset   `json:"assets"`
+	Meta Meta
 }
 
 type Instance struct {
 	Releases []Release `json:"releases"`
+}
+
+
+type Meta struct {
+	Name string `json:"name"`
+	Description string `json:"version"`
+	Containers []Container `json:"containers"`
+}
+
+type Container struct {
+	ContentType string `json:"content_type"`
+	Content []Content `json:"content"`
+}
+
+type Content struct {
+	File string `json:"file"`
+	Url string `json:"url"`
 }
