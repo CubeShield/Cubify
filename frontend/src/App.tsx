@@ -39,20 +39,29 @@ function App() {
 				<main className='flex-1 p-8'>
 					{selectedInstance ? (
 						<div>
-							<h2 className='text-3xl font-bold mb-4'>
+							<h2 className='text-3xl font-bold'>
 								{selectedInstance.releases[0].Meta.name}
 							</h2>
-							{selectedInstance.releases.map((release, index) => {
-								const date = Date.parse(release.created_at)
-								return (
-									<div className='border rounded-2xl p-3 flex flex-col gap-1'>
-										<h1 className='font-semibold text-2xl'>
-											Обновление {release.name}
-										</h1>
-										<Badge>{dayjs(release.created_at).format('D MMMM')}</Badge>
-									</div>
-								)
-							})}
+							<h3 className='text-2xl font-medium text-zinc-400'>
+								{selectedInstance.releases[0].Meta.description}
+							</h3>
+							<div className='flex flex-col gap-3 mt-4'>
+								{selectedInstance.releases.map((release, index) => {
+									return (
+										<div className='border rounded-2xl p-3 flex flex-col gap-2'>
+											<div className='flex flex-col gap-1'>
+												<h1 className='font-semibold text-2xl'>
+													Обновление {release.name}
+												</h1>
+												<Badge>
+													{dayjs(release.created_at).format('D MMMM HH:MM')}
+												</Badge>
+											</div>
+											<span>{release.body}</span>
+										</div>
+									)
+								})}
+							</div>
 						</div>
 					) : (
 						<div className='text-muted-foreground flex items-center justify-center h-full'>

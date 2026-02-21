@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/sidebar'
 import { Card, CardContent, CardHeader } from './ui/card'
 import { Badge } from './ui/badge'
-import { ChevronDown } from 'lucide-react'
+import { ChevronDown, RefreshCwIcon } from 'lucide-react'
 import {
 	DropdownMenuTrigger,
 	DropdownMenu,
@@ -19,6 +19,7 @@ import {
 } from './ui/dropdown-menu'
 import { github } from 'wailsjs/go/models'
 import { useState } from 'react'
+import { Button } from './ui/button'
 
 interface AppSidebarProps {
 	instances: github.Instance[]
@@ -71,6 +72,9 @@ export function AppSidebar({
 	return (
 		<Sidebar>
 			<SidebarHeader>
+				<Button className='cursor-pointer' onClick={onRefresh}>
+					<RefreshCwIcon /> Обновить
+				</Button>
 				<SidebarMenu>
 					<SidebarMenuItem>
 						<DropdownMenu>

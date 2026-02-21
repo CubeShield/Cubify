@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import './style.css'
 import App from './App'
 import dayjs from 'dayjs'
+import 'dayjs/locale/ru'
 
 const container = document.getElementById('root')
 dayjs.locale('ru')

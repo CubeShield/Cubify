@@ -73,7 +73,7 @@ export namespace github {
 	
 	export class Meta {
 	    name: string;
-	    version: string;
+	    description: string;
 	    containers: Container[];
 	
 	    static createFrom(source: any = {}) {
@@ -83,7 +83,7 @@ export namespace github {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.name = source["name"];
-	        this.version = source["version"];
+	        this.description = source["description"];
 	        this.containers = this.convertValues(source["containers"], Container);
 	    }
 	
