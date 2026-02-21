@@ -61,7 +61,8 @@ func (c *Controller) Run(release github.Release) error {
 	bin := c.installer.GetExecutablePath()
 	c.mc = mc.New(bin, c.cfg.InstancesDirectory)
 	c.mc.Prepare(release.Meta.Name, release.Meta.Loader, release.Meta.LoaderVersion, release.Meta.MinecraftVersion)
-	// Скачиваем контейнеры итд
+	
+	
 
 
 	c.mc.Run(release.Meta.Name, release.Meta.Loader, release.Meta.LoaderVersion, release.Meta.MinecraftVersion, c.cfg.User.UUID, c.cfg.Nickname)
