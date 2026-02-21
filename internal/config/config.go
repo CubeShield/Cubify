@@ -5,6 +5,11 @@ import (
 	"os"
 )
 
+type User struct {
+	Username string `json:"username"`
+	UUID string `json:"uuid"`
+}
+
 type Config struct {
 	Nickname string `json:"nickname"`
 	IndexURL string `json:"index_url"`
@@ -14,6 +19,8 @@ type Config struct {
 	CacheDirectory string `json:"cache_directory"`
 	InstancesDirectory string `json:"instances_directory"`
 	BinDirectory string `json:"bin_directory"`
+
+	User User `json:"user"`
 }
 
 

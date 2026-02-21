@@ -17,9 +17,13 @@ import {
 	BoxIcon,
 	ChevronDown,
 	ChevronsUpDown,
+	CircleQuestionMarkIcon,
+	FileQuestionIcon,
 	ListIcon,
+	PencilIcon,
 	PlayIcon,
 	Plus,
+	PlusIcon,
 	RefreshCwIcon,
 	Settings2Icon,
 	User2,
@@ -34,7 +38,7 @@ import {
 	DropdownMenuShortcut,
 	DropdownMenuLabel,
 } from './ui/dropdown-menu'
-import { github } from 'wailsjs/go/models'
+import { config as ConfigData, github } from 'wailsjs/go/models'
 import { useState } from 'react'
 import { Button } from './ui/button'
 import { Run } from 'wailsjs/go/main/App'
@@ -101,6 +105,7 @@ export function AppSidebar({
 	currentPage,
 	setCurrentPage,
 }: AppSidebarProps) {
+	const [currentUser, setCurrentUser] = useState<ConfigData.User | null>(null)
 	const [isRunning, setRunning] = useState<boolean>(false)
 
 	const run = async () => {
@@ -140,56 +145,48 @@ export function AppSidebar({
 				})}
 			</SidebarContent>
 			<SidebarFooter>
-				<SidebarMenu>
-					<SidebarMenuItem>
-						<DropdownMenu>
-							<DropdownMenuTrigger asChild>
-								<SidebarMenuButton
-									size='lg'
-									className='data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground'
-								>
-									<img
-										src='https://minotar.net/helm/9a076b22676f4273837fded9696875db/512.png'
-										className='size-8 aspect-square rounded-lg'
-									></img>
-									<div className='grid flex-1 text-left text-sm leading-tight'>
-										<span className='truncate font-bold'>Lyroq1s</span>
-										<span className='truncate text-xs font-medium'>
-											CubeShield Аккаунт
-										</span>
-									</div>
-									<ChevronsUpDown className='ml-auto' />
-								</SidebarMenuButton>
-							</DropdownMenuTrigger>
-							<DropdownMenuContent
-								className='w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg'
-								align='start'
-								sideOffset={4}
+				<div className='flex items-center justify-between'>
+					{currentUser == null ? (
+						<div className='flex items-center gap-2'>
+							<Button
+								size='icon'
+								className='rounded-xl cursor-pointer'
+								variant='outline'
 							>
-								<DropdownMenuGroup>
-									<DropdownMenuLabel className='text-muted-foreground text-xs'>
-										Аккаунты
-									</DropdownMenuLabel>
-								</DropdownMenuGroup>
-								<DropdownMenuSeparator />
-								<DropdownMenuGroup>
-									<DropdownMenuItem className='gap-2 p-2'>
-										<div className='flex size-6 items-center justify-center rounded-md border bg-transparent'>
-											<Plus className='size-4' />
-										</div>
-										<div className='text-muted-foreground font-medium'>
-											Добавить аккаунт
-										</div>
-									</DropdownMenuItem>
-								</DropdownMenuGroup>
-							</DropdownMenuContent>
-						</DropdownMenu>
-					</SidebarMenuItem>
-				</SidebarMenu>
+								<PlusIcon className='stroke-zinc-500' />
+							</Button>
+							<div className='flex flex-col justify-center'>
+								<h4 className='text-sm font-medium text-zinc-500'>
+									Настройте аккаунт, чтобы играть...
+								</h4>
+							</div>
+						</div>
+					) : (
+						<>
+							<div className='flex items-center gap-2'>
+								<img
+									src='https://minotar.net/helm/9a076b22676f4273837fded9696875db/512.png'
+									className='size-8 aspect-square rounded-lg'
+								></img>
+								<div className='flex flex-col justify-center'>
+									<h4 className='text-md font-bold'>{currentUser.username}</h4>
+									<span className='text-xs font-medium text-primary'>
+										{currentUser.uuid == '00000000-0000-0000-0000-000000000000'
+											? 'Неоффициальный Аккаунт'
+											: 'Microsoft Аккаунт'}
+									</span>
+								</div>
+							</div>
+							<Button size='icon' className='rounded-xl cursor-pointer'>
+								<PencilIcon />
+							</Button>
+						</>
+					)}
+				</div>
 				<Button
 					className='cursor-pointer'
 					onClick={run}
-					disabled={isRunning || !selectedInstance}
+					disabled={isRunning || !selectedInstance || !currentUser}
 				>
 					<PlayIcon /> Играть
 				</Button>
