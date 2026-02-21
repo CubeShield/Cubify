@@ -38,6 +38,10 @@ import { github } from 'wailsjs/go/models'
 import { useState } from 'react'
 import { Button } from './ui/button'
 
+function capitalizeFirstLetter(val: string): string {
+	return String(val).charAt(0).toUpperCase() + String(val).slice(1)
+}
+
 interface AppSidebarProps {
 	instances: github.Instance[]
 	selectedInstance: github.Instance | null
@@ -75,6 +79,10 @@ function InstanceCard({ instance, isSelected, onClick }: InstanceCardProps) {
 						</h1>
 					</div>
 					<div className='flex items-center gap-1'>
+						<Badge>
+							{capitalizeFirstLetter(instance.releases[0].Meta.loader)}
+						</Badge>
+						<Badge>{instance.releases[0].Meta.minecraft_version}</Badge>
 						<Badge>{instance.releases[0].name}</Badge>
 					</div>
 				</div>
