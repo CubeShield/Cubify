@@ -97,6 +97,9 @@ export namespace github {
 	export class Meta {
 	    name: string;
 	    description: string;
+	    loader: string;
+	    loader_version: string;
+	    minecraft_version: string;
 	    image_url: string;
 	    containers: Container[];
 	
@@ -108,6 +111,9 @@ export namespace github {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.name = source["name"];
 	        this.description = source["description"];
+	        this.loader = source["loader"];
+	        this.loader_version = source["loader_version"];
+	        this.minecraft_version = source["minecraft_version"];
 	        this.image_url = source["image_url"];
 	        this.containers = this.convertValues(source["containers"], Container);
 	    }

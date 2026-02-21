@@ -34,6 +34,9 @@ type Instance struct {
 type Meta struct {
 	Name string `json:"name"`
 	Description string `json:"description"`
+	Loader string `json:"loader"`
+	LoaderVersion string `json:"loader_version"`
+	MinecraftVersion string `json:"minecraft_version"`
 	ImageURL string `json:"image_url"`
 	Containers []Container `json:"containers"`
 }
