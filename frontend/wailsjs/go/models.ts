@@ -74,6 +74,7 @@ export namespace github {
 	export class Meta {
 	    name: string;
 	    description: string;
+	    image_url: string;
 	    containers: Container[];
 	
 	    static createFrom(source: any = {}) {
@@ -84,6 +85,7 @@ export namespace github {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.name = source["name"];
 	        this.description = source["description"];
+	        this.image_url = source["image_url"];
 	        this.containers = this.convertValues(source["containers"], Container);
 	    }
 	

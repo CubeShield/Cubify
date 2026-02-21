@@ -39,12 +39,12 @@ function InstanceCard({ instance, isSelected, onClick }: InstanceCardProps) {
 		<div onClick={onClick} className='cursor-pointer'>
 			<div
 				className={
-					'flex px-3 items-center gap-2 py-3 hover:bg-accent/50 transition-all ' +
-					(isSelected ? 'bg-accent' : '')
+					'flex px-3 items-center gap-2 py-3 bg-linear-to-r hover:from-accent/50 hover:to-accent/0 transition-all ' +
+					(isSelected ? 'bg-linear-to-r from-accent to-accent/0' : '')
 				}
 			>
 				<img
-					src='https://avatars.githubusercontent.com/u/207460496?s=200&v=4'
+					src={instance.releases[0].Meta.image_url}
 					className='size-16 rounded-2xl'
 				/>
 				<div className='flex flex-col gap-1'>
@@ -70,32 +70,14 @@ export function AppSidebar({
 	onRefresh,
 }: AppSidebarProps) {
 	return (
-		<Sidebar>
+		<Sidebar variant='floating' className=''>
 			<SidebarHeader>
 				<Button className='cursor-pointer' onClick={onRefresh}>
-					<RefreshCwIcon /> Обновить
+					<RefreshCwIcon /> Обновить список
 				</Button>
-				<SidebarMenu>
-					<SidebarMenuItem>
-						<DropdownMenu>
-							<DropdownMenuTrigger asChild>
-								<SidebarMenuButton>
-									CubeStudio
-									<ChevronDown className='ml-auto' />
-								</SidebarMenuButton>
-							</DropdownMenuTrigger>
-							<DropdownMenuContent className='w-[--radix-popper-anchor-width]'>
-								<DropdownMenuItem>
-									<span>Acme Inc</span>
-								</DropdownMenuItem>
-							</DropdownMenuContent>
-						</DropdownMenu>
-					</SidebarMenuItem>
-				</SidebarMenu>
 			</SidebarHeader>
 			<SidebarContent className='flex gap-0'>
 				{instances.map((instance, index) => {
-					const uniqueKey = instance.releases[0].Meta.name
 					return (
 						<InstanceCard
 							key={index}

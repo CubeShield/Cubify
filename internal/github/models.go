@@ -34,6 +34,7 @@ type Instance struct {
 type Meta struct {
 	Name string `json:"name"`
 	Description string `json:"description"`
+	ImageURL string `json:"image_url"`
 	Containers []Container `json:"containers"`
 }
 

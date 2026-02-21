@@ -14,6 +14,12 @@ import {
 import { AppSidebar } from './components/sidebar'
 import { Badge } from './components/ui/badge'
 import dayjs from 'dayjs'
+import { BoxIcon } from 'lucide-react'
+
+const CONTAINERS = {
+	mods: 'Моды',
+	resourcepacks: 'Ресурспаки',
+}
 
 function App() {
 	const [instances, setInstances] = useState<github.Instance[]>([])
@@ -36,15 +42,24 @@ function App() {
 					onSelect={setSelectedInstance}
 					onRefresh={getInstances}
 				/>
-				<main className='flex-1 p-8'>
+				<main className='flex-1 p-6'>
 					{selectedInstance ? (
 						<div>
 							<h2 className='text-3xl font-bold'>
 								{selectedInstance.releases[0].Meta.name}
 							</h2>
-							<h3 className='text-2xl font-medium text-zinc-400'>
+							<h3 className='text-l font-medium text-zinc-400'>
 								{selectedInstance.releases[0].Meta.description}
 							</h3>
+							<div className='flex gap-2 mt-2'>
+								{selectedInstance.releases[0].Meta.containers.map(container => (
+									<div className='flex items-center gap-1 p-2 border rounded-xl'>
+										<BoxIcon className='size-4' />
+										{CONTAINERS[container.content_type]}
+										<Badge className=''>{container.content.length}</Badge>
+									</div>
+								))}
+							</div>
 							<div className='flex flex-col gap-3 mt-4'>
 								{selectedInstance.releases.map((release, index) => {
 									return (
