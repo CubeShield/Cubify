@@ -23,7 +23,7 @@ export function InstanceDetail({ instance }: InstanceDetailProps) {
 				{instance.releases[0].Meta.containers.map(container => (
 					<div className='flex items-center gap-1 p-2 border rounded-xl'>
 						<BoxIcon className='size-4' />
-						{CONTAINERS[container.content_type]}
+						{/*CONTAINERS[container.content_type]*/}
 						<Badge className=''>{container.content.length}</Badge>
 					</div>
 				))}

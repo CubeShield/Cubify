@@ -1,3 +1,26 @@
+export namespace config {
+	
+	export class Config {
+	    nickname: string;
+	    index_url: string;
+	    base_url: string;
+	    auth_token: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Config(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.nickname = source["nickname"];
+	        this.index_url = source["index_url"];
+	        this.base_url = source["base_url"];
+	        this.auth_token = source["auth_token"];
+	    }
+	}
+
+}
+
 export namespace github {
 	
 	export class Asset {

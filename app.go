@@ -44,3 +44,12 @@ func (a *App) FetchInstances() []github.Instance {
 func (a *App) GetInstances() []github.Instance {
 	return a.instances
 }
+
+func (a *App) GetConfig() config.Config {
+	return *a.cfg
+}
+
+func (a *App) SaveConfig(cfg config.Config) {
+	a.cfg = &cfg
+	a.cfg.Save("config.json")
+}

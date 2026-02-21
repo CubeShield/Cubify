@@ -16,6 +16,7 @@ import { Badge } from './components/ui/badge'
 import dayjs from 'dayjs'
 import { BoxIcon } from 'lucide-react'
 import { InstanceDetail } from './components/detail'
+import { Settings } from './components/settings'
 
 function App() {
 	const [instances, setInstances] = useState<github.Instance[]>([])
@@ -45,15 +46,19 @@ function App() {
 					onSelect={setSelectedInstance}
 					onRefresh={getInstances}
 					isRefreshing={isRefreshing}
+					currentPage={currentPage}
+					setCurrentPage={setCurrentPage}
 				/>
 				<main className='flex-1 p-6'>
-					{selectedInstance ? (
-						<InstanceDetail instance={selectedInstance} />
-					) : (
-						<div className='text-muted-foreground flex items-center justify-center h-full'>
-							Выберите инстанс в меню слева
-						</div>
-					)}
+					{currentPage === 'settings' && <Settings />}
+					{currentPage === 'detail' &&
+						(selectedInstance ? (
+							<InstanceDetail instance={selectedInstance} />
+						) : (
+							<div className='text-muted-foreground flex items-center justify-center h-full'>
+								Выберите инстанс в меню слева
+							</div>
+						))}
 				</main>
 			</SidebarProvider>
 		</div>

@@ -11,6 +11,8 @@ import {
 import { Card, CardContent, CardHeader } from './ui/card'
 import { Badge } from './ui/badge'
 import {
+	ArrowLeft,
+	ArrowRight,
 	BoxesIcon,
 	BoxIcon,
 	ChevronDown,
@@ -42,6 +44,8 @@ interface AppSidebarProps {
 	onSelect: (instance: github.Instance) => void
 	onRefresh?: () => void
 	isRefreshing: boolean
+	currentPage: 'detail' | 'settings'
+	setCurrentPage: (page: 'detail' | 'settings') => void
 }
 
 interface InstanceCardProps {
@@ -85,6 +89,8 @@ export function AppSidebar({
 	onSelect,
 	onRefresh,
 	isRefreshing,
+	currentPage,
+	setCurrentPage,
 }: AppSidebarProps) {
 	return (
 		<Sidebar variant='floating' className=''>
@@ -104,7 +110,10 @@ export function AppSidebar({
 							key={index}
 							instance={instance}
 							isSelected={selectedInstance === instance}
-							onClick={() => onSelect(instance)}
+							onClick={() => {
+								setCurrentPage('detail')
+								onSelect(instance)
+							}}
 						/>
 					)
 				})}
@@ -159,9 +168,16 @@ export function AppSidebar({
 				<Button className='cursor-pointer'>
 					<PlayIcon /> Играть
 				</Button>
-				<Button className='cursor-pointer'>
-					<Settings2Icon /> Настройки
-				</Button>
+				{currentPage === 'detail' && (
+					<Button
+						className='cursor-pointer'
+						onClick={() => {
+							setCurrentPage('settings')
+						}}
+					>
+						<Settings2Icon /> Настройки
+					</Button>
+				)}
 				<Button
 					className='cursor-pointer'
 					onClick={onRefresh}

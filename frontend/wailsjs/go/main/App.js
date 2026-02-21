@@ -6,6 +6,14 @@ export function FetchInstances() {
   return window['go']['main']['App']['FetchInstances']();
 }
 
+export function GetConfig() {
+  return window['go']['main']['App']['GetConfig']();
+}
+
 export function GetInstances() {
   return window['go']['main']['App']['GetInstances']();
+}
+
+export function SaveConfig(arg1) {
+  return window['go']['main']['App']['SaveConfig'](arg1);
 }

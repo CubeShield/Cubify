@@ -1,0 +1,134 @@
+import { config as ConfigModels } from 'wailsjs/go/models'
+import { Input } from './ui/input' // Твои компоненты
+import {
+	Field,
+	FieldDescription,
+	FieldGroup,
+	FieldLabel,
+	FieldLegend,
+} from './ui/field'
+import { Button } from './ui/button' // Добавь кнопку, если есть
+import { useEffect, useState } from 'react'
+import { GetConfig, SaveConfig } from 'wailsjs/go/main/App' // Предполагаем, что есть SaveConfig
+import { SaveIcon } from 'lucide-react'
+
+// 1. Улучшаем типизацию пропсов
+interface ConfigInputProps {
+	value: string | number | undefined // Значение может быть undefined, пока грузится
+	fieldKey: keyof ConfigModels.Config // Ключ поля (для типизации)
+	label: string
+	type?: string
+	description?: string
+	// Функция изменения принимает ключ поля и новое значение
+	onChange: (key: keyof ConfigModels.Config, value: any) => void
+}
+
+function ConfigInput({
+	value,
+	fieldKey,
+	label,
+	type = 'text',
+	description,
+	onChange,
+}: ConfigInputProps) {
+	return (
+		<Field className='mb-4'>
+			{' '}
+			<FieldLabel>{label}</FieldLabel>
+			<Input
+				type={type}
+				placeholder={`Введите ${label}`}
+				value={value ?? ''}
+				onChange={e => {
+					const val =
+						type === 'number' ? Number(e.target.value) : e.target.value
+					onChange(fieldKey, val)
+				}}
+			/>
+			{description && <FieldDescription>{description}</FieldDescription>}
+		</Field>
+	)
+}
+
+export function Settings() {
+	const [cfgData, setConfigData] = useState<ConfigModels.Config | null>(null)
+	const [isLoading, setLoading] = useState(false)
+
+	const fetchConfig = async () => {
+		setLoading(true)
+		try {
+			const data = await GetConfig()
+			setConfigData(data)
+		} catch (err) {
+			console.error('Failed to load config', err)
+		} finally {
+			setLoading(false)
+		}
+	}
+
+	const handleUpdate = (key: keyof ConfigModels.Config, value: any) => {
+		if (!cfgData) return
+
+		setConfigData({
+			...cfgData,
+			[key]: value,
+		})
+	}
+
+	const handleSave = async () => {
+		if (!cfgData) return
+		setLoading(true)
+		await SaveConfig(cfgData)
+		setLoading(false)
+	}
+
+	useEffect(() => {
+		fetchConfig()
+	}, [])
+
+	if (isLoading || !cfgData) {
+		return <div className='p-4'>Загрузка настроек...</div>
+	}
+
+	return (
+		<div className='p-6 max-w-2xl'>
+			<div className='flex justify-between items-center mb-6'>
+				<h2 className='text-3xl font-bold'>Настройки</h2>
+				<Button
+					onClick={handleSave}
+					className='cursor-pointer'
+					disabled={isLoading}
+				>
+					<SaveIcon />
+					Сохранить
+				</Button>
+			</div>
+
+			<FieldGroup className='gap-2'>
+				<ConfigInput
+					fieldKey='base_url'
+					label='Base URL'
+					value={cfgData.base_url}
+					description='Ссылка на GitHub API'
+					onChange={handleUpdate}
+				/>
+
+				<ConfigInput
+					fieldKey='index_url'
+					label='Index URL'
+					value={cfgData.index_url}
+					description='Ссылка на репозиторий с манифестом'
+					onChange={handleUpdate}
+				/>
+
+				<ConfigInput
+					fieldKey='auth_token'
+					label='GitHub Token'
+					value={cfgData.auth_token}
+					description='Токен для увеличения лимитов API'
+					onChange={handleUpdate}
+				/>
+			</FieldGroup>
+		</div>
+	)
+}
