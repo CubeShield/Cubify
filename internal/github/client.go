@@ -22,7 +22,7 @@ func New(baseUrl, authorizationToken string) *Client {
 	return &Client{
 		baseUrl: baseUrl,
 		authorizationToken: authorizationToken,
-		UserAgent: "Cubify-Launcher",
+		UserAgent: "Cubify-Launcherss",
 		httpClient: &http.Client{
 			Timeout: 10 * time.Second,
 		},
