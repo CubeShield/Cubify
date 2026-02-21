@@ -14,16 +14,23 @@ import {
 	BoxesIcon,
 	BoxIcon,
 	ChevronDown,
+	ChevronsUpDown,
 	ListIcon,
 	PlayIcon,
+	Plus,
 	RefreshCwIcon,
 	Settings2Icon,
+	User2,
 } from 'lucide-react'
 import {
 	DropdownMenuTrigger,
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
+	DropdownMenuGroup,
+	DropdownMenuSeparator,
+	DropdownMenuShortcut,
+	DropdownMenuLabel,
 } from './ui/dropdown-menu'
 import { github } from 'wailsjs/go/models'
 import { useState } from 'react'
@@ -103,6 +110,52 @@ export function AppSidebar({
 				})}
 			</SidebarContent>
 			<SidebarFooter>
+				<SidebarMenu>
+					<SidebarMenuItem>
+						<DropdownMenu>
+							<DropdownMenuTrigger asChild>
+								<SidebarMenuButton
+									size='lg'
+									className='data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground'
+								>
+									<img
+										src='https://minotar.net/helm/9a076b22676f4273837fded9696875db/512.png'
+										className='size-8 aspect-square rounded-lg'
+									></img>
+									<div className='grid flex-1 text-left text-sm leading-tight'>
+										<span className='truncate font-bold'>Lyroq1s</span>
+										<span className='truncate text-xs font-medium'>
+											CubeShield Аккаунт
+										</span>
+									</div>
+									<ChevronsUpDown className='ml-auto' />
+								</SidebarMenuButton>
+							</DropdownMenuTrigger>
+							<DropdownMenuContent
+								className='w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg'
+								align='start'
+								sideOffset={4}
+							>
+								<DropdownMenuGroup>
+									<DropdownMenuLabel className='text-muted-foreground text-xs'>
+										Аккаунты
+									</DropdownMenuLabel>
+								</DropdownMenuGroup>
+								<DropdownMenuSeparator />
+								<DropdownMenuGroup>
+									<DropdownMenuItem className='gap-2 p-2'>
+										<div className='flex size-6 items-center justify-center rounded-md border bg-transparent'>
+											<Plus className='size-4' />
+										</div>
+										<div className='text-muted-foreground font-medium'>
+											Добавить аккаунт
+										</div>
+									</DropdownMenuItem>
+								</DropdownMenuGroup>
+							</DropdownMenuContent>
+						</DropdownMenu>
+					</SidebarMenuItem>
+				</SidebarMenu>
 				<Button className='cursor-pointer'>
 					<PlayIcon /> Играть
 				</Button>
