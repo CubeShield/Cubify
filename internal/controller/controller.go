@@ -4,6 +4,7 @@ import (
 	"Cubify/internal/cache"
 	"Cubify/internal/config"
 	"Cubify/internal/github"
+	"Cubify/internal/installer"
 	"log"
 )
 
@@ -13,13 +14,15 @@ type Controller struct {
 	cfg *config.Config
 	ghClient *github.Client
 	cm *cache.CacheManager
+	installer *installer.Installer
 }
 
 func New(cfg *config.Config) *Controller {
 	return &Controller{
 		cfg: cfg,
-		ghClient: github.New(cfg.BaseURL, cfg.AuthToken),
-		cm: cache.New(),
+		ghClient: github.New(cfg.BaseURL, cfg.AuthToken, cfg.CacheDirectory),
+		cm: cache.New(cfg.CacheDirectory),
+		installer: installer.New(cfg.BinDirectory),
 	}
 }
 
@@ -43,4 +46,11 @@ func (c *Controller) Fetch() ([]github.Instance, error) {
 	}
 
 	return instances, nil
+}
+
+func (c *Controller) Run() error {
+	if err := c.installer.RetrievePortableMC(); err != nil {
+		return err
+	}
+	return nil
 }

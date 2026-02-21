@@ -37,6 +37,7 @@ import {
 import { github } from 'wailsjs/go/models'
 import { useState } from 'react'
 import { Button } from './ui/button'
+import { Run } from 'wailsjs/go/main/App'
 
 function capitalizeFirstLetter(val: string): string {
 	return String(val).charAt(0).toUpperCase() + String(val).slice(1)
@@ -100,6 +101,14 @@ export function AppSidebar({
 	currentPage,
 	setCurrentPage,
 }: AppSidebarProps) {
+	const [isRunning, setRunning] = useState<boolean>(false)
+
+	const run = async () => {
+		setRunning(true)
+		await Run()
+		setRunning(false)
+	}
+
 	return (
 		<Sidebar variant='floating' className=''>
 			<SidebarHeader>
@@ -173,7 +182,7 @@ export function AppSidebar({
 						</DropdownMenu>
 					</SidebarMenuItem>
 				</SidebarMenu>
-				<Button className='cursor-pointer'>
+				<Button className='cursor-pointer' onClick={run} disabled={isRunning}>
 					<PlayIcon /> Играть
 				</Button>
 				{currentPage === 'detail' && (
@@ -182,6 +191,7 @@ export function AppSidebar({
 						onClick={() => {
 							setCurrentPage('settings')
 						}}
+						disabled={isRunning}
 					>
 						<Settings2Icon /> Настройки
 					</Button>
@@ -189,7 +199,7 @@ export function AppSidebar({
 				<Button
 					className='cursor-pointer'
 					onClick={onRefresh}
-					disabled={isRefreshing}
+					disabled={isRefreshing || isRunning}
 				>
 					<RefreshCwIcon /> Обновить список
 				</Button>

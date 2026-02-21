@@ -18,7 +18,7 @@ type Client struct {
 	cm *cache.CacheManager
 }
 
-func New(baseUrl, authorizationToken string) *Client {
+func New(baseUrl, authorizationToken, cacheDir string) *Client {
 	return &Client{
 		baseUrl: baseUrl,
 		authorizationToken: authorizationToken,
@@ -26,7 +26,7 @@ func New(baseUrl, authorizationToken string) *Client {
 		httpClient: &http.Client{
 			Timeout: 10 * time.Second,
 		},
-		cm: cache.New(),
+		cm: cache.New(cacheDir),
 	}
 }
 

@@ -1,8 +1,8 @@
 package cache
 
 import (
+	"Cubify/internal/utils"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 )
@@ -12,20 +12,12 @@ type CacheManager struct {
 	dir string
 }
 
-func New() *CacheManager {
+func New(cacheDir string) *CacheManager {
 	cache := &CacheManager{
-		dir: ".cache",
+		dir: cacheDir,
 	}
 	os.MkdirAll(cache.dir, os.ModePerm)
 	return cache
-}
-
-func exists(path string) bool {
-	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
-		return false
-
-	}
-	return true
 }
 
 func (c *CacheManager) getPath(key string) string {
@@ -34,7 +26,7 @@ func (c *CacheManager) getPath(key string) string {
 
 func (c *CacheManager) Get(key string, ptr interface{}) error {
 	path := c.getPath(key)
-	if exists(path) {
+	if utils.Exists(path) {
 		file, err := os.Open(path)
 		if err != nil {
 			return err
@@ -51,7 +43,7 @@ func (c *CacheManager) Get(key string, ptr interface{}) error {
 
 func (c *CacheManager) Put(key string, ptr interface{}) error {
 	path := c.getPath(key)
-	if exists(path) {
+	if utils.Exists(path) {
 		if err := os.Remove(path); err != nil {
 			return err
 		}

@@ -4,3 +4,5 @@ frontend/dist
 config.json
 .cache
 .DS_STORE
+bin
+instances

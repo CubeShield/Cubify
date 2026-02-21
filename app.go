@@ -53,3 +53,9 @@ func (a *App) SaveConfig(cfg config.Config) {
 	a.cfg = &cfg
 	a.cfg.Save("config.json")
 }
+
+func (a *App) Run() {
+	if err := a.controller.Run(); err != nil {
+		log.Printf("failed to run instance: %v", err)
+	}
+}
