@@ -186,7 +186,11 @@ export function AppSidebar({
 						</DropdownMenu>
 					</SidebarMenuItem>
 				</SidebarMenu>
-				<Button className='cursor-pointer' onClick={run} disabled={isRunning}>
+				<Button
+					className='cursor-pointer'
+					onClick={run}
+					disabled={isRunning || !selectedInstance}
+				>
 					<PlayIcon /> Играть
 				</Button>
 				{currentPage === 'detail' && (
