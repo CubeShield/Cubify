@@ -59,9 +59,9 @@ export function EditorPage({ project, onRefresh }: EditorPageProps) {
 	const loadGitInfo = async () => {
 		const status = await CheckProjectStatus(project.path)
 		setGitDirty(status)
-		const [c, t] = await GetProjectHistory(project.path)
-		//setCommits(c)
-		//setTags(t)
+		const g = await GetProjectHistory(project.path)
+		setCommits(g.commits)
+		setTags(g.tags)
 	}
 
 	useEffect(() => {

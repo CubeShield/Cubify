@@ -105,9 +105,8 @@ func (a *App) FetchLocalProjects() []editor.Project {
 	return projects
 }
 
-func (a *App) GetProjectHistory(path string) ([]editor.Commit, []string, error) {
-	c, t, err := a.editorManager.GetGitHistory(path)
-    return c, t, err
+func (a *App) GetProjectHistory(path string) (*editor.GitHistory, error) {
+	return a.editorManager.GetGitHistory(path)
 }
 
 func (a *App) CheckProjectStatus(path string) (bool, error) {

@@ -16,7 +16,7 @@ export function GetConfig():Promise<config.Config>;
 
 export function GetInstances():Promise<Array<github.Instance>>;
 
-export function GetProjectHistory(arg1:string):Promise<Array<editor.Commit>>;
+export function GetProjectHistory(arg1:string):Promise<editor.GitHistory>;
 
 export function LoadProjectMeta(arg1:string):Promise<github.Meta>;
 

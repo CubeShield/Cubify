@@ -233,37 +233,55 @@ func (m *Manager) GetGitStatus(projectPath string) (bool, error) {
 	return len(strings.TrimSpace(string(output))) > 0, nil
 }
 
-func (m *Manager) GetGitHistory(projectPath string) ([]Commit, []string, error) {
-	// 1. Получаем коммиты
-	cmdLog := exec.Command("git", "log", "-n", "10", "--pretty=format:%h|%s|%ar")
-	cmdLog.Dir = projectPath
-	outLog, _ := cmdLog.Output() // Игнорируем ошибку, если репо пустой
+func (m *Manager) GetGitHistory(projectPath string) (*GitHistory, error) {
+	commits := []Commit{}
+	tags := []string{}
 
-	var commits []Commit
-	lines := strings.Split(string(outLog), "\n")
-	for _, line := range lines {
-		parts := strings.Split(line, "|")
-		if len(parts) >= 3 {
-			commits = append(commits, Commit{
-				Hash:    parts[0],
-				Message: parts[1],
-				Date:    parts[2],
-			})
+	// 1. Получаем коммиты
+	// Используем специальный разделитель "|||", чтобы не ломалось об текст коммита
+	// %h - хеш, %s - сообщение, %cr - относительная дата (2 hours ago)
+	cmdLog := exec.Command("git", "log", "-n", "10", "--pretty=format:%h|||%s|||%cr")
+	cmdLog.Dir = projectPath
+	
+	outLog, err := cmdLog.Output()
+	// Если ошибка (например, нет коммитов в репо), мы просто возвращаем пустой список, 
+	// но не падаем с ошибкой для всего метода.
+	if err == nil {
+		lines := strings.Split(strings.TrimSpace(string(outLog)), "\n")
+		for _, line := range lines {
+			if line == "" { continue }
+			
+			parts := strings.Split(line, "|||")
+			if len(parts) == 3 {
+				commits = append(commits, Commit{
+					Hash:    parts[0],
+					Message: parts[1],
+					Date:    parts[2],
+				})
+			}
 		}
+	} else {
+		// Для отладки можно вывести ошибку в консоль
+		fmt.Printf("Git log warning in %s: %v\n", projectPath, err)
 	}
 
 	// 2. Получаем теги
-	cmdTags := exec.Command("git", "tag", "--sort=-creatordate") // Свежие сверху
+	cmdTags := exec.Command("git", "tag", "--sort=-creatordate") 
 	cmdTags.Dir = projectPath
-	outTags, _ := cmdTags.Output()
+	outTags, err := cmdTags.Output()
 	
-	var tags []string
-	tagLines := strings.Split(strings.TrimSpace(string(outTags)), "\n")
-	for _, t := range tagLines {
-		if t != "" {
-			tags = append(tags, t)
+	if err == nil {
+		tagLines := strings.Split(strings.TrimSpace(string(outTags)), "\n")
+		for _, t := range tagLines {
+			t = strings.TrimSpace(t)
+			if t != "" {
+				tags = append(tags, t)
+			}
 		}
 	}
 
-	return commits, tags, nil
+	return &GitHistory{
+        Commits: commits,
+        Tags:    tags,
+    }, nil
 }
