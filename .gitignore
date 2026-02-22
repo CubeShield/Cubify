@@ -8,3 +8,6 @@ bin
 instances
 .instances
 msa-db.json
+
+./editor
+./.editor

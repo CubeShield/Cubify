@@ -3,14 +3,26 @@
 import {github} from '../models';
 import {config} from '../models';
 
+export function CreateProject(arg1:string,arg2:string,arg3:string,arg4:string,arg5:string,arg6:string,arg7:string):Promise<string>;
+
 export function FetchInstances():Promise<Array<github.Instance>>;
 
 export function GetConfig():Promise<config.Config>;
 
 export function GetInstances():Promise<Array<github.Instance>>;
 
+export function LoadProjectMeta(arg1:string):Promise<github.Meta>;
+
+export function ReleaseProject(arg1:string,arg2:string):Promise<void>;
+
 export function Run(arg1:github.Release):Promise<void>;
 
 export function SaveConfig(arg1:config.Config):Promise<void>;
 
+export function SaveProjectMeta(arg1:string,arg2:github.Meta):Promise<void>;
+
+export function SelectLogoFile():Promise<string>;
+
 export function StartMicrosoftLogin():Promise<void>;
+
+export function SyncProject(arg1:string,arg2:string):Promise<void>;

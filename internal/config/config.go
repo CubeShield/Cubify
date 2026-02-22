@@ -20,6 +20,7 @@ type Config struct {
 	CacheDirectory string `json:"cache_directory"`
 	InstancesDirectory string `json:"instances_directory"`
 	BinDirectory string `json:"bin_directory"`
+	EditorDirectory string `json:"editor_directory"`
 
 	User User `json:"user"`
 }
@@ -35,6 +36,7 @@ func Load(filename string) (*Config, error) {
 			CacheDirectory: ".cache",
 			InstancesDirectory: ".instances",
 			BinDirectory: "bin",
+			EditorDirectory: "editor",
 		}
 		
 		if err := defaultConfig.Save(filename); err != nil {

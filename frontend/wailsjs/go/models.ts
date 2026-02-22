@@ -24,6 +24,7 @@ export namespace config {
 	    cache_directory: string;
 	    instances_directory: string;
 	    bin_directory: string;
+	    editor_directory: string;
 	    user: User;
 	
 	    static createFrom(source: any = {}) {
@@ -39,6 +40,7 @@ export namespace config {
 	        this.cache_directory = source["cache_directory"];
 	        this.instances_directory = source["instances_directory"];
 	        this.bin_directory = source["bin_directory"];
+	        this.editor_directory = source["editor_directory"];
 	        this.user = this.convertValues(source["user"], User);
 	    }
 	

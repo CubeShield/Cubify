@@ -21,6 +21,7 @@ import { User } from './components/user'
 import { StatusBar } from './components/status-bar'
 import { LogProvider } from './context/log-context'
 import { LogViewer } from './components/log-viewer'
+import { CreateProjectModal } from './components/create-modal-project'
 
 function App() {
 	const [instances, setInstances] = useState<github.Instance[]>([])
@@ -29,8 +30,8 @@ function App() {
 	const [isRefreshing, setIsRefreshing] = useState<boolean>(false)
 
 	const [currentPage, setCurrentPage] = useState<
-		'detail' | 'settings' | 'account'
-	>('detail')
+		'detail' | 'settings' | 'account' | 'create'
+	>('create')
 
 	const getInstances = async () => {
 		setIsRefreshing(true)
@@ -67,6 +68,7 @@ function App() {
 									Выберите инстанс в меню слева
 								</div>
 							))}
+						{currentPage === 'create' && <CreateProjectModal />}
 					</main>
 					<LogViewer />
 					<StatusBar />
