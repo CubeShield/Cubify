@@ -258,7 +258,7 @@ export function EditorPage({ project, onRefresh }: EditorPageProps) {
 			>
 				<TabsList>
 					<TabsTrigger value='general'>Основное</TabsTrigger>
-					<TabsTrigger value='containers'>Контент (Моды/Ресурсы)</TabsTrigger>
+					<TabsTrigger value='containers'>Контейнеры</TabsTrigger>
 				</TabsList>
 
 				<TabsContent value='general' className='space-y-4 pt-4'>
@@ -372,14 +372,14 @@ function ContainerEditor({
 					variant='outline'
 					onClick={() => addContainer('mods')}
 				>
-					+ Mods Container
+					+ Моды
 				</Button>
 				<Button
 					size='sm'
 					variant='outline'
 					onClick={() => addContainer('resourcepacks')}
 				>
-					+ Resourcepacks
+					+ Ресурспаки
 				</Button>
 			</div>
 
@@ -392,7 +392,7 @@ function ContainerEditor({
 									{container.content_type}
 								</h3>
 								<Badge variant='secondary'>
-									{container.content.length} items
+									{container.content.length} Элемент(ов)
 								</Badge>
 							</div>
 							<Button
@@ -404,7 +404,6 @@ function ContainerEditor({
 							</Button>
 						</div>
 
-						{/* Таблица контента */}
 						<div className='space-y-2'>
 							{container.content.map((item, iIdx) => (
 								<div
