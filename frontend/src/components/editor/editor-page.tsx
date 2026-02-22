@@ -33,26 +33,21 @@ import { Textarea } from '../ui/textarea'
 
 interface EditorPageProps {
 	project: editor.Project
-	onRefresh: () => void // Чтобы обновить сайдбар при смене имени
+	onRefresh: () => void
 }
 
 export function EditorPage({ project, onRefresh }: EditorPageProps) {
-	// Состояние меты (редактируемое)
 	const [meta, setMeta] = useState<github.Meta>(project.meta)
 
-	// Гит состояние
 	const [isGitDirty, setGitDirty] = useState(false)
 	const [commits, setCommits] = useState<editor.Commit[]>([])
 	const [tags, setTags] = useState<string[]>([])
 
-	// UI состояние
 	const [commitMsg, setCommitMsg] = useState('')
 	const [tagName, setTagName] = useState('')
 	const [isLoading, setLoading] = useState(false)
 	const [activeTab, setActiveTab] = useState('general')
 
-	// Проверка на несохраненные изменения на диск
-	// Сравниваем JSON текущего стейта с JSON при загрузке
 	const [initialJson, setInitialJson] = useState(JSON.stringify(project.meta))
 	const isFileDirty = JSON.stringify(meta) !== initialJson
 
@@ -86,7 +81,6 @@ export function EditorPage({ project, onRefresh }: EditorPageProps) {
 		}
 	}
 
-	// 2. Git Commit & Push
 	const handleSync = async () => {
 		if (!commitMsg) return alert('Введите сообщение коммита')
 		setLoading(true)
@@ -102,7 +96,6 @@ export function EditorPage({ project, onRefresh }: EditorPageProps) {
 		}
 	}
 
-	// 3. Git Release
 	const handleRelease = async () => {
 		if (!tagName) return alert('Введите тег (например v1.0.1)')
 		setLoading(true)
@@ -118,7 +111,6 @@ export function EditorPage({ project, onRefresh }: EditorPageProps) {
 		}
 	}
 
-	// Хелпер для обновления полей меты
 	const updateMeta = (field: keyof github.Meta, value: any) => {
 		setMeta(prev => {
 			const newMeta = new github.Meta(prev)
@@ -130,7 +122,6 @@ export function EditorPage({ project, onRefresh }: EditorPageProps) {
 
 	return (
 		<div className='flex flex-col h-full gap-4'>
-			{/* Верхняя панель: Название и Git статус */}
 			<div className='flex items-center justify-between pb-4 border-b'>
 				<div className='flex flex-col'>
 					<h2 className='text-2xl font-bold flex items-center gap-2'>
@@ -155,7 +146,6 @@ export function EditorPage({ project, onRefresh }: EditorPageProps) {
 				</div>
 
 				<div className='flex items-center gap-2'>
-					{/* Кнопка "Сохранить файл" */}
 					<Button
 						onClick={handleSaveFile}
 						disabled={!isFileDirty || isLoading}
@@ -165,7 +155,6 @@ export function EditorPage({ project, onRefresh }: EditorPageProps) {
 						Сохранить
 					</Button>
 
-					{/* Кнопка "Коммит" (только если файл сохранен, но гит грязный) */}
 					<Dialog>
 						<DialogTrigger asChild>
 							<Button variant='outline' disabled={isFileDirty || !isGitDirty}>
@@ -195,7 +184,6 @@ export function EditorPage({ project, onRefresh }: EditorPageProps) {
 						</DialogContent>
 					</Dialog>
 
-					{/* История и Релизы */}
 					<Dialog>
 						<DialogTrigger asChild>
 							<Button variant='ghost' size='icon'>
@@ -207,7 +195,6 @@ export function EditorPage({ project, onRefresh }: EditorPageProps) {
 								<DialogTitle>История проекта</DialogTitle>
 							</DialogHeader>
 							<div className='grid gap-6'>
-								{/* Форма релиза */}
 								<div className='flex gap-2 p-4 border rounded-lg bg-muted/20 items-end'>
 									<div className='grid w-full gap-1.5'>
 										<Label>Новый релиз</Label>
@@ -264,7 +251,6 @@ export function EditorPage({ project, onRefresh }: EditorPageProps) {
 				</div>
 			</div>
 
-			{/* Основной контент */}
 			<Tabs
 				value={activeTab}
 				onValueChange={setActiveTab}
@@ -323,7 +309,6 @@ export function EditorPage({ project, onRefresh }: EditorPageProps) {
 	)
 }
 
-// Компонент редактора контейнеров (вынесен отдельно)
 function ContainerEditor({
 	meta,
 	setMeta,
@@ -331,7 +316,6 @@ function ContainerEditor({
 	meta: github.Meta
 	setMeta: (m: github.Meta) => void
 }) {
-	// Хелпер для добавления/удаления
 	const addContainer = (type: string) => {
 		const newMeta = new github.Meta(meta)
 		newMeta.containers.push(
@@ -349,16 +333,14 @@ function ContainerEditor({
 		setMeta(newMeta)
 	}
 
-	// Хелпер для контента внутри контейнера
 	const addContent = (containerIdx: number) => {
 		const newMeta = new github.Meta(meta)
-		// Добавляем заглушку, пользователь отредактирует
 		newMeta.containers[containerIdx].content.push(
 			new github.Content({
 				name: 'New Mod',
 				file: 'mod.jar',
 				url: 'https://...',
-				type: 'both', // client/server/both
+				type: 'both',
 			}),
 		)
 		setMeta(newMeta)
