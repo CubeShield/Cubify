@@ -92,7 +92,7 @@ func (c *Client) GetInstance(repo string) (*Instance, error) {
 		if err := c.cm.Get(instanceCacheKey, &instance); err != nil {
 			return nil, fmt.Errorf("cannot get instance from github and cache: %v", err)
 		}
-		c.l.Info("cannot get instance from github, used cached")
+		c.l.Info("cannot get instance from github, used cached for %s", repo)
 		return &instance, nil
 	}
 

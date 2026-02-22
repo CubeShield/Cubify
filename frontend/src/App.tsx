@@ -19,6 +19,8 @@ import { InstanceDetail } from './components/detail'
 import { Settings } from './components/settings'
 import { User } from './components/user'
 import { StatusBar } from './components/status-bar'
+import { LogProvider } from './context/log-context'
+import { LogViewer } from './components/log-viewer'
 
 function App() {
 	const [instances, setInstances] = useState<github.Instance[]>([])
@@ -41,32 +43,35 @@ function App() {
 
 	return (
 		<div id='App'>
-			<SidebarProvider>
-				<AppSidebar
-					instances={instances}
-					selectedInstance={selectedInstance}
-					onSelect={setSelectedInstance}
-					onRefresh={getInstances}
-					isRefreshing={isRefreshing}
-					currentPage={currentPage}
-					setCurrentPage={setCurrentPage}
-				/>
-				<main className='flex-1 p-6'>
-					{currentPage === 'settings' && <Settings />}
-					{currentPage === 'account' && (
-						<User setCurrentPage={setCurrentPage} />
-					)}
-					{currentPage === 'detail' &&
-						(selectedInstance ? (
-							<InstanceDetail instance={selectedInstance} />
-						) : (
-							<div className='text-muted-foreground flex items-center justify-center h-full'>
-								Выберите инстанс в меню слева
-							</div>
-						))}
-				</main>
-				<StatusBar />
-			</SidebarProvider>
+			<LogProvider>
+				<SidebarProvider>
+					<AppSidebar
+						instances={instances}
+						selectedInstance={selectedInstance}
+						onSelect={setSelectedInstance}
+						onRefresh={getInstances}
+						isRefreshing={isRefreshing}
+						currentPage={currentPage}
+						setCurrentPage={setCurrentPage}
+					/>
+					<main className='flex-1 p-6'>
+						{currentPage === 'settings' && <Settings />}
+						{currentPage === 'account' && (
+							<User setCurrentPage={setCurrentPage} />
+						)}
+						{currentPage === 'detail' &&
+							(selectedInstance ? (
+								<InstanceDetail instance={selectedInstance} />
+							) : (
+								<div className='text-muted-foreground flex items-center justify-center h-full'>
+									Выберите инстанс в меню слева
+								</div>
+							))}
+					</main>
+					<LogViewer />
+					<StatusBar />
+				</SidebarProvider>
+			</LogProvider>
 		</div>
 	)
 }
