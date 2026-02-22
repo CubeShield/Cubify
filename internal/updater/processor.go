@@ -3,8 +3,8 @@ package updater
 import (
 	"Cubify/internal/filesystem"
 	"Cubify/internal/github"
+	logger "Cubify/internal/logging"
 	"fmt"
-	"log"
 	"net/http"
 	"path/filepath"
 	"time"
@@ -12,6 +12,7 @@ import (
 
 
 type ContentProcessor struct {
+	l *logger.Logger
 	contentType      string
 	apiContent       []github.Content
 	installedContent []github.Content
@@ -23,8 +24,10 @@ func NewContentProcessor(
 	container github.Container,
 	installedContainer github.Container,
 	fm *filesystem.FileManager,
+	l *logger.Logger,
 ) *ContentProcessor {
 	return &ContentProcessor{
+		l: l,
 		contentType:      container.ContentType,
 		apiContent:       container.Content,
 		installedContent: installedContainer.Content,
@@ -44,7 +47,7 @@ func (p *ContentProcessor) toSet(contentList []github.Content) map[string]github
 }
 
 func (p *ContentProcessor) Process() error {
-	fmt.Printf("● Обработка %s\n", p.contentType)
+	p.l.Info("Handling container %s", p.contentType)
 
 	apiSet := p.toSet(p.apiContent)
 	installedSet := p.toSet(p.installedContent)
@@ -52,7 +55,7 @@ func (p *ContentProcessor) Process() error {
 	for fileName := range installedSet {
 		if _, exists := apiSet[fileName]; !exists {
 			if err := p.delete(installedSet[fileName]); err != nil {
-				fmt.Printf("Ошибка удаления %s: %v\n", fileName, err)
+				p.l.Error("Failed while deleting %s: %v", fileName, err)
 			}
 		}
 	}
@@ -61,36 +64,36 @@ func (p *ContentProcessor) Process() error {
 	for fileName := range apiSet {
 		if _, exists := installedSet[fileName]; !exists {
 			if err := p.install(apiSet[fileName]); err != nil {
-				fmt.Printf("Ошибка установки %s: %v\n", fileName, err)
+				p.l.Error("Failed while downloading %s: %v", fileName, err)
 			}
 		}
 	}
-	fmt.Printf("✔ Завершнено\n\n")
+	p.l.Info("💅 Dоne")
 	return nil
 }
 
 func (p *ContentProcessor) delete(content github.Content) error {
-	log.Printf("· Удаление %s\n", content.File)
-	fileNameWithPrefix := fmt.Sprintf("[CubeHopper] %s", content.File)
+	p.l.Info("Deleting %s", content.File)
+	fileNameWithPrefix := fmt.Sprintf("[Cubify] %s", content.File)
 	relativePath := filepath.Join(p.contentType, fileNameWithPrefix)
 	return p.fm.Delete(relativePath)
 }
 
 func (p *ContentProcessor) install(content github.Content) error {
-	log.Printf("· Скачивание %s\n", content.File)
+	p.l.Info("Downloading %s", content.File)
 
 	resp, err := p.httpClient.Get(content.Url)
 	if err != nil {
-		return fmt.Errorf("ошибка при скачивании файла с %s: %w", content.Url, err)
+		return fmt.Errorf("failed while downloading file %s: %w", content.Url, err)
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("сервер вернул неверный статус для файла %s: %s", content.Url, resp.Status)
+		return fmt.Errorf("server responded with incorrect status for file %s: %s", content.Url, resp.Status)
 	}
 
 	defer resp.Body.Close()
 
-	fileNameWithPrefix := fmt.Sprintf("[CubeHopper] %s", content.File)
+	fileNameWithPrefix := fmt.Sprintf("[Cubify] %s", content.File)
 	relativePath := filepath.Join(p.contentType, fileNameWithPrefix)
 
 	return p.fm.Save(relativePath, resp.Body)

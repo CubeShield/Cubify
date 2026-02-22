@@ -4,11 +4,12 @@ import (
 	"Cubify/internal/config"
 	"Cubify/internal/controller"
 	"Cubify/internal/github"
+	logger "Cubify/internal/logging"
 	"context"
-	"log"
 )
 
 type App struct {
+	l *logger.Logger
 	ctx context.Context
 	cfg *config.Config
 	controller *controller.Controller
@@ -18,13 +19,15 @@ type App struct {
 }
 
 func NewApp() *App {
-	return &App{}
+	return &App{
+		l: logger.New(func (v string) {}),
+	}
 }
 
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 	a.cfg, _ = config.Load("config.json")
-	a.controller = controller.New(a.cfg)
+	a.controller = controller.New(a.cfg, a.l)
 }
 
 func (a *App) shutdown(ctx context.Context) {
@@ -34,7 +37,7 @@ func (a *App) shutdown(ctx context.Context) {
 func (a *App) FetchInstances() []github.Instance {
 	instances, err := a.controller.Fetch()
 	if err != nil {
-		log.Printf("Error while fetch instances: %v", err)
+		a.l.Error("Error while fetch instances: %v", err)
 		return a.instances
 	}
 	a.instances = instances
@@ -62,6 +65,6 @@ func (a *App) StartMicrosoftLogin() {
 
 func (a *App) Run(release github.Release) {
 	if err := a.controller.Run(release); err != nil {
-		log.Printf("failed to run instance: %v", err)
+		a.l.Error("Error while fetch instances: %v", err)
 	}
 }

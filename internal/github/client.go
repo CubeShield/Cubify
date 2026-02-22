@@ -2,15 +2,16 @@ package github
 
 import (
 	"Cubify/internal/cache"
+	logger "Cubify/internal/logging"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
 	"time"
 )
 
 type Client struct {
+	l *logger.Logger
 	baseUrl string
 	authorizationToken string
 	httpClient *http.Client
@@ -18,8 +19,9 @@ type Client struct {
 	cm *cache.CacheManager
 }
 
-func New(baseUrl, authorizationToken, cacheDir string) *Client {
+func New(baseUrl, authorizationToken, cacheDir string, l *logger.Logger) *Client {
 	return &Client{
+		l: l,
 		baseUrl: baseUrl,
 		authorizationToken: authorizationToken,
 		UserAgent: "Cubify-Launcher",
@@ -90,7 +92,7 @@ func (c *Client) GetInstance(repo string) (*Instance, error) {
 		if err := c.cm.Get(instanceCacheKey, &instance); err != nil {
 			return nil, fmt.Errorf("cannot get instance from github and cache: %v", err)
 		}
-		log.Println("cannot get instance from github, used cached")
+		c.l.Info("cannot get instance from github, used cached")
 		return &instance, nil
 	}
 
@@ -103,7 +105,7 @@ func (c *Client) GetInstance(repo string) (*Instance, error) {
 			}
 		}
 		if metaURL == "" {
-			log.Printf("Error while getting meta url for %s", release.URL)
+			c.l.Error("failed to get meta url for %s", release.URL)
 			continue
 		}
 		var meta Meta
@@ -111,11 +113,11 @@ func (c *Client) GetInstance(repo string) (*Instance, error) {
 		if err := c.cm.Get(metaCacheKey, &meta); err != nil {
 			meta, err = c.GetMeta(metaURL)
 			if err != nil {
-				log.Printf("Error while getting meta: %v", err)
+				c.l.Error("failed to get meta: %v", err)
 				continue
 			}
 			if err := c.cm.Put(metaCacheKey, meta); err != nil {
-				log.Printf("failed to cache: %v", err)
+				c.l.Error("failed to cache: %v", err)
 			}
 		}
 
@@ -138,7 +140,7 @@ func (c *Client) GetIndex(indexUrl string) (*Index, error) {
 		if err := c.cm.Get(indexCacheKey, &index); err != nil {
 			return nil, fmt.Errorf("cannot get index from github and cache: %v", err)
 		}
-		log.Println("cannot get index from github, used cached")
+		c.l.Info("cannot get index from github, used cached")
 		return &index, nil
 	}
 	c.cm.Put(indexCacheKey, &index)

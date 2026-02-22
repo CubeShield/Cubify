@@ -6,12 +6,12 @@ import (
 	"Cubify/internal/filesystem"
 	"Cubify/internal/github"
 	"Cubify/internal/installer"
+	logger "Cubify/internal/logging"
 	"Cubify/internal/mc"
 	"Cubify/internal/updater"
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -22,6 +22,7 @@ import (
 
 
 type Controller struct {
+	l *logger.Logger
 	cfg *config.Config
 	ghClient *github.Client
 	cm *cache.CacheManager
@@ -29,10 +30,11 @@ type Controller struct {
 	mc *mc.Mc
 }
 
-func New(cfg *config.Config) *Controller {
+func New(cfg *config.Config, l *logger.Logger) *Controller {
 	return &Controller{
+		l: l,
 		cfg: cfg,
-		ghClient: github.New(cfg.BaseURL, cfg.AuthToken, cfg.CacheDirectory),
+		ghClient: github.New(cfg.BaseURL, cfg.AuthToken, cfg.CacheDirectory, l),
 		cm: cache.New(cfg.CacheDirectory),
 		installer: installer.New(cfg.BinDirectory),
 	}
@@ -53,7 +55,7 @@ func (c *Controller) Fetch() ([]github.Instance, error) {
 	for _, instanceRepo := range index.Instances {
 		instance, err := c.ghClient.GetInstance(instanceRepo)
 		if err != nil {
-			log.Printf("Error while getting instance %s: %v", instanceRepo, err)
+			c.l.Error("Error while getting instance %s: %v", instanceRepo, err)
 			continue
 		}
 
@@ -70,17 +72,17 @@ func (c *Controller) Run(release github.Release) error {
 
 	bin := c.installer.GetExecutablePath()
 	c.mc = mc.New(bin, c.cfg.InstancesDirectory)
-	log.Println("Preparing minecraft...")
+	c.l.Info("Preparing Minecraft...")
 	c.mc.Prepare(release.Meta.Name, release.Meta.Loader, release.Meta.LoaderVersion, release.Meta.MinecraftVersion)
-	log.Println("Checking for updates...")
+	c.l.Info("Checking for updates...")
 	instanceDirectory := getInstanceDirectoryName(release.Meta.Name)
 	fullInstancePath := filepath.Join(c.cfg.InstancesDirectory, instanceDirectory)
 	if err := c.updateInstanceContent(fullInstancePath, release.Meta.Containers); err != nil {
-		log.Printf("Update warning: %v", err)
+		c.l.Error("Update warning: %v", err)
 		return fmt.Errorf("failed to update instance: %w", err)
 	}
 	
-	log.Println("Launch minecraft...")
+	c.l.Info("Launching Minecraft!")
 	c.mc.Run(release.Meta.Name, release.Meta.Loader, release.Meta.LoaderVersion, release.Meta.MinecraftVersion, c.cfg.User.UUID, c.cfg.Nickname)
 	return nil
 }
@@ -107,7 +109,7 @@ func (c *Controller) updateInstanceContent(instancePath string, releaseContainer
 	for _, newContainer := range releaseContainers {
 		oldContainer := findInstalled(newContainer.ContentType)
 		
-		processor := updater.NewContentProcessor(newContainer, oldContainer, fm)
+		processor := updater.NewContentProcessor(newContainer, oldContainer, fm, c.l)
 		if err := processor.Process(); err != nil {
 			return err
 		}
@@ -156,7 +158,7 @@ func (c *Controller) StartMicrosoftLogin(ctx context.Context) error {
 		)
 
 		if err != nil {
-			log.Printf("Auth error: %v", err)
+			c.l.Error("Auth error: %v", err)
 			runtime.EventsEmit(ctx, "auth:error", err.Error())
 		}
 	}()
