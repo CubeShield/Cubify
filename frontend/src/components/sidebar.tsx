@@ -2,46 +2,23 @@ import {
 	Sidebar,
 	SidebarContent,
 	SidebarFooter,
-	SidebarGroup,
 	SidebarHeader,
-	SidebarMenu,
-	SidebarMenuButton,
-	SidebarMenuItem,
 } from '@/components/ui/sidebar'
-import { Card, CardContent, CardHeader } from './ui/card'
 import { Badge } from './ui/badge'
 import {
-	ArrowLeft,
-	ArrowRight,
 	BoxesIcon,
-	BoxIcon,
-	ChevronDown,
-	ChevronsUpDown,
-	CircleQuestionMarkIcon,
-	FileQuestionIcon,
-	ListIcon,
 	PencilIcon,
 	PlayIcon,
-	Plus,
 	PlusIcon,
 	RefreshCwIcon,
 	Settings2Icon,
-	User2,
 } from 'lucide-react'
-import {
-	DropdownMenuTrigger,
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuGroup,
-	DropdownMenuSeparator,
-	DropdownMenuShortcut,
-	DropdownMenuLabel,
-} from './ui/dropdown-menu'
 import { config as ConfigData, github } from 'wailsjs/go/models'
 import { useEffect, useState } from 'react'
 import { Button } from './ui/button'
 import { GetConfig, Run } from 'wailsjs/go/main/App'
+import fabric from '../assets/images/fabric.png'
+import forge from '../assets/images/forge.png'
 
 function capitalizeFirstLetter(val: string): string {
 	return String(val).charAt(0).toUpperCase() + String(val).slice(1)
@@ -61,6 +38,11 @@ interface InstanceCardProps {
 	instance: github.Instance
 	isSelected: boolean
 	onClick: () => void
+}
+
+const LOADERS = {
+	fabric: fabric,
+	forge: forge,
 }
 
 function InstanceCard({ instance, isSelected, onClick }: InstanceCardProps) {
@@ -83,12 +65,21 @@ function InstanceCard({ instance, isSelected, onClick }: InstanceCardProps) {
 							{instance.releases[0].Meta.name}
 						</h1>
 					</div>
-					<div className='flex items-center gap-1'>
-						<Badge>
-							{capitalizeFirstLetter(instance.releases[0].Meta.loader)}
-						</Badge>
-						<Badge>{instance.releases[0].Meta.minecraft_version}</Badge>
+					<div className='flex items-center gap-2'>
 						<Badge>{instance.releases[0].name}</Badge>
+						<div className='flex items-center gap-1'>
+							<img
+								src={
+									LOADERS[
+										instance.releases[0].Meta.loader as keyof typeof LOADERS
+									]
+								}
+								className='size-4 object-contain'
+							></img>
+							<span className='text-zinc-400 font-medium text-[15px]'>
+								{instance.releases[0].Meta.minecraft_version}
+							</span>
+						</div>
 					</div>
 				</div>
 			</div>
