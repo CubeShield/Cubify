@@ -38,6 +38,19 @@ jobs:
           prerelease: false
 `
 
+
+type Project struct {
+	Name string      `json:"name"`
+	Path string      `json:"path"`
+	Meta github.Meta `json:"meta"`
+}
+
+type Commit struct {
+	Hash    string `json:"hash"`
+	Message string `json:"message"`
+	Date    string `json:"date"`
+}
+
 type Manager struct {
 	ProjectsDir string
 }
@@ -165,8 +178,92 @@ func saveJSON(path string, data interface{}) error {
 // LoadProject читает instance.json из папки
 func (m *Manager) LoadProject(path string) (*github.Meta, error) {
 	bytes, err := os.ReadFile(filepath.Join(path, "instance.json"))
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	var meta github.Meta
-	if err := json.Unmarshal(bytes, &meta); err != nil { return nil, err }
+	if err := json.Unmarshal(bytes, &meta); err != nil {
+		return nil, err
+	}
 	return &meta, nil
+}
+
+func (m *Manager) ListProjects() ([]Project, error) {
+	entries, err := os.ReadDir(m.ProjectsDir)
+	if err != nil {
+		return nil, err
+	}
+
+	var projects []Project
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+
+		fullPath := filepath.Join(m.ProjectsDir, entry.Name())
+		metaPath := filepath.Join(fullPath, "instance.json")
+
+		// Если нет instance.json, это не наш проект
+		if _, err := os.Stat(metaPath); os.IsNotExist(err) {
+			continue
+		}
+
+		meta, err := m.LoadProject(fullPath)
+		if err != nil {
+			continue 
+		}
+
+		projects = append(projects, Project{
+			Name: meta.Name,
+			Path: fullPath,
+			Meta: *meta,
+		})
+	}
+	return projects, nil
+}
+
+func (m *Manager) GetGitStatus(projectPath string) (bool, error) {
+	// git status --porcelain выводит строки только если есть изменения
+	cmd := exec.Command("git", "status", "--porcelain")
+	cmd.Dir = projectPath
+	output, err := cmd.Output()
+	if err != nil {
+		return false, err
+	}
+	return len(strings.TrimSpace(string(output))) > 0, nil
+}
+
+func (m *Manager) GetGitHistory(projectPath string) ([]Commit, []string, error) {
+	// 1. Получаем коммиты
+	cmdLog := exec.Command("git", "log", "-n", "10", "--pretty=format:%h|%s|%ar")
+	cmdLog.Dir = projectPath
+	outLog, _ := cmdLog.Output() // Игнорируем ошибку, если репо пустой
+
+	var commits []Commit
+	lines := strings.Split(string(outLog), "\n")
+	for _, line := range lines {
+		parts := strings.Split(line, "|")
+		if len(parts) >= 3 {
+			commits = append(commits, Commit{
+				Hash:    parts[0],
+				Message: parts[1],
+				Date:    parts[2],
+			})
+		}
+	}
+
+	// 2. Получаем теги
+	cmdTags := exec.Command("git", "tag", "--sort=-creatordate") // Свежие сверху
+	cmdTags.Dir = projectPath
+	outTags, _ := cmdTags.Output()
+	
+	var tags []string
+	tagLines := strings.Split(strings.TrimSpace(string(outTags)), "\n")
+	for _, t := range tagLines {
+		if t != "" {
+			tags = append(tags, t)
+		}
+	}
+
+	return commits, tags, nil
 }

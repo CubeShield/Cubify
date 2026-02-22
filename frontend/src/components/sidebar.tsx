@@ -7,13 +7,15 @@ import {
 import { Badge } from './ui/badge'
 import {
 	BoxesIcon,
+	HammerIcon,
 	PencilIcon,
 	PlayIcon,
 	PlusIcon,
 	RefreshCwIcon,
+	SeparatorHorizontal,
 	Settings2Icon,
 } from 'lucide-react'
-import { config as ConfigData, github } from 'wailsjs/go/models'
+import { config as ConfigData, editor, github } from 'wailsjs/go/models'
 import { useEffect, useState } from 'react'
 import { Button } from './ui/button'
 import { GetConfig, Run } from 'wailsjs/go/main/App'
@@ -26,12 +28,15 @@ function capitalizeFirstLetter(val: string): string {
 
 interface AppSidebarProps {
 	instances: github.Instance[]
+	localProjects: editor.Project[]
 	selectedInstance: github.Instance | null
+	selectedProject: editor.Project | null
 	onSelect: (instance: github.Instance) => void
+	onSelectProject: (project: editor.Project) => void
 	onRefresh?: () => void
 	isRefreshing: boolean
-	currentPage: 'detail' | 'settings' | 'account'
-	setCurrentPage: (page: 'detail' | 'settings' | 'account') => void
+	currentPage: 'detail' | 'settings' | 'account' | 'editor'
+	setCurrentPage: (page: 'detail' | 'settings' | 'account' | 'editor') => void
 }
 
 interface InstanceCardProps {
@@ -95,6 +100,9 @@ export function AppSidebar({
 	isRefreshing,
 	currentPage,
 	setCurrentPage,
+	localProjects,
+	onSelectProject,
+	selectedProject,
 }: AppSidebarProps) {
 	const [currentUser, setCurrentUser] = useState<ConfigData.User | null>(null)
 	const [isRunning, setRunning] = useState<boolean>(false)
@@ -143,6 +151,39 @@ export function AppSidebar({
 						/>
 					)
 				})}
+				{localProjects.length > 0 && (
+					<div className='flex items-center gap-2 px-4 py-2 opacity-50'>
+						<SeparatorHorizontal className='flex-1 h-px bg-border' />
+						<span className='text-xs font-mono uppercase'>Разработка</span>
+						<SeparatorHorizontal className='flex-1 h-px bg-border' />
+					</div>
+				)}
+				{localProjects.map((project, index) => (
+					<div
+						key={`proj-${index}`}
+						onClick={() => {
+							setCurrentPage('editor')
+							onSelectProject(project)
+						}}
+						className={`flex px-3 items-center gap-2 py-3 cursor-pointer transition-all hover:bg-accent/50 ${
+							currentPage === 'editor' && selectedProject?.path === project.path
+								? 'bg-accent text-accent-foreground border-r-2 border-primary'
+								: ''
+						}`}
+					>
+						<div className='size-10 rounded-lg bg-zinc-800 flex items-center justify-center'>
+							<HammerIcon className='size-5 text-zinc-400' />
+						</div>
+						<div className='flex flex-col gap-0.5'>
+							<h1 className='font-bold text-sm truncate max-w-[140px]'>
+								{project.name}
+							</h1>
+							<span className='text-[10px] text-muted-foreground font-mono'>
+								{project.meta.minecraft_version} • {project.meta.loader}
+							</span>
+						</div>
+					</div>
+				))}
 			</SidebarContent>
 			<SidebarFooter>
 				<div className='flex items-center justify-between'>

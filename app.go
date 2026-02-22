@@ -96,6 +96,24 @@ func (a *App) SaveConfig(cfg config.Config) {
 	a.cfg.Save("config.json")
 }
 
+func (a *App) FetchLocalProjects() []editor.Project {
+	projects, err := a.editorManager.ListProjects()
+	if err != nil {
+		a.l.Error("Failed to list projects: %v", err)
+		return []editor.Project{}
+	}
+	return projects
+}
+
+func (a *App) GetProjectHistory(path string) ([]editor.Commit, []string, error) {
+	c, t, err := a.editorManager.GetGitHistory(path)
+    return c, t, err
+}
+
+func (a *App) CheckProjectStatus(path string) (bool, error) {
+    return a.editorManager.GetGitStatus(path)
+}
+
 func (a *App) StartMicrosoftLogin() {
 	if err := a.controller.StartMicrosoftLogin(a.ctx); err != nil {
 		
