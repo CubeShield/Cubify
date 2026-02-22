@@ -1,8 +1,11 @@
 package logger
 
 import (
+	"context"
 	"fmt"
 	"log"
+
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 
@@ -10,9 +13,9 @@ type Logger struct {
 	callback func(string)
 }
 
-func New(callback func(string)) *Logger {
+func New(ctx context.Context) *Logger {
 	return &Logger{
-		callback: callback,
+		callback: func (msg string) {runtime.EventsEmit(ctx, "log:line", msg)},
 	}
 }
 

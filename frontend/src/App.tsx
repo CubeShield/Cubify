@@ -18,6 +18,7 @@ import { BoxIcon } from 'lucide-react'
 import { InstanceDetail } from './components/detail'
 import { Settings } from './components/settings'
 import { User } from './components/user'
+import { StatusBar } from './components/status-bar'
 
 function App() {
 	const [instances, setInstances] = useState<github.Instance[]>([])
@@ -64,6 +65,7 @@ function App() {
 							</div>
 						))}
 				</main>
+				<StatusBar />
 			</SidebarProvider>
 		</div>
 	)

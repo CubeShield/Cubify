@@ -1,23 +1,27 @@
 package mc
 
 import (
+	logger "Cubify/internal/logging"
 	"bufio"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"strings"
 )
 
 type Mc struct {
+	l *logger.Logger
 	bin string
 	instancesDir string
 }
 
-func New(bin, instancesDir string) *Mc {
+func New(bin, instancesDir string, l *logger.Logger) *Mc {
 	if err := os.MkdirAll(instancesDir, 0755); err != nil {
 		fmt.Printf("Error creating dir: %v\n", err)
 	}
 	return &Mc{
+		l: l,
 		bin: bin,
 		instancesDir: instancesDir,
 	}
@@ -75,11 +79,8 @@ func (m *Mc) Prepare(instanceName, loader, loaderVersion, minecraftVersion strin
 		"--main-dir", path,
 		"start",
 		"--dry", version)
-	cmd.Stdout = os.Stdout
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-	return nil
+	
+	return m.executeWithLogging(cmd)
 }
 
 
@@ -95,9 +96,39 @@ func (m *Mc) Run(instanceName, loader, loaderVersion, minecraftVersion, uuid, us
 		"--uuid", uuid,
 		"--auth",
 		version)
-	cmd.Stdout = os.Stdout
-	if err := cmd.Run(); err != nil {
+	
+	return m.executeWithLogging(cmd)
+}
+
+func (m *Mc) executeWithLogging(cmd *exec.Cmd) error {
+	stdoutReader, stdoutWriter := io.Pipe()
+	stderrReader, stderrWriter := io.Pipe()
+
+	cmd.Stdout = stdoutWriter
+	cmd.Stderr = stderrWriter
+
+
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+	go readOutput(stdoutReader, m.l, false)
+	go readOutput(stderrReader, m.l, true)
+	if err := cmd.Wait(); err != nil {
 		return err
 	}
 	return nil
+}
+
+
+func readOutput(reader io.Reader, l *logger.Logger, isErr bool) {
+	scanner := bufio.NewScanner(reader)
+	for scanner.Scan() {
+		text := scanner.Text()
+		if !isErr {
+			l.Info("[MC] %s", text)
+		} else {
+			l.Error("[MC] %s", text)
+		}
+		
+	}
 }

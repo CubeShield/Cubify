@@ -128,7 +128,7 @@ export function AppSidebar({
 	}, [])
 
 	return (
-		<Sidebar variant='floating' className=''>
+		<Sidebar variant='floating' className='h-22/23'>
 			<SidebarHeader>
 				<div className='flex items-center justify-center gap-2'>
 					<div className='flex border min-h-10 min-w-10 size-10 rounded-xl items-center justify-center'>

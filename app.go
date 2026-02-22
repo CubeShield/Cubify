@@ -19,13 +19,12 @@ type App struct {
 }
 
 func NewApp() *App {
-	return &App{
-		l: logger.New(func (v string) {}),
-	}
+	return &App{}
 }
 
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
+	a.l = logger.New(ctx)
 	a.cfg, _ = config.Load("config.json")
 	a.controller = controller.New(a.cfg, a.l)
 }
