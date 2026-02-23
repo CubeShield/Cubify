@@ -455,7 +455,7 @@ function ContainerEditor({
 									className='flex-1 border-dashed border'
 									onClick={() => addContent(cIdx)}
 								>
-									<PlusIcon className='mr-2 h-4 w-4' /> Manual Add
+									<PlusIcon className='h-4 w-4' /> Добавить вручную
 								</Button>
 
 								{/* Кнопка добавления по ссылке */}
@@ -472,7 +472,7 @@ function ContainerEditor({
 											size='sm'
 											className='flex-1 border-dashed border-primary/50 hover:bg-primary/10'
 										>
-											<LinkIcon className='mr-2 h-4 w-4' /> From URL
+											<LinkIcon className='h-4 w-4' /> Из URL
 										</Button>
 									</DialogTrigger>
 									<DialogContent>

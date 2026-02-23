@@ -34,7 +34,7 @@ func classify(url string) github.Source {
 	case contains("modrinth"):
 		return github.SourceModrinth
 	case contains("curseforge"):
-		return github.SourceModrinth
+		return github.SourceCurseForge
 	default:
 		return github.SourceURL
 	}

@@ -31,44 +31,53 @@ export function Content({
 }) {
 	return (
 		<div className='flex flex-col gap-2 items-center bg-muted/40 p-2 rounded-md border border-transparent hover:border-border transition-colors'>
-			<div className='w-full flex gap-2 items-center'>
-				<Input
-					className='h-8'
-					value={item.name}
-					onChange={e => updateContent(cIdx, iIdx, 'name', e.target.value)}
-					placeholder='Название'
-				/>
-				<Select
-					value={item.type}
-					onValueChange={val => updateContent(cIdx, iIdx, 'type', val)}
-				>
-					<SelectTrigger className='h-8 w-full'>
-						<SelectValue placeholder='Тип' />
-					</SelectTrigger>
-					<SelectContent>
-						<SelectItem value='both'>Общий</SelectItem>
-						<SelectItem value='client'>Клиент</SelectItem>
-						<SelectItem value='server'>Сервер</SelectItem>
-					</SelectContent>
-				</Select>
-			</div>
+			<div className='flex gap-2 items-center justify-center'>
+				{item.image_url != '' && (
+					<img src={item.image_url} className='size-18' />
+				)}
 
-			<div className='w-full grid grid-cols-4 gap-2'>
-				<div className='col-span-1'>
-					<Input
-						className='h-8'
-						value={item.file}
-						onChange={e => updateContent(cIdx, iIdx, 'file', e.target.value)}
-						placeholder='Файл'
-					/>
+				<div className='flex flex-col gap-2'>
+					<div className='w-full flex gap-2 items-center'>
+						<Input
+							className='h-8'
+							value={item.name}
+							onChange={e => updateContent(cIdx, iIdx, 'name', e.target.value)}
+							placeholder='Название'
+						/>
+						<Select
+							value={item.type}
+							onValueChange={val => updateContent(cIdx, iIdx, 'type', val)}
+						>
+							<SelectTrigger className='h-8 w-full'>
+								<SelectValue placeholder='Тип' />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value='both'>Общий</SelectItem>
+								<SelectItem value='client'>Клиент</SelectItem>
+								<SelectItem value='server'>Сервер</SelectItem>
+							</SelectContent>
+						</Select>
+					</div>
+					<div className='w-full grid grid-cols-4 gap-2'>
+						<div className='col-span-1'>
+							<Input
+								className='h-8'
+								value={item.file}
+								onChange={e =>
+									updateContent(cIdx, iIdx, 'file', e.target.value)
+								}
+								placeholder='Файл'
+							/>
+						</div>
+
+						<Input
+							className='col-span-3 h-8 font-mono text-xs'
+							value={item.url}
+							onChange={e => updateContent(cIdx, iIdx, 'url', e.target.value)}
+							placeholder='Download URL'
+						/>
+					</div>
 				</div>
-
-				<Input
-					className='col-span-3 h-8 font-mono text-xs'
-					value={item.url}
-					onChange={e => updateContent(cIdx, iIdx, 'url', e.target.value)}
-					placeholder='Download URL'
-				/>
 			</div>
 
 			<Button

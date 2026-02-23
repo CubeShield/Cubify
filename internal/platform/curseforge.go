@@ -35,7 +35,8 @@ func (s *CurseForgeService) ParseURL(ctx context.Context, url string) (modID, fi
 	if len(mods.Data) < 1 {
 		return "", "", fmt.Errorf("not enough mod amount")
 	}
-	modID = string(mods.Data[0].ID)
+	modID = mods.Data[0].ID.Param()
+	fmt.Println(modID, fileID)
 	return modID, fileID, nil
 }
 
@@ -44,7 +45,7 @@ func (s *CurseForgeService) GetMod(ctx context.Context, modID, fileID string) (g
 	if err != nil {
 		return github.Content{}, err
 	}
-	intFileID, err := strconv.ParseInt(modID, 10, 32)
+	intFileID, err := strconv.ParseInt(fileID, 10, 32)
 	if err != nil {
 		return github.Content{}, err
 	}
@@ -55,11 +56,12 @@ func (s *CurseForgeService) GetMod(ctx context.Context, modID, fileID string) (g
 
 	modFile, err := s.client.ModFile(schema.ModID(intModID), schema.FileID(intFileID))
 	if err != nil {
+		fmt.Println("bbb")
 		return github.Content{}, err
 	}
 
 	return github.Content{
-		Name: modFile.Data.DisplayName,
+		Name: mod.Data.Name,
 		ImageURL: mod.Data.Logo.ThumbnailUrl,
 		Type: github.TypeBoth,
 		ModID: modID,

@@ -129,5 +129,9 @@ func (a *App) Run(release github.Release) {
 }
 
 func (a *App) GetContentFromURL(url string) (github.Content, error) {
-	return a.platformManager.GetModFromURL(a.ctx, url)
+	data, err := a.platformManager.GetModFromURL(a.ctx, url)
+	if err != nil {
+		a.l.Error("%v", err)
+	}
+	return data, err
 }
