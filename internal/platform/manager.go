@@ -16,6 +16,7 @@ func NewManager(curseForgeAPIKey string) *Manager {
 	return &Manager{
 		services: map[github.Source]Service{
 			github.SourceCurseForge: NewCurseForgeService(curseForgeAPIKey),
+			github.SourceModrinth: NewModrinthService(),
 			github.SourceURL: NewURLService(),
 		},
 	}
