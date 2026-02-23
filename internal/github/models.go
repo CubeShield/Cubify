@@ -54,10 +54,21 @@ const (
 	TypeBoth Type = "both"
 )
 
+type Source string
+
+const (
+	SourceCurseForge Source = "curseforge"
+	SourceModrinth Source = "modrinth"
+	SourceURL Source = "url"
+)
+
 type Content struct {
 	Name string `json:"name"`
 	ImageURL string `json:"image_url"`
 	Type Type `json:"type"`
+	ModID string `json:"mod_id"`
+	FileID string `json:"file_id"`
+	Source Source `json:"source"`
 	File string `json:"file"`
 	Url string `json:"url"`
 }
