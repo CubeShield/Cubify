@@ -65,8 +65,8 @@ const (
 type From string
 
 const (
-	FromMain Source = "main"
-	FromAdditional Source = "additional"
+	FromMain From = "main"
+	FromAdditional From = "additional"
 )
 
 type Content struct {
