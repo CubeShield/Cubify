@@ -6,6 +6,7 @@ import (
 	"Cubify/internal/editor"
 	"Cubify/internal/github"
 	logger "Cubify/internal/logging"
+	"Cubify/internal/platform"
 	"context"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -18,6 +19,7 @@ type App struct {
 	controller *controller.Controller
 	editorManager *editor.Manager
 	instances []github.Instance
+	platformManager *platform.Manager
 
 }
 
@@ -31,6 +33,7 @@ func (a *App) startup(ctx context.Context) {
 	a.cfg, _ = config.Load("config.json")
 	a.editorManager = editor.New(a.cfg.EditorDirectory)
 	a.controller = controller.New(a.cfg, a.l)
+	a.platformManager = platform.NewManager(a.cfg.CurseForgeAPIKey)
 }
 
 func (a *App) shutdown(ctx context.Context) {
@@ -123,4 +126,8 @@ func (a *App) Run(release github.Release) {
 	if err := a.controller.Run(release); err != nil {
 		a.l.Error("Error while fetch instances: %v", err)
 	}
+}
+
+func (a *App) GetContentFromURL(url string) (github.Content, error) {
+	return a.platformManager.GetModFromURL(a.ctx, url)
 }

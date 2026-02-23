@@ -14,6 +14,8 @@ export function FetchLocalProjects():Promise<Array<editor.Project>>;
 
 export function GetConfig():Promise<config.Config>;
 
+export function GetContentFromURL(arg1:string):Promise<github.Content>;
+
 export function GetInstances():Promise<Array<github.Instance>>;
 
 export function GetProjectHistory(arg1:string):Promise<editor.GitHistory>;

@@ -22,6 +22,10 @@ export function GetConfig() {
   return window['go']['main']['App']['GetConfig']();
 }
 
+export function GetContentFromURL(arg1) {
+  return window['go']['main']['App']['GetContentFromURL'](arg1);
+}
+
 export function GetInstances() {
   return window['go']['main']['App']['GetInstances']();
 }
