@@ -5,6 +5,7 @@ import {
 	ReleaseProject,
 	GetProjectHistory,
 	CheckProjectStatus,
+	GetContentFromURL, // <--- Добавил импорт
 } from '../../../wailsjs/go/main/App'
 import { editor, github } from '../../../wailsjs/go/models'
 import { Button } from '../ui/button'
@@ -18,6 +19,8 @@ import {
 	PlusIcon,
 	Trash2,
 	RefreshCcw,
+	LinkIcon, // <--- Добавил иконку
+	Loader2, // <--- Добавил иконку
 } from 'lucide-react'
 import {
 	Dialog,
@@ -56,25 +59,25 @@ export function EditorPage({ project, onRefresh }: EditorPageProps) {
 		const status = await CheckProjectStatus(project.path)
 		setGitDirty(status)
 		const g = await GetProjectHistory(project.path)
-		setCommits(g.commits)
-		setTags(g.tags)
+		if (g) {
+			setCommits(g.commits || [])
+			setTags(g.tags || [])
+		}
 	}
 
 	useEffect(() => {
-		// При смене проекта сбрасываем стейт
 		setMeta(project.meta)
 		setInitialJson(JSON.stringify(project.meta))
 		loadGitInfo()
 	}, [project])
 
-	// 1. Сохранение на диск (instance.json)
 	const handleSaveFile = async () => {
 		setLoading(true)
 		try {
 			await SaveProjectMeta(project.path, meta)
 			setInitialJson(JSON.stringify(meta))
-			await loadGitInfo() // Статус гита должен стать dirty
-			onRefresh() // Если поменяли имя
+			await loadGitInfo()
+			onRefresh()
 		} catch (e) {
 			alert('Ошибка сохранения: ' + e)
 		} finally {
@@ -317,6 +320,11 @@ function ContainerEditor({
 	meta: github.Meta
 	setMeta: (m: github.Meta) => void
 }) {
+	// Состояние для диалога добавления по URL
+	const [openUrlDialog, setOpenUrlDialog] = useState<number | null>(null)
+	const [urlToAdd, setUrlToAdd] = useState('')
+	const [isUrlLoading, setUrlLoading] = useState(false)
+
 	const addContainer = (type: string) => {
 		const newMeta = new github.Meta(meta)
 		newMeta.containers.push(
@@ -345,6 +353,28 @@ function ContainerEditor({
 			}),
 		)
 		setMeta(newMeta)
+	}
+
+	// Функция добавления контента по ссылке
+	const handleAddFromUrl = async (cIdx: number) => {
+		if (!urlToAdd) return
+		setUrlLoading(true)
+		try {
+			const content = await GetContentFromURL(urlToAdd)
+			const newMeta = new github.Meta(meta)
+
+			// Если type пустой, ставим both
+			if (!content.type) content.type = 'both'
+
+			newMeta.containers[cIdx].content.push(content)
+			setMeta(newMeta)
+			setOpenUrlDialog(null)
+			setUrlToAdd('')
+		} catch (e) {
+			alert('Ошибка получения данных по ссылке: ' + e)
+		} finally {
+			setUrlLoading(false)
+		}
 	}
 
 	const updateContent = (
@@ -416,14 +446,62 @@ function ContainerEditor({
 									item={item}
 								/>
 							))}
-							<Button
-								variant='ghost'
-								size='sm'
-								className='w-full border-dashed border'
-								onClick={() => addContent(cIdx)}
-							>
-								<PlusIcon className='mr-2 h-4 w-4' /> Add File
-							</Button>
+
+							<div className='flex gap-2 pt-2'>
+								{/* Кнопка ручного добавления */}
+								<Button
+									variant='ghost'
+									size='sm'
+									className='flex-1 border-dashed border'
+									onClick={() => addContent(cIdx)}
+								>
+									<PlusIcon className='mr-2 h-4 w-4' /> Manual Add
+								</Button>
+
+								{/* Кнопка добавления по ссылке */}
+								<Dialog
+									open={openUrlDialog === cIdx}
+									onOpenChange={open => {
+										setOpenUrlDialog(open ? cIdx : null)
+										if (!open) setUrlToAdd('')
+									}}
+								>
+									<DialogTrigger asChild>
+										<Button
+											variant='outline'
+											size='sm'
+											className='flex-1 border-dashed border-primary/50 hover:bg-primary/10'
+										>
+											<LinkIcon className='mr-2 h-4 w-4' /> From URL
+										</Button>
+									</DialogTrigger>
+									<DialogContent>
+										<DialogHeader>
+											<DialogTitle>Добавить мод по ссылке</DialogTitle>
+										</DialogHeader>
+										<div className='space-y-4 py-2'>
+											<Label>Ссылка на CurseForge / Modrinth / GitHub</Label>
+											<Input
+												placeholder='https://...'
+												value={urlToAdd}
+												onChange={e => setUrlToAdd(e.target.value)}
+											/>
+											<Button
+												className='w-full'
+												onClick={() => handleAddFromUrl(cIdx)}
+												disabled={isUrlLoading || !urlToAdd}
+											>
+												{isUrlLoading ? (
+													<Loader2 className='mr-2 h-4 w-4 animate-spin' />
+												) : (
+													<PlusIcon className='mr-2 h-4 w-4' />
+												)}
+												Добавить
+											</Button>
+										</div>
+									</DialogContent>
+								</Dialog>
+							</div>
 						</div>
 					</Card>
 				))}
