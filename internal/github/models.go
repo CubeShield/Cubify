@@ -62,6 +62,13 @@ const (
 	SourceURL Source = "url"
 )
 
+type From string
+
+const (
+	FromMain Source = "main"
+	FromAdditional Source = "additional"
+)
+
 type Content struct {
 	Name string `json:"name"`
 	ImageURL string `json:"image_url"`
@@ -69,6 +76,7 @@ type Content struct {
 	ModID string `json:"mod_id"`
 	FileID string `json:"file_id"`
 	Source Source `json:"source"`
+	From From `json:"from"`
 	File string `json:"file"`
 	Url string `json:"url"`
 }

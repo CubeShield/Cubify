@@ -3,7 +3,9 @@ package platform
 import (
 	"Cubify/internal/github"
 	"context"
+	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/sjet47/go-curseforge"
 	"github.com/sjet47/go-curseforge/schema"
@@ -20,6 +22,23 @@ func NewCurseForgeService(apiKey string) Service {
 	}
 }
 
+func (s *CurseForgeService) ParseURL(ctx context.Context, url string) (modID, fileID string, err error) {
+	// Парсим такое: https://www.curseforge.com/minecraft/mc-mods/cloth-config/files/7361439
+	url = strings.ReplaceAll(url, "https://www.curseforge.com/minecraft/mc-mods/", "")
+	url = strings.ReplaceAll(url, "/files/", " ")
+	parts := strings.Split(url, " ")
+	modName, fileID := parts[0], parts[1]
+	mods, err := s.client.SearchMod(432, s.client.WithSlug(modName))
+	if err != nil {
+		return "", "", err
+	}
+	if len(mods.Data) < 1 {
+		return "", "", fmt.Errorf("not enough mod amount")
+	}
+	modID = string(mods.Data[0].ID)
+	return modID, fileID, nil
+}
+
 func (s *CurseForgeService) GetMod(ctx context.Context, modID, fileID string) (github.Content, error) {
 	intModID, err := strconv.ParseInt(modID, 10, 32)
 	if err != nil {
@@ -29,19 +48,24 @@ func (s *CurseForgeService) GetMod(ctx context.Context, modID, fileID string) (g
 	if err != nil {
 		return github.Content{}, err
 	}
-	resp, err := s.client.ModFile(schema.ModID(intModID), schema.FileID(intFileID))
+	mod, err := s.client.Mod(schema.ModID(intModID))
+	if err != nil {
+		return  github.Content{}, err
+	}
+
+	modFile, err := s.client.ModFile(schema.ModID(intModID), schema.FileID(intFileID))
 	if err != nil {
 		return github.Content{}, err
 	}
 
 	return github.Content{
-		Name: resp.Data.DisplayName,
-		ImageURL: "",
+		Name: modFile.Data.DisplayName,
+		ImageURL: mod.Data.Logo.ThumbnailUrl,
 		Type: github.TypeBoth,
 		ModID: modID,
 		FileID: fileID,
 		Source: github.SourceCurseForge,
-		File: resp.Data.FileName,
-		Url: resp.Data.DownloadURL,
+		File: modFile.Data.FileName,
+		Url: modFile.Data.DownloadURL,
 	}, nil
 }

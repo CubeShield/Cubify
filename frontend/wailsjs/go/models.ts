@@ -181,6 +181,7 @@ export namespace github {
 	    mod_id: string;
 	    file_id: string;
 	    source: string;
+	    from: string;
 	    file: string;
 	    url: string;
 	
@@ -196,6 +197,7 @@ export namespace github {
 	        this.mod_id = source["mod_id"];
 	        this.file_id = source["file_id"];
 	        this.source = source["source"];
+	        this.from = source["from"];
 	        this.file = source["file"];
 	        this.url = source["url"];
 	    }
