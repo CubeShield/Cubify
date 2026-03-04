@@ -77,12 +77,18 @@ func (a *App) SelectLogoFile() (string, error) {
 }
 
 func (a *App) FetchInstances() []github.Instance {
-	instances, err := a.controller.Fetch()
+	fetchedInstances, err := a.controller.Fetch()
 	if err != nil {
 		a.l.Error("Error while fetch instances: %v", err)
 		return a.instances
 	}
-	a.instances = instances
+	finalInstances := []github.Instance{}
+	for _, instance := range fetchedInstances {
+		if len(instance.Releases) > 0 {
+			finalInstances = append(finalInstances, instance)
+		}
+	}
+	a.instances = finalInstances
 	return a.instances
 }
 

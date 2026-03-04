@@ -21,6 +21,7 @@ import { Button } from './ui/button'
 import { GetConfig, Run } from 'wailsjs/go/main/App'
 import fabric from '../assets/images/fabric.png'
 import forge from '../assets/images/forge.png'
+import { CreateProjectModal } from './create-modal-project'
 
 function capitalizeFirstLetter(val: string): string {
 	return String(val).charAt(0).toUpperCase() + String(val).slice(1)
@@ -258,6 +259,7 @@ export function AppSidebar({
 				>
 					<RefreshCwIcon /> Обновить список
 				</Button>
+				<CreateProjectModal />
 			</SidebarFooter>
 		</Sidebar>
 	)
