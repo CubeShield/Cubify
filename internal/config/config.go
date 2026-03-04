@@ -17,6 +17,7 @@ type Config struct {
 	BaseURL string `json:"base_url"`
 	AuthToken string `json:"auth_token"`
 	CurseForgeAPIKey string `json:"curseforge_api_key"`
+	JVMPath string `json:"jvm_path"`
 
 	CacheDirectory string `json:"cache_directory"`
 	InstancesDirectory string `json:"instances_directory"`

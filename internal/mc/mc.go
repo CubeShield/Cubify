@@ -14,9 +14,10 @@ type Mc struct {
 	l *logger.Logger
 	bin string
 	instancesDir string
+	jvmPath string
 }
 
-func New(bin, instancesDir string, l *logger.Logger) *Mc {
+func New(bin, instancesDir string, jvmPath string, l *logger.Logger) *Mc {
 	if err := os.MkdirAll(instancesDir, 0755); err != nil {
 		fmt.Printf("Error creating dir: %v\n", err)
 	}
@@ -24,6 +25,7 @@ func New(bin, instancesDir string, l *logger.Logger) *Mc {
 		l: l,
 		bin: bin,
 		instancesDir: instancesDir,
+		jvmPath: jvmPath,
 	}
 }
 
@@ -88,14 +90,23 @@ func (m *Mc) Run(instanceName, loader, loaderVersion, minecraftVersion, uuid, us
 	path := fmt.Sprintf("%s/%s", m.instancesDir, getInstanceDirectory(instanceName))
 	version := fmt.Sprintf("%s:%s", loader, minecraftVersion)
 
-	cmd := exec.Command(m.bin,
+	args := []string{
 		"--main-dir", path,
 		"--msa-db-file", "./msa-db.json",
 		"start",
 		"--username", username,
 		"--uuid", uuid,
 		"--auth",
-		version)
+		"--jvm-policy", "mojang",
+		version, 
+	}
+
+	if m.jvmPath != "" {
+		args = append(args, "--jvm")
+		args = append(args, m.jvmPath)
+	}
+
+	cmd := exec.Command(m.bin, args...)
 	
 	return m.executeWithLogging(cmd)
 }

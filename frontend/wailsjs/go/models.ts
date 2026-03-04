@@ -22,6 +22,7 @@ export namespace config {
 	    base_url: string;
 	    auth_token: string;
 	    curseforge_api_key: string;
+	    jvm_path: string;
 	    cache_directory: string;
 	    instances_directory: string;
 	    bin_directory: string;
@@ -39,6 +40,7 @@ export namespace config {
 	        this.base_url = source["base_url"];
 	        this.auth_token = source["auth_token"];
 	        this.curseforge_api_key = source["curseforge_api_key"];
+	        this.jvm_path = source["jvm_path"];
 	        this.cache_directory = source["cache_directory"];
 	        this.instances_directory = source["instances_directory"];
 	        this.bin_directory = source["bin_directory"];
