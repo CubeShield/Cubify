@@ -11,6 +11,7 @@ import {
 	Link2Icon,
 	LinkIcon,
 	ListIcon,
+	Loader2,
 	LucideIcon,
 	PinIcon,
 	PointerIcon,
@@ -40,7 +41,16 @@ import {
 	GetContentSiteURL,
 	GetContentVersionURL,
 	GetContentVersionsURL,
+	GetContentFromURL,
 } from '../../../wailsjs/go/main/App'
+import { useState } from 'react'
+import {
+	Dialog,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
+	DialogTrigger,
+} from '../ui/dialog'
 
 const SmallButton = ({
 	icon: Icon,
@@ -117,6 +127,7 @@ const InfoInput = ({
 
 export function Content({
 	updateContent,
+	replaceContent,
 	removeContent,
 	cIdx,
 	iIdx,
@@ -127,6 +138,11 @@ export function Content({
 		itemIdx: number,
 		field: keyof github.Content,
 		val: any,
+	) => void
+	replaceContent: (
+		cIdx: number,
+		itemIdx: number,
+		newContent: Partial<github.Content>,
 	) => void
 	removeContent: (cIdx: number, itemIdx: number) => void
 	cIdx: number
@@ -139,7 +155,10 @@ export function Content({
 
 	const isRaw = !['modrinth', 'curseforge'].includes(item.source)
 
-	// Обработчики для кнопок
+	const [editDialogOpen, setEditDialogOpen] = useState(false)
+	const [newUrl, setNewUrl] = useState('')
+	const [isUpdating, setIsUpdating] = useState(false)
+
 	const handleOpenSite = async () => {
 		if (isRaw || !item.mod_id) return
 		try {
@@ -177,6 +196,46 @@ export function Content({
 			}
 		} catch (err) {
 			console.error('Failed to get content versions URL:', err)
+		}
+	}
+
+	const handleUpdateContent = async () => {
+		console.log('handleUpdateContent called, newUrl:', newUrl)
+		if (!newUrl.trim()) {
+			console.log('URL is empty, returning')
+			return
+		}
+		setIsUpdating(true)
+		try {
+			console.log('Fetching content from URL:', newUrl)
+			const newContent = await GetContentFromURL(newUrl)
+			console.log('Received new content:', newContent)
+
+			// Сохраняем старые тип и название
+			const oldType = item.type
+			const oldName = item.name
+			console.log('Preserving old type:', oldType, 'and name:', oldName)
+
+			// Обновляем весь контент одним вызовом, сохраняя старые значения type и name
+			replaceContent(cIdx, iIdx, {
+				url: newContent.url,
+				file: newContent.file,
+				mod_id: newContent.mod_id,
+				file_id: newContent.file_id,
+				source: newContent.source,
+				image_url: newContent.image_url,
+				type: oldType, // Сохраняем старый тип
+				name: oldName, // Сохраняем старое название
+			})
+
+			console.log('Content updated successfully')
+			setEditDialogOpen(false)
+			setNewUrl('')
+		} catch (err) {
+			console.error('Failed to update content:', err)
+			alert('Ошибка при обновлении контента: ' + err)
+		} finally {
+			setIsUpdating(false)
 		}
 	}
 
@@ -283,16 +342,63 @@ export function Content({
 						onClick={handleOpenVersion}
 						disabled={isRaw}
 					/>
-					<SmallButton
-						icon={RefreshCcwIcon}
-						tooltip='Обновить URL контента'
-						disabled={true}
-					/>
-					<SmallButton
-						icon={EditIcon}
-						tooltip='Изменить контент'
-						disabled={true}
-					/>
+
+					<Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<DialogTrigger asChild>
+									<Button variant='outline' size='icon'>
+										<EditIcon />
+									</Button>
+								</DialogTrigger>
+							</TooltipTrigger>
+							<TooltipContent>
+								<p>Изменить контент по URL</p>
+							</TooltipContent>
+						</Tooltip>
+						<DialogContent>
+							<DialogHeader>
+								<DialogTitle>Изменить контент</DialogTitle>
+							</DialogHeader>
+							<div className='space-y-4 py-2'>
+								<Label>
+									Новая ссылка на контент (CurseForge / Modrinth / GitHub)
+								</Label>
+								<Input
+									placeholder='https://...'
+									value={newUrl}
+									onChange={e => setNewUrl(e.target.value)}
+								/>
+								<p className='text-xs text-muted-foreground'>
+									Тип (
+									{item.type === 'both'
+										? 'Общий'
+										: item.type === 'client'
+											? 'Клиент'
+											: 'Сервер'}
+									) и название ({item.name}) будут сохранены
+								</p>
+								<Button
+									type='button'
+									className='w-full'
+									onClick={e => {
+										e.preventDefault()
+										e.stopPropagation()
+										console.log('Button clicked!')
+										handleUpdateContent()
+									}}
+									disabled={isUpdating || !newUrl.trim()}
+								>
+									{isUpdating ? (
+										<Loader2 className='mr-2 h-4 w-4 animate-spin' />
+									) : (
+										<EditIcon className='mr-2 h-4 w-4' />
+									)}
+									Изменить контент
+								</Button>
+							</div>
+						</DialogContent>
+					</Dialog>
 				</div>
 				<Button variant='destructive' onClick={() => removeContent(cIdx, iIdx)}>
 					<Trash2 /> Удалить

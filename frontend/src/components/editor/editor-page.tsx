@@ -418,6 +418,20 @@ function ContainerEditor({
 		setMeta(newMeta)
 	}
 
+	const replaceContent = (
+		cIdx: number,
+		itemIdx: number,
+		newContent: Partial<github.Content>,
+	) => {
+		const newMeta = new github.Meta(meta)
+		// Обновляем все переданные поля за раз
+		Object.entries(newContent).forEach(([field, value]) => {
+			// @ts-ignore
+			newMeta.containers[cIdx].content[itemIdx][field] = value
+		})
+		setMeta(newMeta)
+	}
+
 	const removeContent = (cIdx: number, itemIdx: number) => {
 		const newMeta = new github.Meta(meta)
 		newMeta.containers[cIdx].content.splice(itemIdx, 1)
@@ -502,6 +516,7 @@ function ContainerEditor({
 											<Content
 												key={originalIdx}
 												updateContent={updateContent}
+												replaceContent={replaceContent}
 												removeContent={removeContent}
 												cIdx={cIdx}
 												iIdx={originalIdx}
