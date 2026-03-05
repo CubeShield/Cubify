@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import {
 	SaveProjectMeta,
 	SyncProject,
@@ -20,8 +20,10 @@ import {
 	Trash2,
 	RefreshCcw,
 	LinkIcon, // <--- Добавил иконку
-	Loader2, // <--- Добавил иконку
+	Loader2,
+	SearchIcon,
 } from 'lucide-react'
+import Fuse from 'fuse.js'
 import {
 	Dialog,
 	DialogContent,
@@ -320,10 +322,38 @@ function ContainerEditor({
 	meta: github.Meta
 	setMeta: (m: github.Meta) => void
 }) {
-	// Состояние для диалога добавления по URL
 	const [openUrlDialog, setOpenUrlDialog] = useState<number | null>(null)
 	const [urlToAdd, setUrlToAdd] = useState('')
 	const [isUrlLoading, setUrlLoading] = useState(false)
+
+	const [searchQueries, setSearchQueries] = useState<Record<number, string>>({})
+
+	const fuseOptions = {
+		keys: ['name', 'file', 'url', 'type'],
+		threshold: 0.3, // более строгий порог для точного поиска
+		distance: 100,
+		minMatchCharLength: 1,
+		includeScore: true,
+	}
+
+	const getFilteredContent = (
+		containerIdx: number,
+		content: github.Content[],
+	) => {
+		const query = searchQueries[containerIdx]?.trim()
+		if (!query) return content
+
+		const fuse = new Fuse(content, fuseOptions)
+		const results = fuse.search(query)
+		return results.map(result => result.item)
+	}
+
+	const handleSearchChange = (containerIdx: number, query: string) => {
+		setSearchQueries(prev => ({
+			...prev,
+			[containerIdx]: query,
+		}))
+	}
 
 	const addContainer = (type: string) => {
 		const newMeta = new github.Meta(meta)
@@ -355,7 +385,6 @@ function ContainerEditor({
 		setMeta(newMeta)
 	}
 
-	// Функция добавления контента по ссылке
 	const handleAddFromUrl = async (cIdx: number) => {
 		if (!urlToAdd) return
 		setUrlLoading(true)
@@ -363,7 +392,6 @@ function ContainerEditor({
 			const content = await GetContentFromURL(urlToAdd)
 			const newMeta = new github.Meta(meta)
 
-			// Если type пустой, ставим both
 			if (!content.type) content.type = 'both'
 
 			newMeta.containers[cIdx].content.push(content)
@@ -415,37 +443,71 @@ function ContainerEditor({
 			</div>
 
 			<div className='space-y-4 pb-10'>
-				{meta.containers.map((container, cIdx) => (
-					<Card key={cIdx} className='p-4 border-l-4 border-l-primary'>
-						<div className='flex justify-between items-center mb-4'>
-							<div className='flex items-center gap-2'>
-								<h3 className='font-bold text-lg capitalize'>
-									{container.content_type}
-								</h3>
-								<Badge variant='secondary'>
-									{container.content.length} Элемент(ов)
-								</Badge>
-							</div>
-							<Button
-								size='icon'
-								variant='ghost'
-								onClick={() => deleteContainer(cIdx)}
-							>
-								<Trash2 className='text-destructive h-4 w-4' />
-							</Button>
-						</div>
+				{meta.containers.map((container, cIdx) => {
+					const filteredContent = getFilteredContent(cIdx, container.content)
+					const searchQuery = searchQueries[cIdx] || ''
 
-						<div className='space-y-2'>
-							{container.content.map((item, iIdx) => (
-								<Content
-									key={iIdx}
-									updateContent={updateContent}
-									removeContent={removeContent}
-									cIdx={cIdx}
-									iIdx={iIdx}
-									item={item}
+					return (
+						<Card key={cIdx} className='p-4 border-l-4 border-l-primary'>
+							<div className='flex justify-between items-center mb-4'>
+								<div className='flex items-center gap-2'>
+									<h3 className='font-bold text-lg capitalize'>
+										{container.content_type}
+									</h3>
+									<Badge variant='secondary'>
+										{filteredContent.length} / {container.content.length}{' '}
+										Элемент(ов)
+									</Badge>
+								</div>
+								<Button
+									size='icon'
+									variant='ghost'
+									onClick={() => deleteContainer(cIdx)}
+								>
+									<Trash2 className='text-destructive h-4 w-4' />
+								</Button>
+							</div>
+
+							<div className='relative mb-4'>
+								<SearchIcon className='absolute left-3 top-1/2 transform -translate-y-1/2 size-4 text-muted-foreground' />
+								<Input
+									type='text'
+									placeholder='Искать по названию, файлу, URL...'
+									value={searchQuery}
+									onChange={e => handleSearchChange(cIdx, e.target.value)}
+									className='pl-9'
 								/>
-							))}
+							</div>
+
+							{searchQuery && filteredContent.length === 0 && (
+								<div className='flex flex-col items-center justify-center py-6 text-center bg-muted/30 rounded-lg mb-4'>
+									<SearchIcon className='size-10 text-muted-foreground/30 mb-2' />
+									<p className='text-sm text-muted-foreground'>
+										Ничего не найдено по запросу
+									</p>
+									<p className='text-xs text-muted-foreground/70 mt-1'>
+										"{searchQuery}"
+									</p>
+								</div>
+							)}
+
+							<div className='space-y-2'>
+								{filteredContent.map((item, iIdx) => {
+									const originalIdx = container.content.findIndex(
+										c => c === item,
+									)
+									return (
+										<Content
+											key={originalIdx}
+											updateContent={updateContent}
+											removeContent={removeContent}
+											cIdx={cIdx}
+											iIdx={originalIdx}
+											item={item}
+										/>
+									)
+								})}
+							</div>
 
 							<div className='flex gap-2 pt-2'>
 								{/* Кнопка ручного добавления */}
@@ -502,9 +564,9 @@ function ContainerEditor({
 									</DialogContent>
 								</Dialog>
 							</div>
-						</div>
-					</Card>
-				))}
+						</Card>
+					)
+				})}
 				{meta.containers.length === 0 && (
 					<div className='text-center text-muted-foreground py-10'>
 						Нет контейнеров. Добавьте контейнер для модов или ресурспаков.
