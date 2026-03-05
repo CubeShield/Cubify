@@ -2,6 +2,8 @@ import { github } from '../../../wailsjs/go/models' // Убедись в пра�
 import { Input } from '../ui/input'
 import { Button } from '../ui/button'
 import {
+	CloudSyncIcon,
+	ComputerIcon,
 	EarthIcon,
 	EditIcon,
 	InfoIcon,
@@ -13,6 +15,7 @@ import {
 	PointerIcon,
 	RefreshCcw,
 	RefreshCcwIcon,
+	ServerIcon,
 	Trash2,
 	TrashIcon,
 } from 'lucide-react'
@@ -147,9 +150,17 @@ export function Content({
 								<SelectValue placeholder='Тип' />
 							</SelectTrigger>
 							<SelectContent>
-								<SelectItem value='both'>Общий</SelectItem>
-								<SelectItem value='client'>Клиент</SelectItem>
-								<SelectItem value='server'>Сервер</SelectItem>
+								<SelectItem value='both'>
+									<CloudSyncIcon />
+									Общий
+								</SelectItem>
+								<SelectItem value='client'>
+									<ComputerIcon /> Клиент
+								</SelectItem>
+								<SelectItem value='server'>
+									<ServerIcon />
+									Сервер
+								</SelectItem>
 							</SelectContent>
 						</Select>
 					</div>
