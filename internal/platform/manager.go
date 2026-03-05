@@ -60,7 +60,37 @@ func (m *Manager) GetModFromURL(ctx context.Context, url string) (github.Content
 	return content, nil
 }
 
+// GetContentSiteURL возвращает URL страницы контента
+func (m *Manager) GetContentSiteURL(source github.Source, modID string) (string, error) {
+	service, ok := m.services[source]
+	if !ok {
+		return "", fmt.Errorf("not found service for source: %s", source)
+	}
+	return service.GetContentSiteURL(modID), nil
+}
+
+// GetContentVersionURL возвращает URL конкретной версии контента
+func (m *Manager) GetContentVersionURL(source github.Source, modID, fileID string) (string, error) {
+	service, ok := m.services[source]
+	if !ok {
+		return "", fmt.Errorf("not found service for source: %s", source)
+	}
+	return service.GetContentVersionURL(modID, fileID), nil
+}
+
+// GetContentVersionsURL возвращает URL страницы со всеми версиями контента
+func (m *Manager) GetContentVersionsURL(source github.Source, modID string) (string, error) {
+	service, ok := m.services[source]
+	if !ok {
+		return "", fmt.Errorf("not found service for source: %s", source)
+	}
+	return service.GetContentVersionsURL(modID), nil
+}
+
 type Service interface {
 	ParseURL(ctx context.Context, url string) (string, string, error)
 	GetMod(ctx context.Context, modID, fileID string) (github.Content, error)
+	GetContentSiteURL(modID string) string
+	GetContentVersionURL(modID, fileID string) string
+	GetContentVersionsURL(modID string) string
 }

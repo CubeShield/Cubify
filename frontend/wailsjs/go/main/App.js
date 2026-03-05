@@ -26,6 +26,18 @@ export function GetContentFromURL(arg1) {
   return window['go']['main']['App']['GetContentFromURL'](arg1);
 }
 
+export function GetContentSiteURL(arg1, arg2) {
+  return window['go']['main']['App']['GetContentSiteURL'](arg1, arg2);
+}
+
+export function GetContentVersionURL(arg1, arg2, arg3) {
+  return window['go']['main']['App']['GetContentVersionURL'](arg1, arg2, arg3);
+}
+
+export function GetContentVersionsURL(arg1, arg2) {
+  return window['go']['main']['App']['GetContentVersionsURL'](arg1, arg2);
+}
+
 export function GetInstances() {
   return window['go']['main']['App']['GetInstances']();
 }

@@ -147,3 +147,15 @@ func (s *ModrinthService) fetchJSON(ctx context.Context, url string, target inte
 
 	return json.NewDecoder(resp.Body).Decode(target)
 }
+
+func (s *ModrinthService) GetContentSiteURL(modID string) string {
+	return fmt.Sprintf("https://modrinth.com/mod/%s", modID)
+}
+
+func (s *ModrinthService) GetContentVersionURL(modID, fileID string) string {
+	return fmt.Sprintf("https://modrinth.com/mod/%s/version/%s", modID, fileID)
+}
+
+func (s *ModrinthService) GetContentVersionsURL(modID string) string {
+	return fmt.Sprintf("https://modrinth.com/mod/%s/versions", modID)
+}

@@ -16,6 +16,12 @@ export function GetConfig():Promise<config.Config>;
 
 export function GetContentFromURL(arg1:string):Promise<github.Content>;
 
+export function GetContentSiteURL(arg1:string,arg2:string):Promise<string>;
+
+export function GetContentVersionURL(arg1:string,arg2:string,arg3:string):Promise<string>;
+
+export function GetContentVersionsURL(arg1:string,arg2:string):Promise<string>;
+
 export function GetInstances():Promise<Array<github.Instance>>;
 
 export function GetProjectHistory(arg1:string):Promise<editor.GitHistory>;

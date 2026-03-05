@@ -71,3 +71,45 @@ func (s *CurseForgeService) GetMod(ctx context.Context, modID, fileID string) (g
 		Url: modFile.Data.DownloadURL,
 	}, nil
 }
+
+// GetContentSiteURL возвращает URL страницы мода на CurseForge
+func (s *CurseForgeService) GetContentSiteURL(modID string) string {
+	// Получаем данные мода чтобы узнать slug
+	intModID, err := strconv.ParseInt(modID, 10, 32)
+	if err != nil {
+		return ""
+	}
+	mod, err := s.client.Mod(schema.ModID(intModID))
+	if err != nil {
+		return ""
+	}
+	return fmt.Sprintf("https://www.curseforge.com/minecraft/mc-mods/%s", mod.Data.Slug)
+}
+
+// GetContentVersionURL возвращает URL конкретной версии мода на CurseForge
+func (s *CurseForgeService) GetContentVersionURL(modID, fileID string) string {
+	// Получаем данные мода чтобы узнать slug
+	intModID, err := strconv.ParseInt(modID, 10, 32)
+	if err != nil {
+		return ""
+	}
+	mod, err := s.client.Mod(schema.ModID(intModID))
+	if err != nil {
+		return ""
+	}
+	return fmt.Sprintf("https://www.curseforge.com/minecraft/mc-mods/%s/files/%s", mod.Data.Slug, fileID)
+}
+
+// GetContentVersionsURL возвращает URL страницы со всеми версиями мода на CurseForge
+func (s *CurseForgeService) GetContentVersionsURL(modID string) string {
+	// Получаем данные мода чтобы узнать slug
+	intModID, err := strconv.ParseInt(modID, 10, 32)
+	if err != nil {
+		return ""
+	}
+	mod, err := s.client.Mod(schema.ModID(intModID))
+	if err != nil {
+		return ""
+	}
+	return fmt.Sprintf("https://www.curseforge.com/minecraft/mc-mods/%s/files/all", mod.Data.Slug)
+}

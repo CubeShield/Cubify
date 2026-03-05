@@ -41,3 +41,18 @@ func (s *URLService) GetMod(ctx context.Context, filename, url string) (github.C
 		Url: url,
 	}, nil
 }
+
+// GetContentSiteURL для RAW URL не имеет смысла
+func (s *URLService) GetContentSiteURL(modID string) string {
+	return ""
+}
+
+// GetContentVersionURL для RAW URL не имеет смысла
+func (s *URLService) GetContentVersionURL(modID, fileID string) string {
+	return ""
+}
+
+// GetContentVersionsURL для RAW URL не имеет смысла
+func (s *URLService) GetContentVersionsURL(modID string) string {
+	return ""
+}

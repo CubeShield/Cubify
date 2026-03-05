@@ -6,6 +6,7 @@ import {
 	ComputerIcon,
 	EarthIcon,
 	EditIcon,
+	GitCommitIcon,
 	InfoIcon,
 	Link2Icon,
 	LinkIcon,
@@ -35,20 +36,32 @@ import {
 	InputGroupInput,
 	InputGroupText,
 } from '@/components/ui/input-group'
+import {
+	GetContentSiteURL,
+	GetContentVersionURL,
+	GetContentVersionsURL,
+} from '../../../wailsjs/go/main/App'
 
 const SmallButton = ({
 	icon: Icon,
 	tooltip,
 	onClick,
+	disabled = false,
 }: {
 	icon: LucideIcon
 	tooltip: string
 	onClick?: () => void
+	disabled?: boolean
 }) => {
 	return (
 		<Tooltip>
-			<TooltipTrigger>
-				<Button>
+			<TooltipTrigger asChild>
+				<Button
+					onClick={onClick}
+					disabled={disabled}
+					variant='outline'
+					size='icon'
+				>
 					<Icon />
 				</Button>
 			</TooltipTrigger>
@@ -125,6 +138,47 @@ export function Content({
 	}
 
 	const isRaw = !['modrinth', 'curseforge'].includes(item.source)
+
+	// Обработчики для кнопок
+	const handleOpenSite = async () => {
+		if (isRaw || !item.mod_id) return
+		try {
+			const url = await GetContentSiteURL(item.source, item.mod_id)
+			if (url) {
+				BrowserOpenURL(url)
+			}
+		} catch (err) {
+			console.error('Failed to get content site URL:', err)
+		}
+	}
+
+	const handleOpenVersion = async () => {
+		if (isRaw || !item.mod_id || !item.file_id) return
+		try {
+			const url = await GetContentVersionURL(
+				item.source,
+				item.mod_id,
+				item.file_id,
+			)
+			if (url) {
+				BrowserOpenURL(url)
+			}
+		} catch (err) {
+			console.error('Failed to get content version URL:', err)
+		}
+	}
+
+	const handleOpenVersions = async () => {
+		if (isRaw || !item.mod_id) return
+		try {
+			const url = await GetContentVersionsURL(item.source, item.mod_id)
+			if (url) {
+				BrowserOpenURL(url)
+			}
+		} catch (err) {
+			console.error('Failed to get content versions URL:', err)
+		}
+	}
 
 	return (
 		<div className='flex flex-col gap-3 bg-muted/40 p-2 rounded-lg border border-transparent hover:border-border transition-colors'>
@@ -211,11 +265,34 @@ export function Content({
 			</div>
 			<div className='flex w-full justify-between'>
 				<div className='flex w-full gap-2 '>
-					<SmallButton icon={LinkIcon} tooltip='Сайт контента' />
-					<SmallButton icon={PinIcon} tooltip='Сайт с текущей версией' />
-					<SmallButton icon={ListIcon} tooltip='Сайт с версиями контента' />
-					<SmallButton icon={RefreshCcwIcon} tooltip='Обновить URL контента' />
-					<SmallButton icon={EditIcon} tooltip='Изменить контент' />
+					<SmallButton
+						icon={EarthIcon}
+						tooltip='Сайт контента'
+						onClick={handleOpenSite}
+						disabled={isRaw}
+					/>
+					<SmallButton
+						icon={ListIcon}
+						tooltip='Сайт с версиями контента'
+						onClick={handleOpenVersions}
+						disabled={isRaw}
+					/>
+					<SmallButton
+						icon={LinkIcon}
+						tooltip='Сайт с текущей версией'
+						onClick={handleOpenVersion}
+						disabled={isRaw}
+					/>
+					<SmallButton
+						icon={RefreshCcwIcon}
+						tooltip='Обновить URL контента'
+						disabled={true}
+					/>
+					<SmallButton
+						icon={EditIcon}
+						tooltip='Изменить контент'
+						disabled={true}
+					/>
 				</div>
 				<Button variant='destructive' onClick={() => removeContent(cIdx, iIdx)}>
 					<Trash2 /> Удалить

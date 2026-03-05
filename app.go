@@ -141,3 +141,16 @@ func (a *App) GetContentFromURL(url string) (github.Content, error) {
 	}
 	return data, err
 }
+
+
+func (a *App) GetContentSiteURL(source string, modID string) (string, error) {
+	return a.platformManager.GetContentSiteURL(github.Source(source), modID)
+}
+
+func (a *App) GetContentVersionURL(source string, modID string, fileID string) (string, error) {
+	return a.platformManager.GetContentVersionURL(github.Source(source), modID, fileID)
+}
+
+func (a *App) GetContentVersionsURL(source string, modID string) (string, error) {
+	return a.platformManager.GetContentVersionsURL(github.Source(source), modID)
+}
