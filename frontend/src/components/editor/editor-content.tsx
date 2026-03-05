@@ -7,7 +7,11 @@ import {
 	Link2Icon,
 	LinkIcon,
 	ListIcon,
+	LucideIcon,
+	PinIcon,
+	PointerIcon,
 	Trash2,
+	TrashIcon,
 } from 'lucide-react'
 import {
 	Select,
@@ -18,6 +22,54 @@ import {
 } from '../ui/select'
 import { Label } from '../ui/label'
 import { BrowserOpenURL } from 'wailsjs/runtime/runtime'
+import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip'
+
+const SmallButton = ({
+	icon: Icon,
+	tooltip,
+	onClick,
+}: {
+	icon: LucideIcon
+	tooltip: string
+	onClick?: () => void
+}) => {
+	return (
+		<Tooltip>
+			<TooltipTrigger>
+				<Button>
+					<Icon />
+				</Button>
+			</TooltipTrigger>
+			<TooltipContent>
+				<p>{tooltip}</p>
+			</TooltipContent>
+		</Tooltip>
+	)
+}
+
+const InfoInput = ({
+	updateContentByField,
+	key,
+	value,
+	placeholder,
+	mono = false,
+}: {
+	updateContentByField: (field: keyof github.Content, val: any) => void
+	key: keyof github.Content
+	value: any
+	placeholder: string
+	mono?: boolean
+}) => {
+	const font = mono ? 'font-mono' : ''
+	return (
+		<Input
+			className={`h-8 text-xs ${font}`}
+			value={value}
+			onChange={e => updateContentByField(key, e.target.value)}
+			placeholder={placeholder}
+		/>
+	)
+}
 
 export function Content({
 	updateContent,
@@ -37,6 +89,10 @@ export function Content({
 	iIdx: number
 	item: github.Content
 }) {
+	const updateContentByField = (field: keyof github.Content, val: any) => {
+		updateContent(cIdx, iIdx, field, val)
+	}
+
 	return (
 		<div className='flex flex-col gap-3 bg-muted/40 p-2 rounded-md border border-transparent hover:border-border transition-colors'>
 			<div className='flex items-center gap-3 justify-between'>
@@ -46,11 +102,11 @@ export function Content({
 
 				<div className='flex flex-col gap-2 w-full'>
 					<div className='w-full flex gap-2 items-center'>
-						<Input
-							className='h-8'
+						<InfoInput
+							key='name'
+							updateContentByField={updateContentByField}
+							placeholder='Имя'
 							value={item.name}
-							onChange={e => updateContent(cIdx, iIdx, 'name', e.target.value)}
-							placeholder='Название'
 						/>
 						<Select
 							value={item.type}
@@ -67,46 +123,32 @@ export function Content({
 						</Select>
 					</div>
 					<div className='w-full flex gap-2'>
-						<div className=''>
-							<Input
-								className='h-8'
-								value={item.file}
-								onChange={e =>
-									updateContent(cIdx, iIdx, 'file', e.target.value)
-								}
-								placeholder='Файл'
-							/>
-						</div>
+						<InfoInput
+							key='file'
+							updateContentByField={updateContentByField}
+							placeholder='Файл'
+							value={item.file}
+						/>
 
-						<Input
-							className='h-8 font-mono text-xs'
-							value={item.url}
-							onChange={e => updateContent(cIdx, iIdx, 'url', e.target.value)}
+						<InfoInput
+							key='url'
+							updateContentByField={updateContentByField}
 							placeholder='Download URL'
+							value={item.url}
+							mono={true}
 						/>
 					</div>
 				</div>
 			</div>
 			<div className='flex w-full justify-between'>
 				<div className='flex w-full gap-2 '>
-					<Button>
-						<LinkIcon />
-					</Button>
-
-					<Button>
-						<LinkIcon />
-					</Button>
-
-					<Button>
-						<ListIcon />
-					</Button>
-
-					<Button>
-						<EditIcon />
-					</Button>
+					<SmallButton icon={LinkIcon} tooltip='Сайт контента' />
+					<SmallButton icon={PinIcon} tooltip='Сайт с текущей версией' />
+					<SmallButton icon={ListIcon} tooltip='Сайт с версиями контента' />
+					<SmallButton icon={EditIcon} tooltip='Обновить контент' />
 				</div>
 				<Button variant='destructive' onClick={() => removeContent(cIdx, iIdx)}>
-					<Trash2 className='h-3 w-3' /> Удалить
+					<Trash2 /> Удалить
 				</Button>
 			</div>
 		</div>

@@ -36,6 +36,7 @@ import { Card } from '../ui/card'
 import { Label } from '../ui/label'
 import { Textarea } from '../ui/textarea'
 import { Content } from './editor-content'
+import { TooltipProvider } from '../ui/tooltip'
 
 interface EditorPageProps {
 	project: editor.Project
@@ -497,14 +498,16 @@ function ContainerEditor({
 										c => c === item,
 									)
 									return (
-										<Content
-											key={originalIdx}
-											updateContent={updateContent}
-											removeContent={removeContent}
-											cIdx={cIdx}
-											iIdx={originalIdx}
-											item={item}
-										/>
+										<TooltipProvider>
+											<Content
+												key={originalIdx}
+												updateContent={updateContent}
+												removeContent={removeContent}
+												cIdx={cIdx}
+												iIdx={originalIdx}
+												item={item}
+											/>
+										</TooltipProvider>
 									)
 								})}
 							</div>
