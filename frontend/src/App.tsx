@@ -46,7 +46,6 @@ function App() {
 
 	const getInstances = async () => {
 		setIsRefreshing(true)
-		FetchInstances()
 		setInstances(await GetLocalInstances())
 		setIsRefreshing(false)
 	}
