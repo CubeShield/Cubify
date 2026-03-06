@@ -127,6 +127,7 @@ func (c *Client) GetInstance(repo string) (*instance.Instance, error) {
 	}
 
 	instance := &instance.Instance{
+		Slug: getInstanceCacheKey(repo),
 		Releases: updatedReleases,
 	}
 

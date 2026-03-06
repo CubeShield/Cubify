@@ -323,6 +323,7 @@ export namespace instance {
 		}
 	}
 	export class Instance {
+	    slug: string;
 	    releases: Release[];
 	
 	    static createFrom(source: any = {}) {
@@ -331,6 +332,7 @@ export namespace instance {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.slug = source["slug"];
 	        this.releases = this.convertValues(source["releases"], Release);
 	    }
 	

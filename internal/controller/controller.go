@@ -10,10 +10,10 @@ import (
 	logger "Cubify/internal/logging"
 	"Cubify/internal/mc"
 	"Cubify/internal/updater"
+	"Cubify/internal/utils"
 	"context"
 	"fmt"
 	"path/filepath"
-	"strings"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
@@ -27,6 +27,7 @@ type Controller struct {
 	cm *cache.CacheManager
 	installer *installer.Installer
 	mc *mc.Mc
+	instanceManager *instance.Manager
 }
 
 func New(cfg *config.Config, l *logger.Logger) *Controller {
@@ -36,11 +37,8 @@ func New(cfg *config.Config, l *logger.Logger) *Controller {
 		ghClient: github.New(cfg.BaseURL, cfg.AuthToken, cfg.CacheDirectory, l),
 		cm: cache.New(cfg.CacheDirectory),
 		installer: installer.New(cfg.BinDirectory),
+		instanceManager: instance.NewManager(l, file.NewManager(file.NewLocalBackend("")), cfg.InstancesDirectory),
 	}
-}
-
-func getInstanceDirectoryName(instanceName string) string {
-	return strings.ReplaceAll(strings.ReplaceAll(instanceName, ":", ""), " ", "-")
 }
 
 
@@ -49,7 +47,7 @@ func (c *Controller) Fetch() ([]instance.Instance, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	
 	instances := []instance.Instance{}
 	for _, instanceRepo := range index.Instances {
 		instance, err := c.ghClient.GetInstance(instanceRepo)
@@ -57,11 +55,20 @@ func (c *Controller) Fetch() ([]instance.Instance, error) {
 			c.l.Error("Error while getting instance %s: %v", instanceRepo, err)
 			continue
 		}
+		if len(instance.Releases) <= 0 {
+			c.l.Info("Skipping %s, no available releases", instanceRepo)
+			continue
+		}
 
+		instance.Slug = utils.InstanceSlug(instance.Releases[0].Meta.Name)
 		instances = append(instances, *instance)
 	}
 
 	return instances, nil
+}
+
+func (c *Controller) List() ([]instance.LocalInstance, error) {
+	return c.instanceManager.List()
 }
 
 func (c *Controller) Run(release instance.Release) error {
@@ -74,7 +81,7 @@ func (c *Controller) Run(release instance.Release) error {
 	c.l.Info("Preparing Minecraft...")
 	c.mc.Prepare(release.Meta.Name, release.Meta.Loader, release.Meta.LoaderVersion, release.Meta.MinecraftVersion)
 	c.l.Info("Checking for updates...")
-	instanceDirectory := getInstanceDirectoryName(release.Meta.Name)
+	instanceDirectory := utils.InstanceSlug(release.Meta.Name)
 	fullInstancePath := filepath.Join(c.cfg.InstancesDirectory, instanceDirectory)
 	if err := c.updateInstanceContent(fullInstancePath, release.Meta.Containers); err != nil {
 		c.l.Error("Update warning: %v", err)
