@@ -47,8 +47,16 @@ func (m *Manager) List() ([]LocalInstance, error) {
 	return localInstances, nil
 }
 
-func (m *Manager) Install(instance Instance) error {
-	return m.fm.SaveJson(filepath.Join(m.instancesDirectory, instance.Slug, "instance.json"), instance)
+func (m *Manager) GetBySlug(slug string) (LocalInstance, error) {
+	var localInstance LocalInstance
+	if err := m.fm.ReadJson(filepath.Join(m.instancesDirectory, slug, "instance.json"), &localInstance); err != nil {
+		return LocalInstance{}, err
+	}
+	return localInstance, nil
+}
+
+func (m *Manager) Put(localInstance LocalInstance) error {
+	return m.fm.SaveJson(filepath.Join(m.instancesDirectory, localInstance.Slug, "instance.json"), localInstance)
 }
 
 func (m *Manager) Delete(slug string) error {

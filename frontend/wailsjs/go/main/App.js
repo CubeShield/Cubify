@@ -42,6 +42,10 @@ export function GetInstances() {
   return window['go']['main']['App']['GetInstances']();
 }
 
+export function GetLocalInstances() {
+  return window['go']['main']['App']['GetLocalInstances']();
+}
+
 export function GetProjectHistory(arg1) {
   return window['go']['main']['App']['GetProjectHistory'](arg1);
 }

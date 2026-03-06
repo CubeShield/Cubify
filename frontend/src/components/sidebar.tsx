@@ -41,7 +41,7 @@ interface AppSidebarProps {
 }
 
 interface InstanceCardProps {
-	instance: instance.Instance
+	instance: instance.LocalInstance
 	isSelected: boolean
 	onClick: () => void
 }
@@ -54,6 +54,10 @@ const LOADERS = {
 function InstanceCard({ instance, isSelected, onClick }: InstanceCardProps) {
 	return (
 		<div onClick={onClick} className='cursor-pointer'>
+			{!instance.release && 'Необходима установка'}
+			{instance.release &&
+				instance.release?.tag_name != instance.releases[0].tag_name &&
+				'Необходимо обновление'}
 			<div
 				className={
 					'flex px-3 items-center gap-2 py-3 bg-linear-to-r hover:from-accent/50 hover:to-accent/0 transition-all ' +

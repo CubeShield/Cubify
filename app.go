@@ -96,6 +96,10 @@ func (a *App) GetInstances() []instance.Instance {
 	return a.instances
 }
 
+func (a *App) GetLocalInstances() ([]instance.LocalInstance, error) {
+	return a.controller.List()
+}
+
 func (a *App) GetConfig() config.Config {
 	return *a.cfg
 }

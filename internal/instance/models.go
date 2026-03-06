@@ -27,13 +27,14 @@ type Release struct {
 }
 
 type Instance struct {
+	Repo string `json:"repo"`
 	Slug string `json:"slug"`
 	Releases []Release `json:"releases"`
 }
 
 type LocalInstance struct {
 	Instance
-	Release Release `json:"release"`
+	Release *Release `json:"release,omitempty"`
 }
 
 

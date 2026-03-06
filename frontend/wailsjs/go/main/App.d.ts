@@ -24,6 +24,8 @@ export function GetContentVersionsURL(arg1:string,arg2:string):Promise<string>;
 
 export function GetInstances():Promise<Array<instance.Instance>>;
 
+export function GetLocalInstances():Promise<Array<instance.LocalInstance>>;
+
 export function GetProjectHistory(arg1:string):Promise<editor.GitHistory>;
 
 export function LoadProjectMeta(arg1:string):Promise<instance.Meta>;

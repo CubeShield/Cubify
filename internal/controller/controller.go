@@ -61,6 +61,7 @@ func (c *Controller) Fetch() ([]instance.Instance, error) {
 		}
 
 		instance.Slug = utils.InstanceSlug(instance.Releases[0].Meta.Name)
+		instance.Repo = instanceRepo
 		instances = append(instances, *instance)
 	}
 
@@ -87,6 +88,17 @@ func (c *Controller) Run(release instance.Release) error {
 		c.l.Error("Update warning: %v", err)
 		return fmt.Errorf("failed to update instance: %w", err)
 	}
+	localInstance, err := c.instanceManager.GetBySlug(instanceDirectory)
+	if err != nil {
+		return err
+	}
+
+	localInstance.Release = &release
+
+	if err := c.instanceManager.Put(localInstance); err != nil {
+		return err
+	}
+
 	
 	c.l.Info("Launching Minecraft!")
 	c.mc.Run(release.Meta.Name, release.Meta.Loader, release.Meta.LoaderVersion, release.Meta.MinecraftVersion, c.cfg.User.UUID, c.cfg.Nickname)
@@ -99,9 +111,7 @@ func (c *Controller) updateInstanceContent(instancePath string, releaseContainer
 
 	var installedContainers []instance.Container
 
-	if err := m.ReadJson("installed.json", &installedContainers); err != nil {
-		return err
-	}
+	m.ReadJson("installed.json", &installedContainers)
 
 	findInstalled := func(contentType string) instance.Container {
 		for _, cont := range installedContainers {

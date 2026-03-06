@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react'
-import { FetchInstances, FetchLocalProjects } from '../wailsjs/go/main/App'
+import {
+	FetchInstances,
+	FetchLocalProjects,
+	GetLocalInstances,
+} from '../wailsjs/go/main/App'
 import { editor, instance } from '../wailsjs/go/models'
 import { Button } from './components/ui/button'
 import {
@@ -42,7 +46,8 @@ function App() {
 
 	const getInstances = async () => {
 		setIsRefreshing(true)
-		setInstances(await FetchInstances())
+		FetchInstances()
+		setInstances(await GetLocalInstances())
 		setIsRefreshing(false)
 	}
 

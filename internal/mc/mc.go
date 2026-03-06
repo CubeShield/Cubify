@@ -77,7 +77,9 @@ func (m *Mc) Prepare(instanceName, loader, loaderVersion, minecraftVersion strin
 	cmd := exec.Command(m.bin,
 		"--main-dir", path,
 		"start",
-		"--dry", version)
+		"--dry", 
+		"--jvm-policy", "mojang",
+		version)
 	
 	return m.executeWithLogging(cmd)
 }
