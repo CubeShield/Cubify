@@ -1,7 +1,7 @@
 package platform
 
 import (
-	"Cubify/internal/github"
+	"Cubify/internal/instance"
 	"context"
 	"fmt"
 	"strings"
@@ -29,14 +29,14 @@ func (s *URLService) ParseURL(ctx context.Context, url string) (filename, backUr
 	return filename, url, nil
 }
 
-func (s *URLService) GetMod(ctx context.Context, filename, url string) (github.Content, error) {
-	return github.Content{
+func (s *URLService) GetMod(ctx context.Context, filename, url string) (instance.Content, error) {
+	return instance.Content{
 		Name: strings.Split(filename, ".")[0],
 		ImageURL: "",
-		Type: github.TypeBoth,
+		Type: instance.TypeBoth,
 		ModID: "",
 		FileID: "",
-		Source: github.SourceURL,
+		Source: instance.SourceURL,
 		File: filename,
 		Url: url,
 	}, nil

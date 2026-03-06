@@ -1,7 +1,7 @@
 package platform
 
 import (
-	"Cubify/internal/github"
+	"Cubify/internal/instance"
 	"context"
 	"fmt"
 	"strconv"
@@ -40,33 +40,33 @@ func (s *CurseForgeService) ParseURL(ctx context.Context, url string) (modID, fi
 	return modID, fileID, nil
 }
 
-func (s *CurseForgeService) GetMod(ctx context.Context, modID, fileID string) (github.Content, error) {
+func (s *CurseForgeService) GetMod(ctx context.Context, modID, fileID string) (instance.Content, error) {
 	intModID, err := strconv.ParseInt(modID, 10, 32)
 	if err != nil {
-		return github.Content{}, err
+		return instance.Content{}, err
 	}
 	intFileID, err := strconv.ParseInt(fileID, 10, 32)
 	if err != nil {
-		return github.Content{}, err
+		return instance.Content{}, err
 	}
 	mod, err := s.client.Mod(schema.ModID(intModID))
 	if err != nil {
-		return  github.Content{}, err
+		return  instance.Content{}, err
 	}
 
 	modFile, err := s.client.ModFile(schema.ModID(intModID), schema.FileID(intFileID))
 	if err != nil {
 		fmt.Println("bbb")
-		return github.Content{}, err
+		return instance.Content{}, err
 	}
 
-	return github.Content{
+	return instance.Content{
 		Name: mod.Data.Name,
 		ImageURL: mod.Data.Logo.ThumbnailUrl,
-		Type: github.TypeBoth,
+		Type: instance.TypeBoth,
 		ModID: modID,
 		FileID: fileID,
-		Source: github.SourceCurseForge,
+		Source: instance.SourceCurseForge,
 		File: modFile.Data.FileName,
 		Url: modFile.Data.DownloadURL,
 	}, nil

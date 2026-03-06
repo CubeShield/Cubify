@@ -1,4 +1,4 @@
-package github
+package instance
 
 import (
 	"time"

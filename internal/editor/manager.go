@@ -1,7 +1,7 @@
 package editor
 
 import (
-	"Cubify/internal/github"
+	"Cubify/internal/instance"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -42,7 +42,7 @@ jobs:
 type Project struct {
 	Name string      `json:"name"`
 	Path string      `json:"path"`
-	Meta github.Meta `json:"meta"`
+	Meta instance.Meta `json:"meta"`
 }
 
 type Commit struct {
@@ -77,22 +77,22 @@ func (m *Manager) CreateProject(name, desc, mcVer, loader, loaderVer, repoLink, 
 		return "", fmt.Errorf("failed to copy logo: %w", err)
 	}
 
-	rawImgUrl := fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/main/logo.png", owner, repo)
+	rawImgUrl := fmt.Sprintf("https://raw.instanceusercontent.com/%s/%s/main/logo.png", owner, repo)
 
-	meta := github.Meta{
+	meta := instance.Meta{
 		Name:             name,
 		Description:      desc,
 		MinecraftVersion: mcVer,
 		Loader:           loader,
 		LoaderVersion:    loaderVer,
 		ImageURL:         rawImgUrl,
-		Containers:       []github.Container{},
+		Containers:       []instance.Container{},
 	}
 	if err := saveJSON(filepath.Join(projectPath, "instance.json"), meta); err != nil {
 		return "", err
 	}
 
-	workflowsDir := filepath.Join(projectPath, ".github", "workflows")
+	workflowsDir := filepath.Join(projectPath, ".instance", "workflows")
 	if err := os.MkdirAll(workflowsDir, 0755); err != nil {
 		return "", err
 	}
@@ -101,7 +101,7 @@ func (m *Manager) CreateProject(name, desc, mcVer, loader, loaderVer, repoLink, 
 	}
 	
 	
-	remoteURL := fmt.Sprintf("git@github.com:%s/%s.git", owner, repo)
+	remoteURL := fmt.Sprintf("git@instance.com:%s/%s.git", owner, repo)
 	if err := runGit(projectPath, "init"); err != nil { return "", err }
 	
 
@@ -126,7 +126,7 @@ func (m *Manager) CreateProject(name, desc, mcVer, loader, loaderVer, repoLink, 
 }
 
 // SaveInstance обновляет instance.json
-func (m *Manager) SaveInstance(projectPath string, meta github.Meta) error {
+func (m *Manager) SaveInstance(projectPath string, meta instance.Meta) error {
 	return saveJSON(filepath.Join(projectPath, "instance.json"), meta)
 }
 
@@ -176,12 +176,12 @@ func saveJSON(path string, data interface{}) error {
 }
 
 // LoadProject читает instance.json из папки
-func (m *Manager) LoadProject(path string) (*github.Meta, error) {
+func (m *Manager) LoadProject(path string) (*instance.Meta, error) {
 	bytes, err := os.ReadFile(filepath.Join(path, "instance.json"))
 	if err != nil {
 		return nil, err
 	}
-	var meta github.Meta
+	var meta instance.Meta
 	if err := json.Unmarshal(bytes, &meta); err != nil {
 		return nil, err
 	}

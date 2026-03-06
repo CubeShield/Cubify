@@ -2,7 +2,7 @@ package updater
 
 import (
 	"Cubify/internal/file"
-	"Cubify/internal/github"
+	"Cubify/internal/instance"
 	logger "Cubify/internal/logging"
 	"fmt"
 	"net/http"
@@ -14,16 +14,16 @@ import (
 type ContentProcessor struct {
 	l *logger.Logger
 	contentType      string
-	apiContent       []github.Content
-	installedContent []github.Content
+	apiContent       []instance.Content
+	installedContent []instance.Content
 	
 	httpClient *http.Client
 	fm        file.Manager
 }
 
 func NewContentProcessor(
-	container github.Container,
-	installedContainer github.Container,
+	container instance.Container,
+	installedContainer instance.Container,
 	fm file.Manager,
 	l *logger.Logger,
 ) *ContentProcessor {
@@ -39,8 +39,8 @@ func NewContentProcessor(
 	}
 }
 
-func (p *ContentProcessor) toSet(contentList []github.Content) map[string]github.Content {
-	set := make(map[string]github.Content, len(contentList))
+func (p *ContentProcessor) toSet(contentList []instance.Content) map[string]instance.Content {
+	set := make(map[string]instance.Content, len(contentList))
 	for _, item := range contentList {
 		set[item.File] = item
 	}
@@ -73,14 +73,14 @@ func (p *ContentProcessor) Process() error {
 	return nil
 }
 
-func (p *ContentProcessor) delete(content github.Content) error {
+func (p *ContentProcessor) delete(content instance.Content) error {
 	p.l.Info("Deleting %s", content.File)
 	fileNameWithPrefix := fmt.Sprintf("[Cubify] %s", content.File)
 	relativePath := filepath.Join(p.contentType, fileNameWithPrefix)
 	return p.fm.Delete(relativePath)
 }
 
-func (p *ContentProcessor) install(content github.Content) error {
+func (p *ContentProcessor) install(content instance.Content) error {
 	p.l.Info("Downloading %s", content.File)
 
 	resp, err := p.httpClient.Get(content.Url)

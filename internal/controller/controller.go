@@ -6,6 +6,7 @@ import (
 	"Cubify/internal/file"
 	"Cubify/internal/github"
 	"Cubify/internal/installer"
+	"Cubify/internal/instance"
 	logger "Cubify/internal/logging"
 	"Cubify/internal/mc"
 	"Cubify/internal/updater"
@@ -43,13 +44,13 @@ func getInstanceDirectoryName(instanceName string) string {
 }
 
 
-func (c *Controller) Fetch() ([]github.Instance, error) {
+func (c *Controller) Fetch() ([]instance.Instance, error) {
 	index, err := c.ghClient.GetIndex(c.cfg.IndexURL)
 	if err != nil {
 		return nil, err
 	}
 
-	instances := []github.Instance{}
+	instances := []instance.Instance{}
 	for _, instanceRepo := range index.Instances {
 		instance, err := c.ghClient.GetInstance(instanceRepo)
 		if err != nil {
@@ -63,7 +64,7 @@ func (c *Controller) Fetch() ([]github.Instance, error) {
 	return instances, nil
 }
 
-func (c *Controller) Run(release github.Release) error {
+func (c *Controller) Run(release instance.Release) error {
 	if err := c.installer.RetrievePortableMC(); err != nil {
 		return err
 	}
@@ -86,22 +87,22 @@ func (c *Controller) Run(release github.Release) error {
 }
 
 
-func (c *Controller) updateInstanceContent(instancePath string, releaseContainers []github.Container) error {
+func (c *Controller) updateInstanceContent(instancePath string, releaseContainers []instance.Container) error {
 	m := file.NewManager(file.NewLocalBackend(instancePath))
 
-	var installedContainers []github.Container
+	var installedContainers []instance.Container
 
 	if err := m.ReadJson("installed.json", &installedContainers); err != nil {
 		return err
 	}
 
-	findInstalled := func(contentType string) github.Container {
+	findInstalled := func(contentType string) instance.Container {
 		for _, cont := range installedContainers {
 			if cont.ContentType == contentType {
 				return cont
 			}
 		}
-		return github.Container{ContentType: contentType, Content: []github.Content{}}
+		return instance.Container{ContentType: contentType, Content: []instance.Content{}}
 	}
 
 	for _, newContainer := range releaseContainers {

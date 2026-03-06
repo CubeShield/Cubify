@@ -1,7 +1,7 @@
 package platform
 
 import (
-	"Cubify/internal/github"
+	"Cubify/internal/instance"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -79,12 +79,12 @@ func (s *ModrinthService) ParseURL(ctx context.Context, url string) (modID, file
 	return modID, fileID, nil
 }
 
-func (s *ModrinthService) GetMod(ctx context.Context, modID, fileID string) (github.Content, error) {
+func (s *ModrinthService) GetMod(ctx context.Context, modID, fileID string) (instance.Content, error) {
 	versionUrl := fmt.Sprintf("https://api.modrinth.com/v2/project/%s/version/%s", modID, fileID)
 	
 	var versionData modrinthVersion
 	if err := s.fetchJSON(ctx, versionUrl, &versionData); err != nil {
-		return github.Content{}, fmt.Errorf("failed to fetch version: %w", err)
+		return instance.Content{}, fmt.Errorf("failed to fetch version: %w", err)
 	}
 
 	projectUrl := fmt.Sprintf("https://api.modrinth.com/v2/project/%s", versionData.ProjectID)
@@ -112,16 +112,16 @@ func (s *ModrinthService) GetMod(ctx context.Context, modID, fileID string) (git
 	}
 
 	if !found {
-		return github.Content{}, fmt.Errorf("no files found in this version")
+		return instance.Content{}, fmt.Errorf("no files found in this version")
 	}
 
-	return github.Content{
+	return instance.Content{
 		Name:     projectData.Title,
 		ImageURL: projectData.IconUrl,
-		Type:     github.TypeBoth,
+		Type:     instance.TypeBoth,
 		ModID:    modID,
 		FileID:   fileID,
-		Source:   github.SourceModrinth,
+		Source:   instance.SourceModrinth,
 		File:     targetFile.Filename,
 		Url:      targetFile.Url,
 	}, nil

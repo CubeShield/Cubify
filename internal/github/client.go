@@ -2,6 +2,7 @@ package github
 
 import (
 	"Cubify/internal/cache"
+	"Cubify/internal/instance"
 	logger "Cubify/internal/logging"
 	"encoding/json"
 	"fmt"
@@ -73,22 +74,22 @@ func (c *Client) sendRequest(url string, target interface{}) error {
 	return nil
 }
 
-func (c *Client) GetMeta(url string) (Meta, error) {
-	var meta Meta
+func (c *Client) GetMeta(url string) (instance.Meta, error) {
+	var meta instance.Meta
 	if err := c.sendRequest(url, &meta); err != nil {
-		return Meta{}, err
+		return instance.Meta{}, err
 	}
 
 	return meta, nil
 }
 
-func (c *Client) GetInstance(repo string) (*Instance, error) {
+func (c *Client) GetInstance(repo string) (*instance.Instance, error) {
 	path := fmt.Sprintf("%s/repos/%s/releases", c.baseUrl, repo)
 	
-	var releases []Release
+	var releases []instance.Release
 	instanceCacheKey := getInstanceCacheKey(repo)
 	if err := c.sendRequest(path, &releases); err != nil {
-		var instance Instance
+		var instance instance.Instance
 		if err := c.cm.Get(instanceCacheKey, &instance); err != nil {
 			return nil, fmt.Errorf("cannot get instance from github and cache: %v", err)
 		}
@@ -96,7 +97,7 @@ func (c *Client) GetInstance(repo string) (*Instance, error) {
 		return &instance, nil
 	}
 
-	var updatedReleases []Release
+	var updatedReleases []instance.Release
 	for _, release := range releases {
 		metaURL := ""
 		for _, asset := range release.Assets {
@@ -108,7 +109,7 @@ func (c *Client) GetInstance(repo string) (*Instance, error) {
 			c.l.Error("failed to get meta url for %s", release.URL)
 			continue
 		}
-		var meta Meta
+		var meta instance.Meta
 		metaCacheKey := getMetaCacheKey(repo, release.Name)
 		if err := c.cm.Get(metaCacheKey, &meta); err != nil {
 			meta, err = c.GetMeta(metaURL)
@@ -125,7 +126,7 @@ func (c *Client) GetInstance(repo string) (*Instance, error) {
 		updatedReleases = append(updatedReleases, release)
 	}
 
-	instance := &Instance{
+	instance := &instance.Instance{
 		Releases: updatedReleases,
 	}
 
@@ -133,8 +134,8 @@ func (c *Client) GetInstance(repo string) (*Instance, error) {
 	return instance, nil
 }
 
-func (c *Client) GetIndex(indexUrl string) (*Index, error) {
-	var index Index
+func (c *Client) GetIndex(indexUrl string) (*instance.Index, error) {
+	var index instance.Index
 	indexCacheKey := getIndexCacheKey(indexUrl)
 	if err := c.sendRequest(indexUrl, &index); err != nil {
 		if err := c.cm.Get(indexCacheKey, &index); err != nil {
