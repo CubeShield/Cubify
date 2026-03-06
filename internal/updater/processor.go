@@ -1,7 +1,7 @@
 package updater
 
 import (
-	"Cubify/internal/filesystem"
+	"Cubify/internal/file"
 	"Cubify/internal/github"
 	logger "Cubify/internal/logging"
 	"fmt"
@@ -16,14 +16,15 @@ type ContentProcessor struct {
 	contentType      string
 	apiContent       []github.Content
 	installedContent []github.Content
+	
 	httpClient *http.Client
-	fm        *filesystem.FileManager
+	fm        file.Manager
 }
 
 func NewContentProcessor(
 	container github.Container,
 	installedContainer github.Container,
-	fm *filesystem.FileManager,
+	fm file.Manager,
 	l *logger.Logger,
 ) *ContentProcessor {
 	return &ContentProcessor{

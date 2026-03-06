@@ -3,16 +3,14 @@ package controller
 import (
 	"Cubify/internal/cache"
 	"Cubify/internal/config"
-	"Cubify/internal/filesystem"
+	"Cubify/internal/file"
 	"Cubify/internal/github"
 	"Cubify/internal/installer"
 	logger "Cubify/internal/logging"
 	"Cubify/internal/mc"
 	"Cubify/internal/updater"
 	"context"
-	"encoding/json"
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -89,12 +87,12 @@ func (c *Controller) Run(release github.Release) error {
 
 
 func (c *Controller) updateInstanceContent(instancePath string, releaseContainers []github.Container) error {
-	fm, _ := filesystem.NewFileManager(instancePath)
-	installedJSONPath := filepath.Join(instancePath, "installed.json")
+	m := file.NewManager(file.NewLocalBackend(instancePath))
 
 	var installedContainers []github.Container
-	if data, err := os.ReadFile(installedJSONPath); err == nil {
-		_ = json.Unmarshal(data, &installedContainers)
+
+	if err := m.ReadJson("installed.json", &installedContainers); err != nil {
+		return err
 	}
 
 	findInstalled := func(contentType string) github.Container {
@@ -109,19 +107,14 @@ func (c *Controller) updateInstanceContent(instancePath string, releaseContainer
 	for _, newContainer := range releaseContainers {
 		oldContainer := findInstalled(newContainer.ContentType)
 		
-		processor := updater.NewContentProcessor(newContainer, oldContainer, fm, c.l)
+		processor := updater.NewContentProcessor(newContainer, oldContainer, m, c.l)
 		if err := processor.Process(); err != nil {
 			return err
 		}
 	}
 
-	newData, err := json.MarshalIndent(releaseContainers, "", "  ")
-	if err != nil {
-		return fmt.Errorf("failed to marshal installed state: %w", err)
-	}
-
-	if err := os.WriteFile(installedJSONPath, newData, 0644); err != nil {
-		return fmt.Errorf("failed to save installed.json: %w", err)
+	if err := m.SaveJson("installed.json", releaseContainers); err != nil {
+		return err
 	}
 
 	return nil
