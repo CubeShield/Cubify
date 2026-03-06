@@ -9,11 +9,19 @@ import (
 
 type FtpBackend struct {
 	Conn *ftp.ServerConn
-	Root string
+	RootPath string
 }
 
+func NewFtpBackend(rootPath string, Conn *ftp.ServerConn) StorageBackend {
+	return &FtpBackend{
+		RootPath: rootPath,
+		Conn: Conn,
+	}
+}
+
+
 func (f *FtpBackend) ftpPath(p string) string {
-	return pathpkg.Join(f.Root, p)
+	return pathpkg.Join(f.RootPath, p)
 }
 
 func (f *FtpBackend) Read(path string) (io.ReadCloser, error) {
@@ -24,20 +32,27 @@ func (f *FtpBackend) Read(path string) (io.ReadCloser, error) {
 	return resp, nil
 }
 
-func (f *FtpBackend) List(path string) ([]string, error) {
-	entries, err := f.Conn.List(f.ftpPath(path))
+func (f *FtpBackend) ListDir(p string) ([]FileEntry, error) {
+	entries, err := f.Conn.List(f.ftpPath(p))
 	if err != nil {
 		return nil, err
 	}
 
-	var names []string
+	var result []FileEntry
 	for _, e := range entries {
 		if e.Name == "." || e.Name == ".." {
 			continue
 		}
-		names = append(names, e.Name)
+
+		isDir := e.Type == ftp.EntryTypeFolder
+		
+		result = append(result, FileEntry{
+			Name:  e.Name,
+			IsDir: isDir,
+			Size:  int64(e.Size),
+		})
 	}
-	return names, nil
+	return result, nil
 }
 
 func (f *FtpBackend) Save(path string, data io.Reader) error {

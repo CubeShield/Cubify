@@ -25,17 +25,27 @@ func (l *LocalBackend) Read(path string) (io.ReadCloser, error) {
 	return os.Open(l.fullPath(path))
 }
 
-func (l *LocalBackend) List(path string) ([]string, error) {
-	entries, err := os.ReadDir(l.fullPath(path))
+func (l *LocalBackend) ListDir(p string) ([]FileEntry, error) {
+	entries, err := os.ReadDir(l.fullPath(p))
 	if err != nil {
 		return nil, err
 	}
 
-	var names []string
+	var result []FileEntry
 	for _, e := range entries {
-		names = append(names, e.Name())
+		info, _ := e.Info()
+		size := int64(0)
+		if info != nil {
+			size = info.Size()
+		}
+		
+		result = append(result, FileEntry{
+			Name:  e.Name(),
+			IsDir: e.IsDir(),
+			Size:  size,
+		})
 	}
-	return names, nil
+	return result, nil
 }
 
 func (l *LocalBackend) Save(path string, data io.Reader) error {
