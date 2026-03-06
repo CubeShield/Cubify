@@ -1,4 +1,4 @@
-import { github } from '../../../wailsjs/go/models' // Убедись в правильности пути
+import { instance } from '../../../wailsjs/go/models' // Убедись в правильности пути
 import { Input } from '../ui/input'
 import { Button } from '../ui/button'
 import {
@@ -91,8 +91,8 @@ const InfoInput = ({
 	disabled = false,
 	tooltip,
 }: {
-	updateContentByField: (field: keyof github.Content, val: any) => void
-	key: keyof github.Content
+	updateContentByField: (field: keyof instance.Content, val: any) => void
+	key: keyof instance.Content
 	value: any
 	placeholder: string
 	mono?: boolean
@@ -136,20 +136,20 @@ export function Content({
 	updateContent: (
 		cIdx: number,
 		itemIdx: number,
-		field: keyof github.Content,
+		field: keyof instance.Content,
 		val: any,
 	) => void
 	replaceContent: (
 		cIdx: number,
 		itemIdx: number,
-		newContent: Partial<github.Content>,
+		newContent: Partial<instance.Content>,
 	) => void
 	removeContent: (cIdx: number, itemIdx: number) => void
 	cIdx: number
 	iIdx: number
-	item: github.Content
+	item: instance.Content
 }) {
-	const updateContentByField = (field: keyof github.Content, val: any) => {
+	const updateContentByField = (field: keyof instance.Content, val: any) => {
 		updateContent(cIdx, iIdx, field, val)
 	}
 
@@ -362,7 +362,7 @@ export function Content({
 							</DialogHeader>
 							<div className='space-y-4 py-2'>
 								<Label>
-									Новая ссылка на контент (CurseForge / Modrinth / GitHub)
+									Новая ссылка на контент (CurseForge / Modrinth / instance)
 								</Label>
 								<Input
 									placeholder='https://...'

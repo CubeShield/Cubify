@@ -4,7 +4,7 @@ import (
 	"Cubify/internal/config"
 	"Cubify/internal/controller"
 	"Cubify/internal/editor"
-	"Cubify/internal/github"
+	"Cubify/internal/instance"
 	logger "Cubify/internal/logging"
 	"Cubify/internal/platform"
 	"context"
@@ -18,7 +18,7 @@ type App struct {
 	cfg *config.Config
 	controller *controller.Controller
 	editorManager *editor.Manager
-	instances []github.Instance
+	instances []instance.Instance
 	platformManager *platform.Manager
 
 }
@@ -49,13 +49,13 @@ func (a *App) CreateProject(name, desc, mcVer, loader, loaderVer, repoLink, logo
     return s, err
 }
 
-func (a *App) SaveProjectMeta(path string, meta github.Meta) error {
+func (a *App) SaveProjectMeta(path string, meta instance.Meta) error {
     return a.editorManager.SaveInstance(path, meta)
 }
 
-func (a *App) LoadProjectMeta(path string) (github.Meta, error) {
+func (a *App) LoadProjectMeta(path string) (instance.Meta, error) {
     meta, err := a.editorManager.LoadProject(path)
-    if err != nil { return github.Meta{}, err }
+    if err != nil { return instance.Meta{}, err }
     return *meta, nil
 }
 
@@ -76,13 +76,13 @@ func (a *App) SelectLogoFile() (string, error) {
     })
 }
 
-func (a *App) FetchInstances() []github.Instance {
+func (a *App) FetchInstances() []instance.Instance {
 	fetchedInstances, err := a.controller.Fetch()
 	if err != nil {
 		a.l.Error("Error while fetch instances: %v", err)
 		return a.instances
 	}
-	finalInstances := []github.Instance{}
+	finalInstances := []instance.Instance{}
 	for _, instance := range fetchedInstances {
 		if len(instance.Releases) > 0 {
 			finalInstances = append(finalInstances, instance)
@@ -92,7 +92,7 @@ func (a *App) FetchInstances() []github.Instance {
 	return a.instances
 }
 
-func (a *App) GetInstances() []github.Instance {
+func (a *App) GetInstances() []instance.Instance {
 	return a.instances
 }
 
@@ -128,13 +128,13 @@ func (a *App) StartMicrosoftLogin() {
 	}
 }
 
-func (a *App) Run(release github.Release) {
+func (a *App) Run(release instance.Release) {
 	if err := a.controller.Run(release); err != nil {
 		a.l.Error("Error while fetch instances: %v", err)
 	}
 }
 
-func (a *App) GetContentFromURL(url string) (github.Content, error) {
+func (a *App) GetContentFromURL(url string) (instance.Content, error) {
 	data, err := a.platformManager.GetModFromURL(a.ctx, url)
 	if err != nil {
 		a.l.Error("%v", err)
@@ -144,13 +144,13 @@ func (a *App) GetContentFromURL(url string) (github.Content, error) {
 
 
 func (a *App) GetContentSiteURL(source string, modID string) (string, error) {
-	return a.platformManager.GetContentSiteURL(github.Source(source), modID)
+	return a.platformManager.GetContentSiteURL(instance.Source(source), modID)
 }
 
 func (a *App) GetContentVersionURL(source string, modID string, fileID string) (string, error) {
-	return a.platformManager.GetContentVersionURL(github.Source(source), modID, fileID)
+	return a.platformManager.GetContentVersionURL(instance.Source(source), modID, fileID)
 }
 
 func (a *App) GetContentVersionsURL(source string, modID string) (string, error) {
-	return a.platformManager.GetContentVersionsURL(github.Source(source), modID)
+	return a.platformManager.GetContentVersionsURL(instance.Source(source), modID)
 }

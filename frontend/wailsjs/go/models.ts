@@ -122,7 +122,7 @@ export namespace editor {
 	export class Project {
 	    name: string;
 	    path: string;
-	    meta: github.Meta;
+	    meta: instance.Meta;
 	
 	    static createFrom(source: any = {}) {
 	        return new Project(source);
@@ -132,7 +132,7 @@ export namespace editor {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.name = source["name"];
 	        this.path = source["path"];
-	        this.meta = this.convertValues(source["meta"], github.Meta);
+	        this.meta = this.convertValues(source["meta"], instance.Meta);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -156,7 +156,7 @@ export namespace editor {
 
 }
 
-export namespace github {
+export namespace instance {
 	
 	export class Asset {
 	    name: string;

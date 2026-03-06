@@ -7,7 +7,7 @@ import {
 	CheckProjectStatus,
 	GetContentFromURL, // <--- Добавил импорт
 } from '../../../wailsjs/go/main/App'
-import { editor, github } from '../../../wailsjs/go/models'
+import { editor, instance } from '../../../wailsjs/go/models'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs'
@@ -44,7 +44,7 @@ interface EditorPageProps {
 }
 
 export function EditorPage({ project, onRefresh }: EditorPageProps) {
-	const [meta, setMeta] = useState<github.Meta>(project.meta)
+	const [meta, setMeta] = useState<instance.Meta>(project.meta)
 
 	const [isGitDirty, setGitDirty] = useState(false)
 	const [commits, setCommits] = useState<editor.Commit[]>([])
@@ -118,9 +118,9 @@ export function EditorPage({ project, onRefresh }: EditorPageProps) {
 		}
 	}
 
-	const updateMeta = (field: keyof github.Meta, value: any) => {
+	const updateMeta = (field: keyof instance.Meta, value: any) => {
 		setMeta(prev => {
-			const newMeta = new github.Meta(prev)
+			const newMeta = new instance.Meta(prev)
 			// @ts-ignore
 			newMeta[field] = value
 			return newMeta
@@ -320,8 +320,8 @@ function ContainerEditor({
 	meta,
 	setMeta,
 }: {
-	meta: github.Meta
-	setMeta: (m: github.Meta) => void
+	meta: instance.Meta
+	setMeta: (m: instance.Meta) => void
 }) {
 	const [openUrlDialog, setOpenUrlDialog] = useState<number | null>(null)
 	const [urlToAdd, setUrlToAdd] = useState('')
@@ -339,7 +339,7 @@ function ContainerEditor({
 
 	const getFilteredContent = (
 		containerIdx: number,
-		content: github.Content[],
+		content: instance.Content[],
 	) => {
 		const query = searchQueries[containerIdx]?.trim()
 		if (!query) return content
@@ -357,9 +357,9 @@ function ContainerEditor({
 	}
 
 	const addContainer = (type: string) => {
-		const newMeta = new github.Meta(meta)
+		const newMeta = new instance.Meta(meta)
 		newMeta.containers.push(
-			new github.Container({
+			new instance.Container({
 				content_type: type,
 				content: [],
 			}),
@@ -368,15 +368,15 @@ function ContainerEditor({
 	}
 
 	const deleteContainer = (idx: number) => {
-		const newMeta = new github.Meta(meta)
+		const newMeta = new instance.Meta(meta)
 		newMeta.containers.splice(idx, 1)
 		setMeta(newMeta)
 	}
 
 	const addContent = (containerIdx: number) => {
-		const newMeta = new github.Meta(meta)
+		const newMeta = new instance.Meta(meta)
 		newMeta.containers[containerIdx].content.push(
-			new github.Content({
+			new instance.Content({
 				name: 'New Mod',
 				file: 'mod.jar',
 				url: 'https://...',
@@ -391,7 +391,7 @@ function ContainerEditor({
 		setUrlLoading(true)
 		try {
 			const content = await GetContentFromURL(urlToAdd)
-			const newMeta = new github.Meta(meta)
+			const newMeta = new instance.Meta(meta)
 
 			if (!content.type) content.type = 'both'
 
@@ -409,10 +409,10 @@ function ContainerEditor({
 	const updateContent = (
 		cIdx: number,
 		itemIdx: number,
-		field: keyof github.Content,
+		field: keyof instance.Content,
 		val: any,
 	) => {
-		const newMeta = new github.Meta(meta)
+		const newMeta = new instance.Meta(meta)
 		// @ts-ignore
 		newMeta.containers[cIdx].content[itemIdx][field] = val
 		setMeta(newMeta)
@@ -421,9 +421,9 @@ function ContainerEditor({
 	const replaceContent = (
 		cIdx: number,
 		itemIdx: number,
-		newContent: Partial<github.Content>,
+		newContent: Partial<instance.Content>,
 	) => {
-		const newMeta = new github.Meta(meta)
+		const newMeta = new instance.Meta(meta)
 		// Обновляем все переданные поля за раз
 		Object.entries(newContent).forEach(([field, value]) => {
 			// @ts-ignore
@@ -433,7 +433,7 @@ function ContainerEditor({
 	}
 
 	const removeContent = (cIdx: number, itemIdx: number) => {
-		const newMeta = new github.Meta(meta)
+		const newMeta = new instance.Meta(meta)
 		newMeta.containers[cIdx].content.splice(itemIdx, 1)
 		setMeta(newMeta)
 	}
@@ -560,7 +560,7 @@ function ContainerEditor({
 											<DialogTitle>Добавить мод по ссылке</DialogTitle>
 										</DialogHeader>
 										<div className='space-y-4 py-2'>
-											<Label>Ссылка на CurseForge / Modrinth / GitHub</Label>
+											<Label>Ссылка на CurseForge / Modrinth / instance</Label>
 											<Input
 												placeholder='https://...'
 												value={urlToAdd}

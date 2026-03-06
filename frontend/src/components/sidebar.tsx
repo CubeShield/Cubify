@@ -15,7 +15,7 @@ import {
 	SeparatorHorizontal,
 	Settings2Icon,
 } from 'lucide-react'
-import { config as ConfigData, editor, github } from 'wailsjs/go/models'
+import { config as ConfigData, editor, instance } from 'wailsjs/go/models'
 import { useEffect, useState } from 'react'
 import { Button } from './ui/button'
 import { GetConfig, Run } from 'wailsjs/go/main/App'
@@ -28,11 +28,11 @@ function capitalizeFirstLetter(val: string): string {
 }
 
 interface AppSidebarProps {
-	instances: github.Instance[]
+	instances: instance.Instance[]
 	localProjects: editor.Project[]
-	selectedInstance: github.Instance | null
+	selectedInstance: instance.Instance | null
 	selectedProject: editor.Project | null
-	onSelect: (instance: github.Instance) => void
+	onSelect: (instance: instance.Instance) => void
 	onSelectProject: (project: editor.Project) => void
 	onRefresh?: () => void
 	isRefreshing: boolean
@@ -41,7 +41,7 @@ interface AppSidebarProps {
 }
 
 interface InstanceCardProps {
-	instance: github.Instance
+	instance: instance.Instance
 	isSelected: boolean
 	onClick: () => void
 }

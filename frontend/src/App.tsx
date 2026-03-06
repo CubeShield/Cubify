@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { FetchInstances, FetchLocalProjects } from '../wailsjs/go/main/App'
-import { editor, github } from '../wailsjs/go/models'
+import { editor, instance } from '../wailsjs/go/models'
 import { Button } from './components/ui/button'
 import {
 	Sidebar,
@@ -25,9 +25,9 @@ import { CreateProjectModal } from './components/create-modal-project'
 import { EditorPage } from './components/editor/editor-page'
 
 function App() {
-	const [instances, setInstances] = useState<github.Instance[]>([])
+	const [instances, setInstances] = useState<instance.Instance[]>([])
 	const [selectedInstance, setSelectedInstance] =
-		useState<github.Instance | null>(null)
+		useState<instance.Instance | null>(null)
 
 	const [localProjects, setLocalProjects] = useState<editor.Project[]>([])
 	const [selectedProject, setSelectedProject] = useState<editor.Project | null>(

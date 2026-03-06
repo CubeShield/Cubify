@@ -1,10 +1,10 @@
-import { github } from 'wailsjs/go/models'
+import { instance } from 'wailsjs/go/models'
 import dayjs from 'dayjs'
 import { BoxIcon } from 'lucide-react'
 import { Badge } from './ui/badge'
 
 interface InstanceDetailProps {
-	instance: github.Instance
+	instance: instance.Instance
 }
 
 const CONTAINERS = {
