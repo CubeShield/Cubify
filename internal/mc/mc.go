@@ -2,6 +2,7 @@ package mc
 
 import (
 	logger "Cubify/internal/logging"
+	"Cubify/internal/utils"
 	"bufio"
 	"fmt"
 	"io"
@@ -27,10 +28,6 @@ func New(bin, instancesDir string, jvmPath string, l *logger.Logger) *Mc {
 		instancesDir: instancesDir,
 		jvmPath: jvmPath,
 	}
-}
-
-func getInstanceDirectory(instanceName string) string {
-	return strings.ReplaceAll(strings.ReplaceAll(instanceName, ":", ""), " ", "-")
 }
 
 func (m *Mc) AuthenticateMicrosoft(callbackCode func(string, string), callbackSuccess func(string, string)) error {
@@ -75,7 +72,7 @@ func (m *Mc) AuthenticateMicrosoft(callbackCode func(string, string), callbackSu
 }
 
 func (m *Mc) Prepare(instanceName, loader, loaderVersion, minecraftVersion string) error {
-	path := fmt.Sprintf("%s/%s", m.instancesDir, getInstanceDirectory(instanceName))
+	path := fmt.Sprintf("%s/%s", m.instancesDir, utils.InstanceSlug(instanceName))
 	version := fmt.Sprintf("%s:%s", loader, minecraftVersion)
 	cmd := exec.Command(m.bin,
 		"--main-dir", path,
@@ -87,7 +84,7 @@ func (m *Mc) Prepare(instanceName, loader, loaderVersion, minecraftVersion strin
 
 
 func (m *Mc) Run(instanceName, loader, loaderVersion, minecraftVersion, uuid, username string) error {
-	path := fmt.Sprintf("%s/%s", m.instancesDir, getInstanceDirectory(instanceName))
+	path := fmt.Sprintf("%s/%s", m.instancesDir, utils.InstanceSlug(instanceName))
 	version := fmt.Sprintf("%s:%s", loader, minecraftVersion)
 
 	args := []string{
