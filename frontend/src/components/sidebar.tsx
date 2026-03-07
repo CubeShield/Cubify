@@ -79,34 +79,11 @@ function InstanceCard({
 }) {
 	const status = getInstanceStatus(inst)
 	const [hasEditorIcon, setHasEditorIcon] = useState(false)
-	const [serverOnline, setServerOnline] = useState<boolean | null>(null)
 	const latest = inst.releases[0]
-	const serverAddress = latest?.Meta?.server_address
 
 	useEffect(() => {
 		HasEditor(inst.slug).then(setHasEditorIcon)
 	}, [inst.slug])
-
-	// Poll server status every 30s
-	const checkServer = useCallback(async () => {
-		if (!serverAddress) {
-			setServerOnline(null)
-			return
-		}
-		try {
-			const online = await PingServer(serverAddress)
-			setServerOnline(online)
-		} catch {
-			setServerOnline(false)
-		}
-	}, [serverAddress])
-
-	useEffect(() => {
-		checkServer()
-		if (!serverAddress) return
-		const interval = setInterval(checkServer, 30_000)
-		return () => clearInterval(interval)
-	}, [serverAddress, checkServer])
 
 	return (
 		<div onClick={onClick} className='cursor-pointer'>
@@ -123,24 +100,6 @@ function InstanceCard({
 						<div className='flex items-center gap-1'>
 							{hasEditorIcon && <MicroBadge icon={CodeIcon} />}
 							<MicroBadge icon={STATUS_ICONS[status]} />
-							{serverOnline !== null && (
-								<div
-									className={`bg-accent p-1 rounded-2xl ${
-										serverOnline ? 'text-emerald-400' : 'text-zinc-500'
-									}`}
-									title={
-										serverOnline
-											? `Сервер онлайн (${serverAddress})`
-											: `Сервер оффлайн (${serverAddress})`
-									}
-								>
-									{serverOnline ? (
-										<SignalIcon className='size-3' />
-									) : (
-										<SignalZeroIcon className='size-3' />
-									)}
-								</div>
-							)}
 							<Badge className={STATUS_COLORS[status]}>{latest.name}</Badge>
 						</div>
 						<div className='flex items-center gap-1'>
