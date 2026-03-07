@@ -58,7 +58,7 @@ export function CreateProjectModal() {
 	return (
 		<Dialog>
 			<DialogTrigger asChild>
-				<Button className='w-full'>
+				<Button className='w-full cursor-pointer'>
 					<PlusIcon className='mr-2 h-4 w-4' /> Новая сборка
 				</Button>
 			</DialogTrigger>

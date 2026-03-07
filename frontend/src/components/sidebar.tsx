@@ -282,9 +282,8 @@ export function AppSidebar() {
 				>
 					<RefreshCwIcon /> Обновить список
 				</Button>
-
-				<MarketplaceModal onImported={() => refreshInstances()} />
 				{devMode && <CreateProjectModal />}
+				<MarketplaceModal onImported={() => refreshInstances()} />
 			</SidebarFooter>
 		</Sidebar>
 	)
