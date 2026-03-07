@@ -39,11 +39,6 @@ jobs:
 `
 
 
-type Project struct {
-	Name string      `json:"name"`
-	Path string      `json:"path"`
-	Meta instance.Meta `json:"meta"`
-}
 
 type Commit struct {
 	Hash    string `json:"hash"`
@@ -185,13 +180,13 @@ func (m *Manager) LoadProject(path string) (*instance.Meta, error) {
 	return &meta, nil
 }
 
-func (m *Manager) ListProjects() ([]Project, error) {
+func (m *Manager) ListProjects() ([]instance.Project, error) {
 	entries, err := os.ReadDir(m.ProjectsDir)
 	if err != nil {
 		return nil, err
 	}
 
-	var projects []Project
+	var projects []instance.Project
 	for _, entry := range entries {
 		if !entry.IsDir() {
 			continue
@@ -209,7 +204,7 @@ func (m *Manager) ListProjects() ([]Project, error) {
 			continue 
 		}
 
-		projects = append(projects, Project{
+		projects = append(projects, instance.Project{
 			Name: meta.Name,
 			Path: fullPath,
 			Meta: *meta,

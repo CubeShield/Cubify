@@ -32,10 +32,16 @@ type Instance struct {
 	Releases []Release `json:"releases"`
 }
 
+type Project struct {
+	Name string      `json:"name"`
+	Path string      `json:"path"`
+	Meta Meta `json:"meta"`
+}
+
 type LocalInstance struct {
 	Instance
 	Release *Release `json:"release,omitempty"`
-	Dev bool `json:"dev"`
+	Project *Project `json:"project"`
 }
 
 

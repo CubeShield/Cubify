@@ -2,15 +2,29 @@ import { editor, instance } from 'wailsjs/go/models'
 import dayjs from 'dayjs'
 import { BoxIcon } from 'lucide-react'
 import { Badge } from './ui/badge'
+import { EditorPage } from './editor/editor-page'
 
 interface InstanceDetailProps {
 	instance: instance.LocalInstance
-	project?: editor.Project
+	project?: instance.Project
 }
 
 const CONTAINERS = {
 	mods: 'Моды',
 	resourcepacks: 'Ресурспаки',
+}
+
+export function InstanceDetail({ instance, project }: InstanceDetailProps) {
+	return (
+		<div>
+			<h2 className='text-3xl font-bold'>{instance.releases[0].Meta.name}</h2>
+			<h3 className='text-l font-medium text-zinc-400'>
+				{instance.releases[0].Meta.description}
+			</h3>
+			{/*<Releases instance={instance} />*/}
+			{project && <EditorPage project={project} onRefresh={() => {}} />}
+		</div>
+	)
 }
 
 interface ReleasesProps {
@@ -47,17 +61,5 @@ function Releases({ instance }: ReleasesProps) {
 				})}
 			</div>
 		</>
-	)
-}
-
-export function InstanceDetail({ instance }: InstanceDetailProps) {
-	return (
-		<div>
-			<h2 className='text-3xl font-bold'>{instance.releases[0].Meta.name}</h2>
-			<h3 className='text-l font-medium text-zinc-400'>
-				{instance.releases[0].Meta.description}
-			</h3>
-			{/*<Releases instance={instance} />*/}
-		</div>
 	)
 }

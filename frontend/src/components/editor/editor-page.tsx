@@ -39,7 +39,7 @@ import { Content } from './editor-content'
 import { TooltipProvider } from '../ui/tooltip'
 
 interface EditorPageProps {
-	project: editor.Project
+	project: instance.Project
 	onRefresh: () => void
 }
 

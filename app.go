@@ -109,11 +109,11 @@ func (a *App) SaveConfig(cfg config.Config) {
 	a.cfg.Save("config.json")
 }
 
-func (a *App) FetchLocalProjects() []editor.Project {
+func (a *App) FetchLocalProjects() []instance.Project {
 	projects, err := a.editorManager.ListProjects()
 	if err != nil {
 		a.l.Error("Failed to list projects: %v", err)
-		return []editor.Project{}
+		return []instance.Project{}
 	}
 	return projects
 }
