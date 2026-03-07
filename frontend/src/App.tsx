@@ -33,11 +33,6 @@ function App() {
 	const [selectedInstance, setSelectedInstance] =
 		useState<instance.Instance | null>(null)
 
-	const [localProjects, setLocalProjects] = useState<editor.Project[]>([])
-	const [selectedProject, setSelectedProject] = useState<editor.Project | null>(
-		null,
-	)
-
 	const [isRefreshing, setIsRefreshing] = useState<boolean>(false)
 
 	const [currentPage, setCurrentPage] = useState<
@@ -50,15 +45,8 @@ function App() {
 		setIsRefreshing(false)
 	}
 
-	const getProjects = async () => {
-		setIsRefreshing(true)
-		setLocalProjects(await FetchLocalProjects())
-		setIsRefreshing(false)
-	}
-
 	useEffect(() => {
 		getInstances()
-		getProjects()
 	}, [])
 
 	return (
@@ -71,14 +59,10 @@ function App() {
 						onSelect={setSelectedInstance}
 						onRefresh={() => {
 							getInstances()
-							getProjects()
 						}}
 						isRefreshing={isRefreshing}
 						currentPage={currentPage}
 						setCurrentPage={setCurrentPage}
-						localProjects={localProjects}
-						selectedProject={selectedProject}
-						onSelectProject={setSelectedProject}
 					/>
 					<main className='flex-1 p-6'>
 						{currentPage === 'settings' && <Settings />}
@@ -93,9 +77,6 @@ function App() {
 									Выберите инстанс в меню слева
 								</div>
 							))}
-						{currentPage === 'editor' && selectedProject && (
-							<EditorPage project={selectedProject} onRefresh={() => {}} />
-						)}
 					</main>
 					<LogViewer />
 					<StatusBar />

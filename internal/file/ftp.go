@@ -62,3 +62,7 @@ func (f *FtpBackend) Save(path string, data io.Reader) error {
 func (f *FtpBackend) Delete(path string) error {
 	return f.Conn.Delete(f.ftpPath(path))
 }
+
+func (f *FtpBackend) Exists(path string) bool {
+	return false //TODO:
+}

@@ -361,6 +361,7 @@ export namespace instance {
 	    slug: string;
 	    releases: Release[];
 	    release?: Release;
+	    dev: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new LocalInstance(source);
@@ -372,6 +373,7 @@ export namespace instance {
 	        this.slug = source["slug"];
 	        this.releases = this.convertValues(source["releases"], Release);
 	        this.release = this.convertValues(source["release"], Release);
+	        this.dev = source["dev"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
