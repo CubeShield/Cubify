@@ -29,9 +29,9 @@ import { CreateProjectModal } from './components/create-modal-project'
 import { EditorPage } from './components/editor/editor-page'
 
 function App() {
-	const [instances, setInstances] = useState<instance.Instance[]>([])
+	const [instances, setInstances] = useState<instance.LocalInstance[]>([])
 	const [selectedInstance, setSelectedInstance] =
-		useState<instance.Instance | null>(null)
+		useState<instance.LocalInstance | null>(null)
 
 	const [isRefreshing, setIsRefreshing] = useState<boolean>(false)
 

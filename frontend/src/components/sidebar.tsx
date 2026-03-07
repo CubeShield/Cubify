@@ -28,9 +28,9 @@ function capitalizeFirstLetter(val: string): string {
 }
 
 interface AppSidebarProps {
-	instances: instance.Instance[]
-	selectedInstance: instance.Instance | null
-	onSelect: (instance: instance.Instance) => void
+	instances: instance.LocalInstance[]
+	selectedInstance: instance.LocalInstance | null
+	onSelect: (instance: instance.LocalInstance) => void
 	onRefresh?: () => void
 	isRefreshing: boolean
 	currentPage: 'detail' | 'settings' | 'account' | 'editor'

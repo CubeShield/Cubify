@@ -1,10 +1,11 @@
-import { instance } from 'wailsjs/go/models'
+import { editor, instance } from 'wailsjs/go/models'
 import dayjs from 'dayjs'
 import { BoxIcon } from 'lucide-react'
 import { Badge } from './ui/badge'
 
 interface InstanceDetailProps {
-	instance: instance.Instance
+	instance: instance.LocalInstance
+	project?: editor.Project
 }
 
 const CONTAINERS = {
