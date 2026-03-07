@@ -6,8 +6,10 @@ import (
 	logger "Cubify/internal/logging"
 	"Cubify/internal/utils"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 type Manager struct {
@@ -156,6 +158,39 @@ func (m *Manager) CreateProject(project ProjectSettings) (LocalInstance, error) 
 		return LocalInstance{}, err
 	}
 
+	if project.LogoPath != "" {
+		logoFile, err := os.Open(project.LogoPath)
+		if err != nil {
+			return LocalInstance{}, fmt.Errorf("failed to open logo: %w", err)
+		}
+		defer logoFile.Close()
+
+		if err := m.fm.Save(filepath.Join(editorDir, "logo.png"), logoFile); err != nil {
+			return LocalInstance{}, fmt.Errorf("failed to save logo: %w", err)
+		}
+	}
+
+	localInstance := LocalInstance{
+		Instance: Instance{
+			Repo: project.RepoLink,
+			Slug: slug,
+			Releases: []Release{
+				{
+					CreatedAt: time.Now(),
+					TagName: "v1.0.0",
+					Name: "v1.0.0",
+					Meta: meta,
+				},
+			},
+		},
+		DevMeta: &meta,
+	}
+
+	if err := m.Put(localInstance); err != nil {
+		m.l.Error("failed to put instance: %v", err)
+		return LocalInstance{}, err
+	}
+
 	remoteURL := fmt.Sprintf("git@github.com:%s/%s.git", owner, repo)
 	if err := git.Run(editorDir, "init"); err != nil {
 		return LocalInstance{}, err
@@ -174,15 +209,7 @@ func (m *Manager) CreateProject(project ProjectSettings) (LocalInstance, error) 
 		return LocalInstance{}, err
 	}
 
-	localInstance := LocalInstance{
-		Instance: Instance{
-			Repo: project.RepoLink,
-			Slug: slug,
-		},
-		DevMeta: &meta,
-	}
-
-	if err := m.Put(localInstance); err != nil {
+	if err := m.gm.GitRelease(editorDir, "v1.0.0"); err != nil {
 		return LocalInstance{}, err
 	}
 
