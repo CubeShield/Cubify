@@ -1,7 +1,9 @@
 package editor
 
 import (
+	"Cubify/internal/file"
 	"Cubify/internal/instance"
+	"Cubify/internal/utils"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -52,12 +54,13 @@ type GitHistory struct {
 }
 
 type Manager struct {
-	ProjectsDir string
+	fm file.Manager
 }
 
-func New(projectsDir string) *Manager {
-	_ = os.MkdirAll(projectsDir, 0755)
-	return &Manager{ProjectsDir: projectsDir}
+func New(fm file.Manager) *Manager {
+	return &Manager{
+		fm: fm,
+	}
 }
 
 func (m *Manager) CreateProject(name, desc, mcVer, loader, loaderVer, repoLink, logoPath string) (string, error) {
@@ -67,15 +70,12 @@ func (m *Manager) CreateProject(name, desc, mcVer, loader, loaderVer, repoLink, 
 	}
 	owner, repo := parts[0], parts[1]
 
-	projectPath := filepath.Join(m.ProjectsDir, name)
-	if err := os.MkdirAll(projectPath, 0755); err != nil {
-		return "", err
-	}
+	projectPath := filepath.Join(utils.InstanceSlug(name), "editor") 
 
-	destLogo := filepath.Join(projectPath, "logo.png")
-	if err := copyFile(logoPath, destLogo); err != nil {
-		return "", fmt.Errorf("failed to copy logo: %w", err)
-	}
+	//destLogo := filepath.Join(slug, "logo.png")
+	//if err := copyFile(logoPath, destLogo); err != nil {
+	//	return "", fmt.Errorf("failed to copy logo: %w", err)
+	//}
 
 	rawImgUrl := fmt.Sprintf("https://raw.instanceusercontent.com/%s/%s/main/logo.png", owner, repo)
 
@@ -88,20 +88,16 @@ func (m *Manager) CreateProject(name, desc, mcVer, loader, loaderVer, repoLink, 
 		ImageURL:         rawImgUrl,
 		Containers:       []instance.Container{},
 	}
-	if err := saveJSON(filepath.Join(projectPath, "instance.json"), meta); err != nil {
+	if err := m.fm.SaveJson(filepath.Join(projectPath, "instance.json"), meta); err != nil {
 		return "", err
 	}
 
-	workflowsDir := filepath.Join(projectPath, ".instance", "workflows")
-	if err := os.MkdirAll(workflowsDir, 0755); err != nil {
-		return "", err
-	}
-	if err := os.WriteFile(filepath.Join(workflowsDir, "release.yml"), []byte(ReleaseWorkflow), 0644); err != nil {
+	if err := m.fm.Save(filepath.Join(projectPath, ".github", "workflows", "release.yml"), strings.NewReader(ReleaseWorkflow)); err != nil {
 		return "", err
 	}
 	
 	
-	remoteURL := fmt.Sprintf("git@instance.com:%s/%s.git", owner, repo)
+	remoteURL := fmt.Sprintf("git@github.com:%s/%s.git", owner, repo)
 	if err := runGit(projectPath, "init"); err != nil { return "", err }
 	
 
@@ -125,8 +121,8 @@ func (m *Manager) CreateProject(name, desc, mcVer, loader, loaderVer, repoLink, 
 	return projectPath, nil
 }
 
-func (m *Manager) SaveInstance(projectPath string, meta instance.Meta) error {
-	return saveJSON(filepath.Join(projectPath, "instance.json"), meta)
+func (m *Manager) SaveInstance(slug string, meta instance.Meta) error {
+	return m.fm.SaveJson(filepath.Join(slug, "editor", "instance.json"), meta)
 }
 
 func (m *Manager) GitPush(projectPath, message string) error {
@@ -162,12 +158,6 @@ func copyFile(src, dst string) error {
 	return err
 }
 
-func saveJSON(path string, data interface{}) error {
-	bytes, err := json.MarshalIndent(data, "", "  ")
-	if err != nil { return err }
-	return os.WriteFile(path, bytes, 0644)
-}
-
 func (m *Manager) LoadProject(path string) (*instance.Meta, error) {
 	bytes, err := os.ReadFile(filepath.Join(path, "instance.json"))
 	if err != nil {
@@ -178,39 +168,6 @@ func (m *Manager) LoadProject(path string) (*instance.Meta, error) {
 		return nil, err
 	}
 	return &meta, nil
-}
-
-func (m *Manager) ListProjects() ([]instance.Project, error) {
-	entries, err := os.ReadDir(m.ProjectsDir)
-	if err != nil {
-		return nil, err
-	}
-
-	var projects []instance.Project
-	for _, entry := range entries {
-		if !entry.IsDir() {
-			continue
-		}
-
-		fullPath := filepath.Join(m.ProjectsDir, entry.Name())
-		metaPath := filepath.Join(fullPath, "instance.json")
-
-		if _, err := os.Stat(metaPath); os.IsNotExist(err) {
-			continue
-		}
-
-		meta, err := m.LoadProject(fullPath)
-		if err != nil {
-			continue 
-		}
-
-		projects = append(projects, instance.Project{
-			Name: meta.Name,
-			Path: fullPath,
-			Meta: *meta,
-		})
-	}
-	return projects, nil
 }
 
 func (m *Manager) GetGitStatus(projectPath string) (bool, error) {
