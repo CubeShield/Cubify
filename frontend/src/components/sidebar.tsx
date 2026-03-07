@@ -23,7 +23,7 @@ import {
 import { instance } from 'wailsjs/go/models'
 import { useEffect, useState } from 'react'
 import { Button } from './ui/button'
-import { HasEditor } from 'wailsjs/go/main/App'
+import { HasEditor, LoadProjectMeta } from 'wailsjs/go/main/App'
 import fabric from '../assets/images/fabric.png'
 import forge from '../assets/images/forge.png'
 import { CreateProjectModal } from './create-modal-project'
@@ -192,12 +192,14 @@ export function AppSidebar() {
 	}
 
 	const runDev = async () => {
-		if (!selectedInstance || !editorMeta) return
+		if (!selectedInstance || !hasEditor) return
+		const freshMeta = await LoadProjectMeta(selectedInstance.slug)
+		if (!freshMeta) return
 		const devRelease = new instance.Release({
 			tag_name: 'dev',
 			name: 'dev',
 			body: '',
-			Meta: editorMeta,
+			Meta: freshMeta,
 		})
 		await startRun(devRelease)
 	}
