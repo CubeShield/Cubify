@@ -1,12 +1,24 @@
 import { instance } from 'wailsjs/go/models'
 import dayjs from 'dayjs'
-import { BoxIcon, CodeIcon, Loader2, Trash2Icon } from 'lucide-react'
+import {
+	BoxIcon,
+	CodeIcon,
+	Loader2,
+	RocketIcon,
+	ServerIcon,
+	Trash2Icon,
+} from 'lucide-react'
 import { Badge } from './ui/badge'
 import { Button } from './ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs'
 import { EditorPage } from './editor/editor-page'
 import { useState } from 'react'
-import { CloneProject, DeleteInstance } from '../../wailsjs/go/main/App'
+import {
+	CloneProject,
+	DeleteInstance,
+	DeployToServer,
+	CancelDeploy,
+} from '../../wailsjs/go/main/App'
 import {
 	Dialog,
 	DialogContent,
@@ -17,6 +29,13 @@ import {
 	DialogClose,
 } from './ui/dialog'
 import { useEditorData } from '../hooks/use-editor-data'
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from './ui/select'
 
 interface InstanceDetailProps {
 	instance: instance.LocalInstance
@@ -87,7 +106,7 @@ export function InstanceDetail({
 							}}
 						/>
 					)}
-					<Releases instance={inst} />
+					<Releases instance={inst} devMode={devMode} />
 				</TabsContent>
 
 				{devMode && hasEditor && editorMeta && (
@@ -106,6 +125,7 @@ export function InstanceDetail({
 
 interface ReleasesProps {
 	instance: instance.LocalInstance
+	devMode: boolean
 }
 
 function EnableEditorButton({
@@ -153,8 +173,35 @@ function EnableEditorButton({
 	)
 }
 
-function Releases({ instance: inst }: ReleasesProps) {
+function Releases({ instance: inst, devMode }: ReleasesProps) {
 	const latestRelease = inst.releases?.[0]
+	const [selectedDeployVersion, setSelectedDeployVersion] = useState<string>('')
+	const [isDeploying, setDeploying] = useState(false)
+	const [deployError, setDeployError] = useState<string | null>(null)
+	const [deploySuccess, setDeploySuccess] = useState(false)
+
+	const handleDeploy = async () => {
+		const release = inst.releases.find(
+			r => r.tag_name === selectedDeployVersion,
+		)
+		if (!release) return
+
+		setDeploying(true)
+		setDeployError(null)
+		setDeploySuccess(false)
+		try {
+			await DeployToServer(release)
+			setDeploySuccess(true)
+		} catch (e) {
+			setDeployError(String(e))
+		} finally {
+			setDeploying(false)
+		}
+	}
+
+	const handleCancelDeploy = () => {
+		CancelDeploy()
+	}
 
 	if (!latestRelease) {
 		return (
@@ -166,6 +213,65 @@ function Releases({ instance: inst }: ReleasesProps) {
 
 	return (
 		<>
+			{devMode && (
+				<div className='flex flex-col gap-3 p-4 border rounded-xl bg-muted/30 mb-4'>
+					<div className='flex items-center gap-2'>
+						<ServerIcon className='size-5' />
+						<span className='font-medium'>Деплой на сервер</span>
+					</div>
+					<span className='text-sm text-muted-foreground'>
+						Выберите версию для установки на сервер через FTP
+					</span>
+					<div className='flex gap-2'>
+						<Select
+							value={selectedDeployVersion}
+							onValueChange={setSelectedDeployVersion}
+						>
+							<SelectTrigger className='flex-1'>
+								<SelectValue placeholder='Выберите версию' />
+							</SelectTrigger>
+							<SelectContent>
+								{inst.releases.map((release, idx) => (
+									<SelectItem key={idx} value={release.tag_name}>
+										{release.name} (
+										{dayjs(release.created_at).format('D MMM YYYY')})
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+						<Button
+							onClick={handleDeploy}
+							disabled={!selectedDeployVersion || isDeploying}
+							className='cursor-pointer'
+						>
+							{isDeploying ? (
+								<Loader2 className='size-4 animate-spin' />
+							) : (
+								<RocketIcon className='size-4' />
+							)}
+							{isDeploying ? 'Деплой...' : 'Выкатить'}
+						</Button>
+						{isDeploying && (
+							<Button
+								variant='destructive'
+								size='icon'
+								onClick={handleCancelDeploy}
+								className='cursor-pointer'
+							>
+								<Trash2Icon className='size-4' />
+							</Button>
+						)}
+					</div>
+					{deployError && (
+						<span className='text-sm text-destructive'>{deployError}</span>
+					)}
+					{deploySuccess && (
+						<span className='text-sm text-green-500'>
+							Деплой завершён успешно!
+						</span>
+					)}
+				</div>
+			)}
 			<div className='flex gap-2 mt-2'>
 				{latestRelease.Meta.containers?.map((container, idx) => (
 					<div

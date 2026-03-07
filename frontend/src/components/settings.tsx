@@ -8,6 +8,13 @@ import { useEffect, useState } from 'react'
 import { GetConfig, SaveConfig } from 'wailsjs/go/main/App'
 import { PlusIcon, SaveIcon, Trash2Icon } from 'lucide-react'
 import { useApp } from '../context/app-context'
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from './ui/select'
 
 interface ConfigInputProps {
 	value: string | number | undefined
@@ -196,6 +203,28 @@ export function Settings() {
 
 			<FieldGroup className='gap-2'>
 				<Field className='mb-4'>
+					<FieldLabel>Тип сборки</FieldLabel>
+					<FieldDescription>
+						Определяет какой контент скачивать: клиентский, серверный или общий
+					</FieldDescription>
+					<Select
+						value={cfgData.build_type || 'client'}
+						onValueChange={v => handleUpdate('build_type', v)}
+					>
+						<SelectTrigger className='mt-2'>
+							<SelectValue placeholder='Выберите тип сборки' />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value='client'>Клиент</SelectItem>
+							<SelectItem value='common'>Общая</SelectItem>
+							<SelectItem value='server'>Сервер</SelectItem>
+						</SelectContent>
+					</Select>
+				</Field>
+			</FieldGroup>
+
+			<FieldGroup className='gap-2'>
+				<Field className='mb-4'>
 					<div className='flex items-center justify-between'>
 						<div className='flex flex-col gap-1'>
 							<Label>Режим разработчика</Label>
@@ -211,6 +240,90 @@ export function Settings() {
 					</div>
 				</Field>
 			</FieldGroup>
+
+			{cfgData.dev_mode && (
+				<FieldGroup className='gap-2'>
+					<h3 className='text-xl font-bold mb-2'>FTP Настройки</h3>
+					<FieldDescription className='mb-4'>
+						Настройки подключения к FTP серверу для деплоя серверной сборки
+					</FieldDescription>
+
+					<Field className='mb-4'>
+						<FieldLabel>Хост</FieldLabel>
+						<Input
+							placeholder='ftp.example.com'
+							value={cfgData.ftp?.host ?? ''}
+							onChange={e =>
+								handleUpdate('ftp', {
+									...(cfgData.ftp ?? {}),
+									host: e.target.value,
+								})
+							}
+						/>
+					</Field>
+
+					<Field className='mb-4'>
+						<FieldLabel>Порт</FieldLabel>
+						<Input
+							type='number'
+							placeholder='21'
+							value={cfgData.ftp?.port ?? 21}
+							onChange={e =>
+								handleUpdate('ftp', {
+									...(cfgData.ftp ?? {}),
+									port: Number(e.target.value),
+								})
+							}
+						/>
+					</Field>
+
+					<Field className='mb-4'>
+						<FieldLabel>Пользователь</FieldLabel>
+						<Input
+							placeholder='ftp_user'
+							value={cfgData.ftp?.user ?? ''}
+							onChange={e =>
+								handleUpdate('ftp', {
+									...(cfgData.ftp ?? {}),
+									user: e.target.value,
+								})
+							}
+						/>
+					</Field>
+
+					<Field className='mb-4'>
+						<FieldLabel>Пароль</FieldLabel>
+						<Input
+							type='password'
+							placeholder='••••••••'
+							value={cfgData.ftp?.password ?? ''}
+							onChange={e =>
+								handleUpdate('ftp', {
+									...(cfgData.ftp ?? {}),
+									password: e.target.value,
+								})
+							}
+						/>
+					</Field>
+
+					<Field className='mb-4'>
+						<FieldLabel>Корневой путь</FieldLabel>
+						<Input
+							placeholder='/server/mods'
+							value={cfgData.ftp?.root_path ?? ''}
+							onChange={e =>
+								handleUpdate('ftp', {
+									...(cfgData.ftp ?? {}),
+									root_path: e.target.value,
+								})
+							}
+						/>
+						<FieldDescription>
+							Путь на FTP сервере, куда будет загружаться контент
+						</FieldDescription>
+					</Field>
+				</FieldGroup>
+			)}
 		</div>
 	)
 }

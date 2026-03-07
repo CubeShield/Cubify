@@ -17,6 +17,7 @@ type ContentProcessor struct {
 	contentType      string
 	apiContent       []instance.Content
 	installedContent []instance.Content
+	buildType        string
 	
 	httpClient *http.Client
 	fm        file.Manager
@@ -26,6 +27,7 @@ func NewContentProcessor(
 	container instance.Container,
 	installedContainer instance.Container,
 	fm file.Manager,
+	buildType string,
 	l *logger.Logger,
 ) *ContentProcessor {
 	return &ContentProcessor{
@@ -33,6 +35,7 @@ func NewContentProcessor(
 		contentType:      container.ContentType,
 		apiContent:       container.Content,
 		installedContent: installedContainer.Content,
+		buildType:        buildType,
 		httpClient: &http.Client{
 			Timeout: 15 * time.Second,
 		},
@@ -48,10 +51,37 @@ func (p *ContentProcessor) toSet(contentList []instance.Content) map[string]inst
 	return set
 }
 
-func (p *ContentProcessor) Process(ctx context.Context) error {
-	p.l.Info("Handling container %s", p.contentType)
+func (p *ContentProcessor) matchesBuildType(content instance.Content) bool {
+	ct := string(content.Type)
+	if ct == "" || ct == string(instance.TypeBoth) {
+		return true
+	}
+	switch p.buildType {
+	case "client":
+		return ct == string(instance.TypeClient) || ct == string(instance.TypeBoth)
+	case "server":
+		return ct == string(instance.TypeServer) || ct == string(instance.TypeBoth)
+	default:
+		return true
+	}
+}
 
-	apiSet := p.toSet(p.apiContent)
+func (p *ContentProcessor) filterByBuildType(contentList []instance.Content) []instance.Content {
+	var result []instance.Content
+	for _, c := range contentList {
+		if p.matchesBuildType(c) {
+			result = append(result, c)
+		}
+	}
+	return result
+}
+
+func (p *ContentProcessor) Process(ctx context.Context) error {
+	p.l.Info("Handling container %s (build_type=%s)", p.contentType, p.buildType)
+
+	filteredAPI := p.filterByBuildType(p.apiContent)
+
+	apiSet := p.toSet(filteredAPI)
 	installedSet := p.toSet(p.installedContent)
 
 	for fileName := range installedSet {

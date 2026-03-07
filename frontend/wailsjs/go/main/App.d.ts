@@ -4,6 +4,8 @@ import {instance} from '../models';
 import {config} from '../models';
 import {git} from '../models';
 
+export function CancelDeploy():Promise<void>;
+
 export function CancelRun():Promise<void>;
 
 export function CheckProjectStatus(arg1:string):Promise<boolean>;
@@ -13,6 +15,8 @@ export function CloneProject(arg1:string):Promise<void>;
 export function CreateProject(arg1:instance.ProjectSettings):Promise<instance.LocalInstance>;
 
 export function DeleteInstance(arg1:string):Promise<void>;
+
+export function DeployToServer(arg1:instance.Release):Promise<void>;
 
 export function FetchInstances():Promise<Array<instance.Instance>>;
 

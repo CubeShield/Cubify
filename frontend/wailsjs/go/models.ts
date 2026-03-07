@@ -16,6 +16,26 @@ export namespace config {
 	        this.auth_type = source["auth_type"];
 	    }
 	}
+	export class FTPSettings {
+	    host: string;
+	    port: number;
+	    user: string;
+	    password: string;
+	    root_path: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new FTPSettings(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.host = source["host"];
+	        this.port = source["port"];
+	        this.user = source["user"];
+	        this.password = source["password"];
+	        this.root_path = source["root_path"];
+	    }
+	}
 	export class Config {
 	    nickname: string;
 	    index_urls: string[];
@@ -27,6 +47,8 @@ export namespace config {
 	    instances_directory: string;
 	    bin_directory: string;
 	    editor_directory: string;
+	    build_type: string;
+	    ftp: FTPSettings;
 	    dev_mode: boolean;
 	    user: User;
 	
@@ -46,6 +68,8 @@ export namespace config {
 	        this.instances_directory = source["instances_directory"];
 	        this.bin_directory = source["bin_directory"];
 	        this.editor_directory = source["editor_directory"];
+	        this.build_type = source["build_type"];
+	        this.ftp = this.convertValues(source["ftp"], FTPSettings);
 	        this.dev_mode = source["dev_mode"];
 	        this.user = this.convertValues(source["user"], User);
 	    }
@@ -68,6 +92,7 @@ export namespace config {
 		    return a;
 		}
 	}
+	
 
 }
 

@@ -21,8 +21,10 @@ type App struct {
 	instances       []instance.Instance
 	platformManager *platform.Manager
 
-	runMu     sync.Mutex
-	runCancel context.CancelFunc
+	runMu        sync.Mutex
+	runCancel    context.CancelFunc
+	deployMu     sync.Mutex
+	deployCancel context.CancelFunc
 }
 
 func NewApp() *App {
@@ -108,6 +110,50 @@ func (a *App) CancelRun() {
 	defer a.runMu.Unlock()
 	if a.runCancel != nil {
 		a.runCancel()
+	}
+}
+
+func (a *App) DeployToServer(release instance.Release) {
+	a.deployMu.Lock()
+	if a.deployCancel != nil {
+		a.deployCancel()
+	}
+	deployCtx, cancel := context.WithCancel(a.ctx)
+	a.deployCancel = cancel
+	a.deployMu.Unlock()
+
+	defer func() {
+		a.deployMu.Lock()
+		a.deployCancel = nil
+		a.deployMu.Unlock()
+	}()
+
+	onProgress := func(step, total int, label string) {
+		runtime.EventsEmit(a.ctx, "deploy:progress", map[string]interface{}{
+			"step":  step,
+			"total": total,
+			"label": label,
+		})
+	}
+
+	if err := a.controller.DeployToServer(deployCtx, release, onProgress); err != nil {
+		if deployCtx.Err() != nil {
+			a.l.Info("Deploy cancelled")
+			runtime.EventsEmit(a.ctx, "deploy:cancelled", nil)
+			return
+		}
+		a.l.Error("Error while deploying: %v", err)
+		runtime.EventsEmit(a.ctx, "deploy:error", err.Error())
+		return
+	}
+	runtime.EventsEmit(a.ctx, "deploy:done", nil)
+}
+
+func (a *App) CancelDeploy() {
+	a.deployMu.Lock()
+	defer a.deployMu.Unlock()
+	if a.deployCancel != nil {
+		a.deployCancel()
 	}
 }
 

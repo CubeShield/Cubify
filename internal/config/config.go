@@ -11,6 +11,14 @@ type User struct {
 	AuthType string `json:"auth_type"`
 }
 
+type FTPSettings struct {
+	Host     string `json:"host"`
+	Port     int    `json:"port"`
+	User     string `json:"user"`
+	Password string `json:"password"`
+	RootPath string `json:"root_path"`
+}
+
 type Config struct {
 	Nickname string `json:"nickname"`
 	IndexURLs []string `json:"index_urls"`
@@ -23,6 +31,10 @@ type Config struct {
 	InstancesDirectory string `json:"instances_directory"`
 	BinDirectory string `json:"bin_directory"`
 	EditorDirectory string `json:"editor_directory"`
+
+	BuildType string `json:"build_type"`
+
+	FTP FTPSettings `json:"ftp"`
 
 	DevMode bool `json:"dev_mode"`
 
@@ -42,6 +54,10 @@ func Load(filename string) (*Config, error) {
 			InstancesDirectory: ".instances",
 			BinDirectory: "bin",
 			EditorDirectory: "editor",
+			BuildType: "client",
+			FTP: FTPSettings{
+				Port: 21,
+			},
 		}
 		
 		if err := defaultConfig.Save(filename); err != nil {

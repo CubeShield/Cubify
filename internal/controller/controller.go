@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/jlaffaye/ftp"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
@@ -110,7 +111,11 @@ func (c *Controller) Run(ctx context.Context, release instance.Release, onProgre
 	c.l.Info("Checking for updates...")
 	instanceDirectory := utils.InstanceSlug(release.Meta.Name)
 	fullInstancePath := filepath.Join(c.cfg.InstancesDirectory, instanceDirectory)
-	if err := c.updateInstanceContent(ctx, fullInstancePath, release.Meta.Containers); err != nil {
+	buildType := c.cfg.BuildType
+	if buildType == "" {
+		buildType = "client"
+	}
+	if err := c.updateInstanceContent(ctx, fullInstancePath, release.Meta.Containers, buildType); err != nil {
 		c.l.Error("Update warning: %v", err)
 		return fmt.Errorf("failed to update instance: %w", err)
 	}
@@ -140,7 +145,7 @@ func (c *Controller) Run(ctx context.Context, release instance.Release, onProgre
 }
 
 
-func (c *Controller) updateInstanceContent(ctx context.Context, instancePath string, releaseContainers []instance.Container) error {
+func (c *Controller) updateInstanceContent(ctx context.Context, instancePath string, releaseContainers []instance.Container, buildType string) error {
 	m := file.NewManager(file.NewLocalBackend(instancePath))
 
 	var installedContainers []instance.Container
@@ -162,7 +167,7 @@ func (c *Controller) updateInstanceContent(ctx context.Context, instancePath str
 		}
 		oldContainer := findInstalled(newContainer.ContentType)
 		
-		processor := updater.NewContentProcessor(newContainer, oldContainer, m, c.l)
+		processor := updater.NewContentProcessor(newContainer, oldContainer, m, buildType, c.l)
 		if err := processor.Process(ctx); err != nil {
 			return err
 		}
@@ -270,5 +275,84 @@ func (c *Controller) StartMicrosoftLogin(ctx context.Context) error {
 			runtime.EventsEmit(ctx, "auth:error", err.Error())
 		}
 	}()
+	return nil
+}
+
+func (c *Controller) ConnectFTP() (*ftp.ServerConn, error) {
+	ftpCfg := c.cfg.FTP
+	if ftpCfg.Host == "" {
+		return nil, fmt.Errorf("FTP host is not configured")
+	}
+	port := ftpCfg.Port
+	if port == 0 {
+		port = 21
+	}
+
+	addr := fmt.Sprintf("%s:%d", ftpCfg.Host, port)
+	conn, err := ftp.Dial(addr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to FTP %s: %w", addr, err)
+	}
+
+	if err := conn.Login(ftpCfg.User, ftpCfg.Password); err != nil {
+		conn.Quit()
+		return nil, fmt.Errorf("FTP login failed: %w", err)
+	}
+
+	return conn, nil
+}
+
+func (c *Controller) DeployToServer(ctx context.Context, release instance.Release, onProgress func(step, total int, label string)) error {
+	const totalSteps = 3
+
+	onProgress(1, totalSteps, "Подключение к FTP серверу...")
+	c.l.Info("Connecting to FTP server...")
+
+	conn, err := c.ConnectFTP()
+	if err != nil {
+		return fmt.Errorf("FTP connection failed: %w", err)
+	}
+	defer conn.Quit()
+
+	rootPath := c.cfg.FTP.RootPath
+	if rootPath == "" {
+		rootPath = "/"
+	}
+
+	ftpBackend := file.NewFtpBackend(rootPath, conn)
+	fm := file.NewManager(ftpBackend)
+
+	onProgress(2, totalSteps, "Обновление контента на сервере...")
+	c.l.Info("Deploying server content...")
+
+	var installedContainers []instance.Container
+	_ = fm.ReadJson("installed.json", &installedContainers)
+
+	findInstalled := func(contentType string) instance.Container {
+		for _, cont := range installedContainers {
+			if cont.ContentType == contentType {
+				return cont
+			}
+		}
+		return instance.Container{ContentType: contentType, Content: []instance.Content{}}
+	}
+
+	for _, newContainer := range release.Meta.Containers {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+		oldContainer := findInstalled(newContainer.ContentType)
+		processor := updater.NewContentProcessor(newContainer, oldContainer, fm, "server", c.l)
+		if err := processor.Process(ctx); err != nil {
+			return fmt.Errorf("deploy failed for %s: %w", newContainer.ContentType, err)
+		}
+	}
+
+	onProgress(3, totalSteps, "Сохранение информации...")
+	if err := fm.SaveJson("installed.json", release.Meta.Containers); err != nil {
+		return fmt.Errorf("failed to save installed.json on server: %w", err)
+	}
+
+	c.l.Info("Server deploy complete!")
 	return nil
 }
