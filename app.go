@@ -185,8 +185,8 @@ func (a *App) SyncProject(slug, message string) error {
 	return a.controller.IM.SyncProject(slug, message)
 }
 
-func (a *App) ReleaseProject(slug, tagName string) error {
-	return a.controller.IM.ReleaseProject(slug, tagName)
+func (a *App) ReleaseProject(slug, tagName, message string) error {
+	return a.controller.IM.ReleaseProject(slug, tagName, message)
 }
 
 func (a *App) GetProjectHistory(slug string) (*git.GitHistory, error) {

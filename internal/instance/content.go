@@ -95,8 +95,28 @@ func (m *Manager) SyncProject(slug, message string) error {
 	return m.gm.GitPush(m.editorPath(slug), message)
 }
 
-func (m *Manager) ReleaseProject(slug, tagName string) error {
-	return m.gm.GitRelease(m.editorPath(slug), tagName)
+func (m *Manager) ReleaseProject(slug, tagName, message string) error {
+	editorDir := m.editorPath(slug)
+
+	// Write release message file
+	msgPath := filepath.Join(editorDir, "release_message.txt")
+	if message != "" {
+		if err := os.WriteFile(msgPath, []byte(message), 0644); err != nil {
+			return fmt.Errorf("failed to write release message: %w", err)
+		}
+	} else {
+		// Write empty file so workflow doesn't fail
+		if err := os.WriteFile(msgPath, []byte(""), 0644); err != nil {
+			return fmt.Errorf("failed to write release message: %w", err)
+		}
+	}
+
+	// Stage the message file, commit, push, then tag
+	_ = git.Run(editorDir, "add", "release_message.txt")
+	_ = git.Run(editorDir, "commit", "-m", fmt.Sprintf("release: %s", tagName))
+	_ = git.Run(editorDir, "push", "origin", "main")
+
+	return m.gm.GitRelease(editorDir, tagName)
 }
 
 func (m *Manager) GetGitHistory(slug string) (*git.GitHistory, error) {

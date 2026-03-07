@@ -82,8 +82,8 @@ export function RefreshLocalReleases() {
   return window['go']['main']['App']['RefreshLocalReleases']();
 }
 
-export function ReleaseProject(arg1, arg2) {
-  return window['go']['main']['App']['ReleaseProject'](arg1, arg2);
+export function ReleaseProject(arg1, arg2, arg3) {
+  return window['go']['main']['App']['ReleaseProject'](arg1, arg2, arg3);
 }
 
 export function Run(arg1) {

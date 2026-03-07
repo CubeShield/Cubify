@@ -52,6 +52,7 @@ export function EditorPage({ slug, initialMeta, onRefresh }: EditorPageProps) {
 
 	const [commitMsg, setCommitMsg] = useState('')
 	const [tagName, setTagName] = useState('')
+	const [releaseMessage, setReleaseMessage] = useState('')
 	const [isLoading, setLoading] = useState(false)
 	const [activeTab, setActiveTab] = useState('general')
 
@@ -107,8 +108,9 @@ export function EditorPage({ slug, initialMeta, onRefresh }: EditorPageProps) {
 		if (!tagName) return alert('Введите тег (например v1.0.1)')
 		setLoading(true)
 		try {
-			await ReleaseProject(slug, tagName)
+			await ReleaseProject(slug, tagName, releaseMessage)
 			setTagName('')
+			setReleaseMessage('')
 			await loadGitInfo()
 			alert('Релиз создан!')
 		} catch (e) {
@@ -202,18 +204,31 @@ export function EditorPage({ slug, initialMeta, onRefresh }: EditorPageProps) {
 								<DialogTitle>История проекта</DialogTitle>
 							</DialogHeader>
 							<div className='grid gap-6'>
-								<div className='flex gap-2 p-4 border rounded-lg bg-muted/20 items-end'>
-									<div className='grid w-full gap-1.5'>
-										<Label>Новый релиз</Label>
-										<Input
-											placeholder='v1.0.0'
-											value={tagName}
-											onChange={e => setTagName(e.target.value)}
-										/>
+								<div className='flex flex-col gap-3 p-4 border rounded-lg bg-muted/20'>
+									<Label>Новый релиз</Label>
+									<div className='flex gap-2 items-end'>
+										<div className='grid w-full gap-1.5'>
+											<Input
+												placeholder='v1.0.0'
+												value={tagName}
+												onChange={e => setTagName(e.target.value)}
+											/>
+										</div>
+										<Button onClick={handleRelease} disabled={isLoading}>
+											<Tag className='mr-2 h-4 w-4' /> Создать
+										</Button>
 									</div>
-									<Button onClick={handleRelease} disabled={isLoading}>
-										<Tag className='mr-2 h-4 w-4' /> Создать
-									</Button>
+									<Textarea
+										placeholder='Сообщение к релизу (необязательно)'
+										value={releaseMessage}
+										onChange={e => setReleaseMessage(e.target.value)}
+										className='text-sm'
+										rows={2}
+									/>
+									<p className='text-xs text-muted-foreground'>
+										Changelog генерируется автоматически. Сообщение будет
+										добавлено в описание релиза.
+									</p>
 								</div>
 
 								<div>

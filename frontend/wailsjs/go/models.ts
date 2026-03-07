@@ -169,6 +169,109 @@ export namespace instance {
 	        this.content_type = source["content_type"];
 	    }
 	}
+	export class ChangelogContentRef {
+	    name: string;
+	    image_url: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new ChangelogContentRef(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.name = source["name"];
+	        this.image_url = source["image_url"];
+	    }
+	}
+	export class ContainerChanges {
+	    content_type: string;
+	    added: ChangelogContentRef[];
+	    removed: ChangelogContentRef[];
+	    updated: ChangelogContentRef[];
+	
+	    static createFrom(source: any = {}) {
+	        return new ContainerChanges(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.content_type = source["content_type"];
+	        this.added = this.convertValues(source["added"], ChangelogContentRef);
+	        this.removed = this.convertValues(source["removed"], ChangelogContentRef);
+	        this.updated = this.convertValues(source["updated"], ChangelogContentRef);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class MetaChange {
+	    field: string;
+	    label: string;
+	    old_value: string;
+	    new_value: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new MetaChange(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.field = source["field"];
+	        this.label = source["label"];
+	        this.old_value = source["old_value"];
+	        this.new_value = source["new_value"];
+	    }
+	}
+	export class Changelog {
+	    message?: string;
+	    meta_changes?: MetaChange[];
+	    containers?: ContainerChanges[];
+	
+	    static createFrom(source: any = {}) {
+	        return new Changelog(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.message = source["message"];
+	        this.meta_changes = this.convertValues(source["meta_changes"], MetaChange);
+	        this.containers = this.convertValues(source["containers"], ContainerChanges);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	
 	export class Content {
 	    name: string;
 	    image_url: string;
@@ -230,6 +333,7 @@ export namespace instance {
 		}
 	}
 	
+	
 	export class Meta {
 	    name: string;
 	    description: string;
@@ -281,6 +385,7 @@ export namespace instance {
 	    created_at: any;
 	    assets: Asset[];
 	    Meta: Meta;
+	    changelog?: Changelog;
 	
 	    static createFrom(source: any = {}) {
 	        return new Release(source);
@@ -295,6 +400,7 @@ export namespace instance {
 	        this.created_at = this.convertValues(source["created_at"], null);
 	        this.assets = this.convertValues(source["assets"], Asset);
 	        this.Meta = this.convertValues(source["Meta"], Meta);
+	        this.changelog = this.convertValues(source["changelog"], Changelog);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -387,6 +493,7 @@ export namespace instance {
 		    return a;
 		}
 	}
+	
 	
 	export class ProjectSettings {
 	    Name: string;

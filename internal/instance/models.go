@@ -24,6 +24,7 @@ type Release struct {
 	CreatedAt time.Time `json:"created_at"`
 	Assets      []Asset   `json:"assets"`
 	Meta Meta
+	Changelog *Changelog `json:"changelog,omitempty"`
 }
 
 type Instance struct {
@@ -87,6 +88,33 @@ type Content struct {
 	From From `json:"from"`
 	File string `json:"file"`
 	Url string `json:"url"`
+}
+
+// Changelog models
+
+type ChangelogContentRef struct {
+	Name     string `json:"name"`
+	ImageURL string `json:"image_url"`
+}
+
+type MetaChange struct {
+	Field    string `json:"field"`
+	Label    string `json:"label"`
+	OldValue string `json:"old_value"`
+	NewValue string `json:"new_value"`
+}
+
+type ContainerChanges struct {
+	ContentType string               `json:"content_type"`
+	Added       []ChangelogContentRef `json:"added"`
+	Removed     []ChangelogContentRef `json:"removed"`
+	Updated     []ChangelogContentRef `json:"updated"`
+}
+
+type Changelog struct {
+	Message     string             `json:"message,omitempty"`
+	MetaChanges []MetaChange       `json:"meta_changes,omitempty"`
+	Containers  []ContainerChanges `json:"containers,omitempty"`
 }
 
 

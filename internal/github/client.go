@@ -83,6 +83,14 @@ func (c *Client) GetMeta(url string) (instance.Meta, error) {
 	return meta, nil
 }
 
+func (c *Client) GetChangelog(url string) (*instance.Changelog, error) {
+	var cl instance.Changelog
+	if err := c.sendRequest(url, &cl); err != nil {
+		return nil, err
+	}
+	return &cl, nil
+}
+
 func (c *Client) GetInstance(repo string) (*instance.Instance, error) {
 	path := fmt.Sprintf("%s/repos/%s/releases", c.baseUrl, repo)
 	
@@ -100,9 +108,13 @@ func (c *Client) GetInstance(repo string) (*instance.Instance, error) {
 	var updatedReleases []instance.Release
 	for _, release := range releases {
 		metaURL := ""
+		changelogURL := ""
 		for _, asset := range release.Assets {
 			if asset.Name == "instance.json" {
 				metaURL = asset.BrowserDownloadURL
+			}
+			if asset.Name == "changelog.json" {
+				changelogURL = asset.BrowserDownloadURL
 			}
 		}
 		if metaURL == "" {
@@ -123,6 +135,27 @@ func (c *Client) GetInstance(repo string) (*instance.Instance, error) {
 		}
 
 		release.Meta = meta
+
+		// Fetch changelog if available
+		if changelogURL != "" {
+			changelogCacheKey := fmt.Sprintf("%s.changelog", metaCacheKey)
+			var cl instance.Changelog
+			if err := c.cm.Get(changelogCacheKey, &cl); err != nil {
+				fetched, err := c.GetChangelog(changelogURL)
+				if err != nil {
+					c.l.Error("failed to get changelog for %s: %v", release.Name, err)
+				} else {
+					cl = *fetched
+					if err := c.cm.Put(changelogCacheKey, cl); err != nil {
+						c.l.Error("failed to cache changelog: %v", err)
+					}
+				}
+			}
+			if len(cl.MetaChanges) > 0 || len(cl.Containers) > 0 || cl.Message != "" {
+				release.Changelog = &cl
+			}
+		}
+
 		updatedReleases = append(updatedReleases, release)
 	}
 
