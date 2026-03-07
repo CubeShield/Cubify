@@ -11,14 +11,13 @@ import {
 	StartMicrosoftLogin,
 } from '../../wailsjs/go/main/App'
 import { EventsOn, EventsOff } from '../../wailsjs/runtime'
+import { useApp } from '../context/app-context'
 
-interface UserProps {
-	setCurrentPage: (page: 'detail' | 'settings' | 'account') => void
-}
+export function User() {
+	const { setCurrentPage, reloadConfig } = useApp()
 
-type AuthState = 'idle' | 'waiting_code' | 'waiting_auth' | 'success'
+	type AuthState = 'idle' | 'waiting_code' | 'waiting_auth' | 'success'
 
-export function User({ setCurrentPage }: UserProps) {
 	const [configData, setConfigData] = useState<ConfigData.Config | null>(null)
 	const [username, setUsername] = useState<string>('')
 	const [authType, setAuthType] = useState<string>('offline')
@@ -80,6 +79,7 @@ export function User({ setCurrentPage }: UserProps) {
 
 		setConfigData(newConfig)
 		await SaveConfig(newConfig)
+		await reloadConfig()
 		setAuthType('offline')
 	}
 

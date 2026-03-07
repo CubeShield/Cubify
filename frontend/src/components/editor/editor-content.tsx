@@ -1,4 +1,5 @@
-import { instance } from '../../../wailsjs/go/models' // Убедись в правильности пути
+import { memo, useState, useCallback } from 'react'
+import { instance } from '../../../wailsjs/go/models'
 import { Input } from '../ui/input'
 import { Button } from '../ui/button'
 import {
@@ -6,20 +7,13 @@ import {
 	ComputerIcon,
 	EarthIcon,
 	EditIcon,
-	GitCommitIcon,
 	InfoIcon,
-	Link2Icon,
 	LinkIcon,
 	ListIcon,
 	Loader2,
 	LucideIcon,
-	PinIcon,
-	PointerIcon,
-	RefreshCcw,
-	RefreshCcwIcon,
 	ServerIcon,
 	Trash2,
-	TrashIcon,
 } from 'lucide-react'
 import {
 	Select,
@@ -35,7 +29,6 @@ import {
 	InputGroup,
 	InputGroupAddon,
 	InputGroupInput,
-	InputGroupText,
 } from '@/components/ui/input-group'
 import {
 	GetContentSiteURL,
@@ -43,7 +36,6 @@ import {
 	GetContentVersionsURL,
 	GetContentFromURL,
 } from '../../../wailsjs/go/main/App'
-import { useState } from 'react'
 import {
 	Dialog,
 	DialogContent,
@@ -51,6 +43,8 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from '../ui/dialog'
+
+// --- Reusable small components ---
 
 const SmallButton = ({
 	icon: Icon,
@@ -62,77 +56,209 @@ const SmallButton = ({
 	tooltip: string
 	onClick?: () => void
 	disabled?: boolean
-}) => {
-	return (
-		<Tooltip>
-			<TooltipTrigger asChild>
-				<Button
-					onClick={onClick}
-					disabled={disabled}
-					variant='outline'
-					size='icon'
-				>
-					<Icon />
-				</Button>
-			</TooltipTrigger>
-			<TooltipContent>
-				<p>{tooltip}</p>
-			</TooltipContent>
-		</Tooltip>
-	)
-}
+}) => (
+	<Tooltip>
+		<TooltipTrigger asChild>
+			<Button
+				onClick={onClick}
+				disabled={disabled}
+				variant='outline'
+				size='icon'
+			>
+				<Icon />
+			</Button>
+		</TooltipTrigger>
+		<TooltipContent>
+			<p>{tooltip}</p>
+		</TooltipContent>
+	</Tooltip>
+)
 
 const InfoInput = ({
-	updateContentByField,
-	key,
+	onChange,
 	value,
 	placeholder,
 	mono = false,
 	disabled = false,
 	tooltip,
 }: {
-	updateContentByField: (field: keyof instance.Content, val: any) => void
-	key: keyof instance.Content
-	value: any
+	onChange: (val: string) => void
+	value: string
 	placeholder: string
 	mono?: boolean
 	disabled?: boolean
 	tooltip?: string
-}) => {
-	const font = mono ? 'font-mono' : ''
+}) => (
+	<InputGroup>
+		<InputGroupInput
+			className={`h-8 text-xs ${mono ? 'font-mono' : ''}`}
+			value={value}
+			onChange={e => onChange(e.target.value)}
+			placeholder={placeholder}
+			disabled={disabled}
+		/>
+		{tooltip && (
+			<InputGroupAddon align='inline-end'>
+				<Tooltip>
+					<TooltipTrigger>
+						<InfoIcon className='size-4' />
+					</TooltipTrigger>
+					<TooltipContent>
+						<p>{tooltip}</p>
+					</TooltipContent>
+				</Tooltip>
+			</InputGroupAddon>
+		)}
+	</InputGroup>
+)
+
+// --- Content item actions (extracted to reduce nesting) ---
+
+function useContentActions(
+	item: instance.Content,
+	cIdx: number,
+	iIdx: number,
+	replaceContent: ContentProps['replaceContent'],
+) {
+	const isRaw = !['modrinth', 'curseforge'].includes(item.source)
+
+	const handleOpenSite = useCallback(async () => {
+		if (isRaw || !item.mod_id) return
+		try {
+			const url = await GetContentSiteURL(item.source, item.mod_id)
+			if (url) BrowserOpenURL(url)
+		} catch (err) {
+			console.error('Failed to get content site URL:', err)
+		}
+	}, [isRaw, item.source, item.mod_id])
+
+	const handleOpenVersion = useCallback(async () => {
+		if (isRaw || !item.mod_id || !item.file_id) return
+		try {
+			const url = await GetContentVersionURL(
+				item.source,
+				item.mod_id,
+				item.file_id,
+			)
+			if (url) BrowserOpenURL(url)
+		} catch (err) {
+			console.error('Failed to get content version URL:', err)
+		}
+	}, [isRaw, item.source, item.mod_id, item.file_id])
+
+	const handleOpenVersions = useCallback(async () => {
+		if (isRaw || !item.mod_id) return
+		try {
+			const url = await GetContentVersionsURL(item.source, item.mod_id)
+			if (url) BrowserOpenURL(url)
+		} catch (err) {
+			console.error('Failed to get content versions URL:', err)
+		}
+	}, [isRaw, item.source, item.mod_id])
+
+	return { isRaw, handleOpenSite, handleOpenVersion, handleOpenVersions }
+}
+
+// --- Edit dialog (extracted) ---
+
+function EditContentDialog({
+	item,
+	cIdx,
+	iIdx,
+	replaceContent,
+}: {
+	item: instance.Content
+	cIdx: number
+	iIdx: number
+	replaceContent: ContentProps['replaceContent']
+}) {
+	const [open, setOpen] = useState(false)
+	const [newUrl, setNewUrl] = useState('')
+	const [isUpdating, setIsUpdating] = useState(false)
+
+	const handleUpdate = async () => {
+		if (!newUrl.trim()) return
+		setIsUpdating(true)
+		try {
+			const newContent = await GetContentFromURL(newUrl)
+			replaceContent(cIdx, iIdx, {
+				url: newContent.url,
+				file: newContent.file,
+				mod_id: newContent.mod_id,
+				file_id: newContent.file_id,
+				source: newContent.source,
+				image_url: newContent.image_url,
+				type: item.type,
+				name: item.name,
+			})
+			setOpen(false)
+			setNewUrl('')
+		} catch (err) {
+			alert('Ошибка при обновлении контента: ' + err)
+		} finally {
+			setIsUpdating(false)
+		}
+	}
+
+	const typeLabel =
+		item.type === 'both'
+			? 'Общий'
+			: item.type === 'client'
+				? 'Клиент'
+				: 'Сервер'
+
 	return (
-		<InputGroup>
-			<InputGroupInput
-				className={`h-8 text-xs ${font}`}
-				value={value}
-				onChange={e => updateContentByField(key, e.target.value)}
-				placeholder={placeholder}
-				disabled={disabled}
-			/>
-			{tooltip && (
-				<InputGroupAddon align='inline-end'>
-					<Tooltip>
-						<TooltipTrigger>
-							<InfoIcon className='size-4' />
-						</TooltipTrigger>
-						<TooltipContent>
-							<p>{tooltip}</p>
-						</TooltipContent>
-					</Tooltip>
-				</InputGroupAddon>
-			)}
-		</InputGroup>
+		<Dialog open={open} onOpenChange={setOpen}>
+			<Tooltip>
+				<TooltipTrigger asChild>
+					<DialogTrigger asChild>
+						<Button variant='outline' size='icon'>
+							<EditIcon />
+						</Button>
+					</DialogTrigger>
+				</TooltipTrigger>
+				<TooltipContent>
+					<p>Изменить контент по URL</p>
+				</TooltipContent>
+			</Tooltip>
+			<DialogContent>
+				<DialogHeader>
+					<DialogTitle>Изменить контент</DialogTitle>
+				</DialogHeader>
+				<div className='space-y-4 py-2'>
+					<Label>
+						Новая ссылка на контент (CurseForge / Modrinth / instance)
+					</Label>
+					<Input
+						placeholder='https://...'
+						value={newUrl}
+						onChange={e => setNewUrl(e.target.value)}
+					/>
+					<p className='text-xs text-muted-foreground'>
+						Тип ({typeLabel}) и название ({item.name}) будут сохранены
+					</p>
+					<Button
+						type='button'
+						className='w-full'
+						onClick={handleUpdate}
+						disabled={isUpdating || !newUrl.trim()}
+					>
+						{isUpdating ? (
+							<Loader2 className='mr-2 h-4 w-4 animate-spin' />
+						) : (
+							<EditIcon className='mr-2 h-4 w-4' />
+						)}
+						Изменить контент
+					</Button>
+				</div>
+			</DialogContent>
+		</Dialog>
 	)
 }
 
-export function Content({
-	updateContent,
-	replaceContent,
-	removeContent,
-	cIdx,
-	iIdx,
-	item,
-}: {
+// --- Main Content component (memoized) ---
+
+interface ContentProps {
 	updateContent: (
 		cIdx: number,
 		itemIdx: number,
@@ -148,109 +274,37 @@ export function Content({
 	cIdx: number
 	iIdx: number
 	item: instance.Content
-}) {
-	const updateContentByField = (field: keyof instance.Content, val: any) => {
-		updateContent(cIdx, iIdx, field, val)
-	}
+}
 
-	const isRaw = !['modrinth', 'curseforge'].includes(item.source)
+export const Content = memo(function Content({
+	updateContent,
+	replaceContent,
+	removeContent,
+	cIdx,
+	iIdx,
+	item,
+}: ContentProps) {
+	const { isRaw, handleOpenSite, handleOpenVersion, handleOpenVersions } =
+		useContentActions(item, cIdx, iIdx, replaceContent)
 
-	const [editDialogOpen, setEditDialogOpen] = useState(false)
-	const [newUrl, setNewUrl] = useState('')
-	const [isUpdating, setIsUpdating] = useState(false)
-
-	const handleOpenSite = async () => {
-		if (isRaw || !item.mod_id) return
-		try {
-			const url = await GetContentSiteURL(item.source, item.mod_id)
-			if (url) {
-				BrowserOpenURL(url)
-			}
-		} catch (err) {
-			console.error('Failed to get content site URL:', err)
-		}
-	}
-
-	const handleOpenVersion = async () => {
-		if (isRaw || !item.mod_id || !item.file_id) return
-		try {
-			const url = await GetContentVersionURL(
-				item.source,
-				item.mod_id,
-				item.file_id,
-			)
-			if (url) {
-				BrowserOpenURL(url)
-			}
-		} catch (err) {
-			console.error('Failed to get content version URL:', err)
-		}
-	}
-
-	const handleOpenVersions = async () => {
-		if (isRaw || !item.mod_id) return
-		try {
-			const url = await GetContentVersionsURL(item.source, item.mod_id)
-			if (url) {
-				BrowserOpenURL(url)
-			}
-		} catch (err) {
-			console.error('Failed to get content versions URL:', err)
-		}
-	}
-
-	const handleUpdateContent = async () => {
-		console.log('handleUpdateContent called, newUrl:', newUrl)
-		if (!newUrl.trim()) {
-			console.log('URL is empty, returning')
-			return
-		}
-		setIsUpdating(true)
-		try {
-			console.log('Fetching content from URL:', newUrl)
-			const newContent = await GetContentFromURL(newUrl)
-			console.log('Received new content:', newContent)
-
-			// Сохраняем старые тип и название
-			const oldType = item.type
-			const oldName = item.name
-			console.log('Preserving old type:', oldType, 'and name:', oldName)
-
-			// Обновляем весь контент одним вызовом, сохраняя старые значения type и name
-			replaceContent(cIdx, iIdx, {
-				url: newContent.url,
-				file: newContent.file,
-				mod_id: newContent.mod_id,
-				file_id: newContent.file_id,
-				source: newContent.source,
-				image_url: newContent.image_url,
-				type: oldType, // Сохраняем старый тип
-				name: oldName, // Сохраняем старое название
-			})
-
-			console.log('Content updated successfully')
-			setEditDialogOpen(false)
-			setNewUrl('')
-		} catch (err) {
-			console.error('Failed to update content:', err)
-			alert('Ошибка при обновлении контента: ' + err)
-		} finally {
-			setIsUpdating(false)
-		}
-	}
+	const onFieldChange = useCallback(
+		(field: keyof instance.Content) => (val: string) => {
+			updateContent(cIdx, iIdx, field, val)
+		},
+		[updateContent, cIdx, iIdx],
+	)
 
 	return (
 		<div className='flex flex-col gap-3 bg-muted/40 p-2 rounded-lg border border-transparent hover:border-border transition-colors'>
+			{/* Header: image + name/type/file */}
 			<div className='flex items-center gap-3 justify-between'>
-				{item.image_url != '' && (
+				{item.image_url !== '' && (
 					<img src={item.image_url} className='size-20 rounded-xl' />
 				)}
-
 				<div className='flex flex-col gap-2 w-full'>
 					<div className='w-full flex gap-2 items-center'>
 						<InfoInput
-							key='name'
-							updateContentByField={updateContentByField}
+							onChange={onFieldChange('name')}
 							placeholder='Имя'
 							value={item.name}
 							tooltip='Название, отображается у клиентов в лаунчере'
@@ -264,66 +318,61 @@ export function Content({
 							</SelectTrigger>
 							<SelectContent>
 								<SelectItem value='both'>
-									<CloudSyncIcon />
-									Общий
+									<CloudSyncIcon /> Общий
 								</SelectItem>
 								<SelectItem value='client'>
 									<ComputerIcon /> Клиент
 								</SelectItem>
 								<SelectItem value='server'>
-									<ServerIcon />
-									Сервер
+									<ServerIcon /> Сервер
 								</SelectItem>
 							</SelectContent>
 						</Select>
 					</div>
-					<div className='w-full flex gap-2'>
-						<InfoInput
-							key='file'
-							updateContentByField={updateContentByField}
-							placeholder='Файл'
-							value={item.file}
-							tooltip='Название файла, в котором будет сохранен контент'
-						/>
-					</div>
+					<InfoInput
+						onChange={onFieldChange('file')}
+						placeholder='Файл'
+						value={item.file}
+						tooltip='Название файла, в котором будет сохранен контент'
+					/>
 				</div>
 			</div>
+
+			{/* URL / IDs row */}
 			<div className='flex w-full justify-between gap-2'>
-				{isRaw && (
+				{isRaw ? (
 					<InfoInput
-						key='url'
-						updateContentByField={updateContentByField}
+						onChange={onFieldChange('url')}
 						placeholder='Download URL'
 						value={item.url}
-						mono={true}
+						mono
 						tooltip='Ссылка на контент'
 					/>
-				)}
-				{!isRaw && (
+				) : (
 					<>
 						<InfoInput
-							key='mod_id'
-							updateContentByField={updateContentByField}
+							onChange={onFieldChange('mod_id')}
 							placeholder='Abxd123'
 							value={item.mod_id}
-							mono={true}
+							mono
+							disabled
 							tooltip='ModID контента на сайте (Чтобы изменить, воспользуйтесь кнопкой Изменить контент)'
-							disabled={true}
 						/>
 						<InfoInput
-							key='file_id'
-							updateContentByField={updateContentByField}
+							onChange={onFieldChange('file_id')}
 							placeholder='mc-123'
 							value={item.file_id}
-							mono={true}
+							mono
+							disabled
 							tooltip='FileID контента на сайте (Чтобы изменить, воспользуйтесь кнопкой Изменить контент)'
-							disabled={true}
 						/>
 					</>
 				)}
 			</div>
+
+			{/* Actions row */}
 			<div className='flex w-full justify-between'>
-				<div className='flex w-full gap-2 '>
+				<div className='flex w-full gap-2'>
 					<SmallButton
 						icon={EarthIcon}
 						tooltip='Сайт контента'
@@ -342,63 +391,12 @@ export function Content({
 						onClick={handleOpenVersion}
 						disabled={isRaw}
 					/>
-
-					<Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<DialogTrigger asChild>
-									<Button variant='outline' size='icon'>
-										<EditIcon />
-									</Button>
-								</DialogTrigger>
-							</TooltipTrigger>
-							<TooltipContent>
-								<p>Изменить контент по URL</p>
-							</TooltipContent>
-						</Tooltip>
-						<DialogContent>
-							<DialogHeader>
-								<DialogTitle>Изменить контент</DialogTitle>
-							</DialogHeader>
-							<div className='space-y-4 py-2'>
-								<Label>
-									Новая ссылка на контент (CurseForge / Modrinth / instance)
-								</Label>
-								<Input
-									placeholder='https://...'
-									value={newUrl}
-									onChange={e => setNewUrl(e.target.value)}
-								/>
-								<p className='text-xs text-muted-foreground'>
-									Тип (
-									{item.type === 'both'
-										? 'Общий'
-										: item.type === 'client'
-											? 'Клиент'
-											: 'Сервер'}
-									) и название ({item.name}) будут сохранены
-								</p>
-								<Button
-									type='button'
-									className='w-full'
-									onClick={e => {
-										e.preventDefault()
-										e.stopPropagation()
-										console.log('Button clicked!')
-										handleUpdateContent()
-									}}
-									disabled={isUpdating || !newUrl.trim()}
-								>
-									{isUpdating ? (
-										<Loader2 className='mr-2 h-4 w-4 animate-spin' />
-									) : (
-										<EditIcon className='mr-2 h-4 w-4' />
-									)}
-									Изменить контент
-								</Button>
-							</div>
-						</DialogContent>
-					</Dialog>
+					<EditContentDialog
+						item={item}
+						cIdx={cIdx}
+						iIdx={iIdx}
+						replaceContent={replaceContent}
+					/>
 				</div>
 				<Button variant='destructive' onClick={() => removeContent(cIdx, iIdx)}>
 					<Trash2 /> Удалить
@@ -406,4 +404,4 @@ export function Content({
 			</div>
 		</div>
 	)
-}
+})

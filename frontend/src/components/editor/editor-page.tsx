@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react'
 import {
 	SaveProjectMeta,
 	SyncProject,
@@ -18,7 +18,6 @@ import {
 	HistoryIcon,
 	PlusIcon,
 	Trash2,
-	RefreshCcw,
 	LinkIcon,
 	Loader2,
 	SearchIcon,
@@ -322,276 +321,373 @@ function ContainerEditor({
 	setMeta,
 }: {
 	meta: instance.Meta
-	setMeta: (m: instance.Meta) => void
+	setMeta: React.Dispatch<React.SetStateAction<instance.Meta>>
 }) {
 	const [openUrlDialog, setOpenUrlDialog] = useState<number | null>(null)
 	const [urlToAdd, setUrlToAdd] = useState('')
 	const [isUrlLoading, setUrlLoading] = useState(false)
-
 	const [searchQueries, setSearchQueries] = useState<Record<number, string>>({})
 
-	const fuseOptions = {
-		keys: ['name', 'file', 'url', 'type'],
-		threshold: 0.3, // более строгий порог для точного поиска
-		distance: 100,
-		minMatchCharLength: 1,
-		includeScore: true,
-	}
+	// Debounced search: store the "committed" queries separately
+	const [debouncedQueries, setDebouncedQueries] = useState<
+		Record<number, string>
+	>({})
+	const debounceTimers = useRef<Record<number, ReturnType<typeof setTimeout>>>(
+		{},
+	)
 
-	const getFilteredContent = (
-		containerIdx: number,
-		content: instance.Content[],
-	) => {
-		const query = searchQueries[containerIdx]?.trim()
-		if (!query) return content
+	const handleSearchChange = useCallback(
+		(containerIdx: number, query: string) => {
+			setSearchQueries(prev => ({ ...prev, [containerIdx]: query }))
 
-		const fuse = new Fuse(content, fuseOptions)
-		const results = fuse.search(query)
-		return results.map(result => result.item)
-	}
+			// Debounce the actual filter by 200ms
+			clearTimeout(debounceTimers.current[containerIdx])
+			debounceTimers.current[containerIdx] = setTimeout(() => {
+				setDebouncedQueries(prev => ({ ...prev, [containerIdx]: query }))
+			}, 200)
+		},
+		[],
+	)
 
-	const handleSearchChange = (containerIdx: number, query: string) => {
-		setSearchQueries(prev => ({
-			...prev,
-			[containerIdx]: query,
-		}))
-	}
+	const FUSE_OPTIONS = useMemo(
+		() => ({
+			keys: ['name', 'file', 'url', 'type'],
+			threshold: 0.3,
+			distance: 100,
+			minMatchCharLength: 1,
+			includeScore: true,
+		}),
+		[],
+	)
 
-	const addContainer = (type: string) => {
-		const newMeta = new instance.Meta(meta)
-		newMeta.containers.push(
-			new instance.Container({
-				content_type: type,
-				content: [],
-			}),
-		)
-		setMeta(newMeta)
-	}
+	// Memoize Fuse indices per container
+	const fuseIndices = useMemo(() => {
+		return meta.containers.map(c => new Fuse(c.content, FUSE_OPTIONS))
+	}, [meta.containers, FUSE_OPTIONS])
 
-	const deleteContainer = (idx: number) => {
-		const newMeta = new instance.Meta(meta)
-		newMeta.containers.splice(idx, 1)
-		setMeta(newMeta)
-	}
+	const getFilteredContent = useCallback(
+		(containerIdx: number, content: instance.Content[]) => {
+			const query = debouncedQueries[containerIdx]?.trim()
+			if (!query) return content
+			const fuse = fuseIndices[containerIdx]
+			if (!fuse) return content
+			return fuse.search(query).map(r => r.item)
+		},
+		[debouncedQueries, fuseIndices],
+	)
 
-	const addContent = (containerIdx: number) => {
-		const newMeta = new instance.Meta(meta)
-		newMeta.containers[containerIdx].content.push(
-			new instance.Content({
-				name: 'New Mod',
-				file: 'mod.jar',
-				url: 'https://...',
-				type: 'both',
-			}),
-		)
-		setMeta(newMeta)
-	}
+	const cloneMeta = useCallback(() => new instance.Meta(meta), [meta])
 
-	const handleAddFromUrl = async (cIdx: number) => {
-		if (!urlToAdd) return
-		setUrlLoading(true)
-		try {
-			const content = await GetContentFromURL(urlToAdd)
-			const newMeta = new instance.Meta(meta)
-
-			if (!content.type) content.type = 'both'
-
-			newMeta.containers[cIdx].content.push(content)
+	const addContainer = useCallback(
+		(type: string) => {
+			const newMeta = cloneMeta()
+			newMeta.containers.push(
+				new instance.Container({ content_type: type, content: [] }),
+			)
 			setMeta(newMeta)
-			setOpenUrlDialog(null)
-			setUrlToAdd('')
-		} catch (e) {
-			alert('Ошибка получения данных по ссылке: ' + e)
-		} finally {
-			setUrlLoading(false)
-		}
-	}
+		},
+		[cloneMeta, setMeta],
+	)
 
-	const updateContent = (
+	const deleteContainer = useCallback(
+		(idx: number) => {
+			const newMeta = cloneMeta()
+			newMeta.containers.splice(idx, 1)
+			setMeta(newMeta)
+		},
+		[cloneMeta, setMeta],
+	)
+
+	const addContent = useCallback(
+		(containerIdx: number) => {
+			const newMeta = cloneMeta()
+			newMeta.containers[containerIdx].content.push(
+				new instance.Content({
+					name: 'New Mod',
+					file: 'mod.jar',
+					url: 'https://...',
+					type: 'both',
+				}),
+			)
+			setMeta(newMeta)
+		},
+		[cloneMeta, setMeta],
+	)
+
+	const handleAddFromUrl = useCallback(
+		async (cIdx: number) => {
+			if (!urlToAdd) return
+			setUrlLoading(true)
+			try {
+				const content = await GetContentFromURL(urlToAdd)
+				const newMeta = cloneMeta()
+				if (!content.type) content.type = 'both'
+				newMeta.containers[cIdx].content.push(content)
+				setMeta(newMeta)
+				setOpenUrlDialog(null)
+				setUrlToAdd('')
+			} catch (e) {
+				alert('Ошибка получения данных по ссылке: ' + e)
+			} finally {
+				setUrlLoading(false)
+			}
+		},
+		[urlToAdd, cloneMeta, setMeta],
+	)
+
+	const updateContent = useCallback(
+		(
+			cIdx: number,
+			itemIdx: number,
+			field: keyof instance.Content,
+			val: any,
+		) => {
+			setMeta(prev => {
+				const newMeta = new instance.Meta(prev)
+				// @ts-ignore
+				newMeta.containers[cIdx].content[itemIdx][field] = val
+				return newMeta
+			})
+		},
+		[setMeta],
+	)
+
+	const replaceContent = useCallback(
+		(cIdx: number, itemIdx: number, newContent: Partial<instance.Content>) => {
+			setMeta(prev => {
+				const newMeta = new instance.Meta(prev)
+				Object.entries(newContent).forEach(([field, value]) => {
+					// @ts-ignore
+					newMeta.containers[cIdx].content[itemIdx][field] = value
+				})
+				return newMeta
+			})
+		},
+		[setMeta],
+	)
+
+	const removeContent = useCallback(
+		(cIdx: number, itemIdx: number) => {
+			setMeta(prev => {
+				const newMeta = new instance.Meta(prev)
+				newMeta.containers[cIdx].content.splice(itemIdx, 1)
+				return newMeta
+			})
+		},
+		[setMeta],
+	)
+
+	return (
+		<TooltipProvider>
+			<div className='flex flex-col gap-4 h-full'>
+				<div className='flex gap-2'>
+					<Button
+						size='sm'
+						variant='outline'
+						onClick={() => addContainer('mods')}
+					>
+						+ Моды
+					</Button>
+					<Button
+						size='sm'
+						variant='outline'
+						onClick={() => addContainer('resourcepacks')}
+					>
+						+ Ресурспаки
+					</Button>
+				</div>
+
+				<div className='space-y-4 pb-10'>
+					{meta.containers.map((container, cIdx) => (
+						<ContainerCard
+							key={cIdx}
+							container={container}
+							cIdx={cIdx}
+							searchQuery={searchQueries[cIdx] || ''}
+							filteredContent={getFilteredContent(cIdx, container.content)}
+							onSearchChange={handleSearchChange}
+							onDeleteContainer={deleteContainer}
+							onAddContent={addContent}
+							updateContent={updateContent}
+							replaceContent={replaceContent}
+							removeContent={removeContent}
+							openUrlDialog={openUrlDialog}
+							setOpenUrlDialog={setOpenUrlDialog}
+							urlToAdd={urlToAdd}
+							setUrlToAdd={setUrlToAdd}
+							isUrlLoading={isUrlLoading}
+							onAddFromUrl={handleAddFromUrl}
+						/>
+					))}
+					{meta.containers.length === 0 && (
+						<div className='text-center text-muted-foreground py-10'>
+							Нет контейнеров. Добавьте контейнер для модов или ресурспаков.
+						</div>
+					)}
+				</div>
+			</div>
+		</TooltipProvider>
+	)
+}
+
+// Extracted to reduce ContainerEditor nesting
+function ContainerCard({
+	container,
+	cIdx,
+	searchQuery,
+	filteredContent,
+	onSearchChange,
+	onDeleteContainer,
+	onAddContent,
+	updateContent,
+	replaceContent,
+	removeContent,
+	openUrlDialog,
+	setOpenUrlDialog,
+	urlToAdd,
+	setUrlToAdd,
+	isUrlLoading,
+	onAddFromUrl,
+}: {
+	container: instance.Container
+	cIdx: number
+	searchQuery: string
+	filteredContent: instance.Content[]
+	onSearchChange: (idx: number, q: string) => void
+	onDeleteContainer: (idx: number) => void
+	onAddContent: (idx: number) => void
+	updateContent: (
 		cIdx: number,
 		itemIdx: number,
 		field: keyof instance.Content,
 		val: any,
-	) => {
-		const newMeta = new instance.Meta(meta)
-		// @ts-ignore
-		newMeta.containers[cIdx].content[itemIdx][field] = val
-		setMeta(newMeta)
-	}
-
-	const replaceContent = (
+	) => void
+	replaceContent: (
 		cIdx: number,
 		itemIdx: number,
 		newContent: Partial<instance.Content>,
-	) => {
-		const newMeta = new instance.Meta(meta)
-		// Обновляем все переданные поля за раз
-		Object.entries(newContent).forEach(([field, value]) => {
-			// @ts-ignore
-			newMeta.containers[cIdx].content[itemIdx][field] = value
-		})
-		setMeta(newMeta)
-	}
-
-	const removeContent = (cIdx: number, itemIdx: number) => {
-		const newMeta = new instance.Meta(meta)
-		newMeta.containers[cIdx].content.splice(itemIdx, 1)
-		setMeta(newMeta)
-	}
-
+	) => void
+	removeContent: (cIdx: number, itemIdx: number) => void
+	openUrlDialog: number | null
+	setOpenUrlDialog: (v: number | null) => void
+	urlToAdd: string
+	setUrlToAdd: (v: string) => void
+	isUrlLoading: boolean
+	onAddFromUrl: (cIdx: number) => void
+}) {
 	return (
-		<div className='flex flex-col gap-4 h-full'>
-			<div className='flex gap-2'>
+		<Card className='p-4 border-l-4 border-l-primary'>
+			<div className='flex justify-between items-center mb-4'>
+				<div className='flex items-center gap-2'>
+					<h3 className='font-bold text-lg capitalize'>
+						{container.content_type}
+					</h3>
+					<Badge variant='secondary'>
+						{filteredContent.length} / {container.content.length} Элемент(ов)
+					</Badge>
+				</div>
 				<Button
-					size='sm'
-					variant='outline'
-					onClick={() => addContainer('mods')}
+					size='icon'
+					variant='ghost'
+					onClick={() => onDeleteContainer(cIdx)}
 				>
-					+ Моды
-				</Button>
-				<Button
-					size='sm'
-					variant='outline'
-					onClick={() => addContainer('resourcepacks')}
-				>
-					+ Ресурспаки
+					<Trash2 className='text-destructive h-4 w-4' />
 				</Button>
 			</div>
 
-			<div className='space-y-4 pb-10'>
-				{meta.containers.map((container, cIdx) => {
-					const filteredContent = getFilteredContent(cIdx, container.content)
-					const searchQuery = searchQueries[cIdx] || ''
+			<div className='relative mb-4'>
+				<SearchIcon className='absolute left-3 top-1/2 transform -translate-y-1/2 size-4 text-muted-foreground' />
+				<Input
+					type='text'
+					placeholder='Искать по названию, файлу, URL...'
+					value={searchQuery}
+					onChange={e => onSearchChange(cIdx, e.target.value)}
+					className='pl-9'
+				/>
+			</div>
 
+			{searchQuery && filteredContent.length === 0 && (
+				<div className='flex flex-col items-center justify-center py-6 text-center bg-muted/30 rounded-lg mb-4'>
+					<SearchIcon className='size-10 text-muted-foreground/30 mb-2' />
+					<p className='text-sm text-muted-foreground'>
+						Ничего не найдено по запросу
+					</p>
+					<p className='text-xs text-muted-foreground/70 mt-1'>
+						"{searchQuery}"
+					</p>
+				</div>
+			)}
+
+			<div className='space-y-2'>
+				{filteredContent.map(item => {
+					const originalIdx = container.content.indexOf(item)
 					return (
-						<Card key={cIdx} className='p-4 border-l-4 border-l-primary'>
-							<div className='flex justify-between items-center mb-4'>
-								<div className='flex items-center gap-2'>
-									<h3 className='font-bold text-lg capitalize'>
-										{container.content_type}
-									</h3>
-									<Badge variant='secondary'>
-										{filteredContent.length} / {container.content.length}{' '}
-										Элемент(ов)
-									</Badge>
-								</div>
-								<Button
-									size='icon'
-									variant='ghost'
-									onClick={() => deleteContainer(cIdx)}
-								>
-									<Trash2 className='text-destructive h-4 w-4' />
-								</Button>
-							</div>
-
-							<div className='relative mb-4'>
-								<SearchIcon className='absolute left-3 top-1/2 transform -translate-y-1/2 size-4 text-muted-foreground' />
-								<Input
-									type='text'
-									placeholder='Искать по названию, файлу, URL...'
-									value={searchQuery}
-									onChange={e => handleSearchChange(cIdx, e.target.value)}
-									className='pl-9'
-								/>
-							</div>
-
-							{searchQuery && filteredContent.length === 0 && (
-								<div className='flex flex-col items-center justify-center py-6 text-center bg-muted/30 rounded-lg mb-4'>
-									<SearchIcon className='size-10 text-muted-foreground/30 mb-2' />
-									<p className='text-sm text-muted-foreground'>
-										Ничего не найдено по запросу
-									</p>
-									<p className='text-xs text-muted-foreground/70 mt-1'>
-										"{searchQuery}"
-									</p>
-								</div>
-							)}
-
-							<div className='space-y-2'>
-								{filteredContent.map((item, iIdx) => {
-									const originalIdx = container.content.findIndex(
-										c => c === item,
-									)
-									return (
-										<TooltipProvider>
-											<Content
-												key={originalIdx}
-												updateContent={updateContent}
-												replaceContent={replaceContent}
-												removeContent={removeContent}
-												cIdx={cIdx}
-												iIdx={originalIdx}
-												item={item}
-											/>
-										</TooltipProvider>
-									)
-								})}
-							</div>
-
-							<div className='flex gap-2 pt-2'>
-								{/* Кнопка ручного добавления */}
-								<Button
-									variant='ghost'
-									size='sm'
-									className='flex-1 border-dashed border'
-									onClick={() => addContent(cIdx)}
-								>
-									<PlusIcon className='h-4 w-4' /> Добавить вручную
-								</Button>
-
-								{/* Кнопка добавления по ссылке */}
-								<Dialog
-									open={openUrlDialog === cIdx}
-									onOpenChange={open => {
-										setOpenUrlDialog(open ? cIdx : null)
-										if (!open) setUrlToAdd('')
-									}}
-								>
-									<DialogTrigger asChild>
-										<Button
-											variant='outline'
-											size='sm'
-											className='flex-1 border-dashed border-primary/50 hover:bg-primary/10'
-										>
-											<LinkIcon className='h-4 w-4' /> Из URL
-										</Button>
-									</DialogTrigger>
-									<DialogContent>
-										<DialogHeader>
-											<DialogTitle>Добавить мод по ссылке</DialogTitle>
-										</DialogHeader>
-										<div className='space-y-4 py-2'>
-											<Label>Ссылка на CurseForge / Modrinth / instance</Label>
-											<Input
-												placeholder='https://...'
-												value={urlToAdd}
-												onChange={e => setUrlToAdd(e.target.value)}
-											/>
-											<Button
-												className='w-full'
-												onClick={() => handleAddFromUrl(cIdx)}
-												disabled={isUrlLoading || !urlToAdd}
-											>
-												{isUrlLoading ? (
-													<Loader2 className='mr-2 h-4 w-4 animate-spin' />
-												) : (
-													<PlusIcon className='mr-2 h-4 w-4' />
-												)}
-												Добавить
-											</Button>
-										</div>
-									</DialogContent>
-								</Dialog>
-							</div>
-						</Card>
+						<Content
+							key={originalIdx}
+							updateContent={updateContent}
+							replaceContent={replaceContent}
+							removeContent={removeContent}
+							cIdx={cIdx}
+							iIdx={originalIdx}
+							item={item}
+						/>
 					)
 				})}
-				{meta.containers.length === 0 && (
-					<div className='text-center text-muted-foreground py-10'>
-						Нет контейнеров. Добавьте контейнер для модов или ресурспаков.
-					</div>
-				)}
 			</div>
-		</div>
+
+			<div className='flex gap-2 pt-2'>
+				<Button
+					variant='ghost'
+					size='sm'
+					className='flex-1 border-dashed border'
+					onClick={() => onAddContent(cIdx)}
+				>
+					<PlusIcon className='h-4 w-4' /> Добавить вручную
+				</Button>
+
+				<Dialog
+					open={openUrlDialog === cIdx}
+					onOpenChange={open => {
+						setOpenUrlDialog(open ? cIdx : null)
+						if (!open) setUrlToAdd('')
+					}}
+				>
+					<DialogTrigger asChild>
+						<Button
+							variant='outline'
+							size='sm'
+							className='flex-1 border-dashed border-primary/50 hover:bg-primary/10'
+						>
+							<LinkIcon className='h-4 w-4' /> Из URL
+						</Button>
+					</DialogTrigger>
+					<DialogContent>
+						<DialogHeader>
+							<DialogTitle>Добавить мод по ссылке</DialogTitle>
+						</DialogHeader>
+						<div className='space-y-4 py-2'>
+							<Label>Ссылка на CurseForge / Modrinth / instance</Label>
+							<Input
+								placeholder='https://...'
+								value={urlToAdd}
+								onChange={e => setUrlToAdd(e.target.value)}
+							/>
+							<Button
+								className='w-full'
+								onClick={() => onAddFromUrl(cIdx)}
+								disabled={isUrlLoading || !urlToAdd}
+							>
+								{isUrlLoading ? (
+									<Loader2 className='mr-2 h-4 w-4 animate-spin' />
+								) : (
+									<PlusIcon className='mr-2 h-4 w-4' />
+								)}
+								Добавить
+							</Button>
+						</div>
+					</DialogContent>
+				</Dialog>
+			</div>
+		</Card>
 	)
 }

@@ -2,17 +2,12 @@ import { config as ConfigModels } from 'wailsjs/go/models'
 import { Input } from './ui/input'
 import { Switch } from './ui/switch'
 import { Label } from './ui/label'
-import {
-	Field,
-	FieldDescription,
-	FieldGroup,
-	FieldLabel,
-	FieldLegend,
-} from './ui/field'
+import { Field, FieldDescription, FieldGroup, FieldLabel } from './ui/field'
 import { Button } from './ui/button'
 import { useEffect, useState } from 'react'
 import { GetConfig, SaveConfig } from 'wailsjs/go/main/App'
 import { PlusIcon, SaveIcon, Trash2Icon } from 'lucide-react'
+import { useApp } from '../context/app-context'
 
 interface ConfigInputProps {
 	value: string | number | undefined
@@ -50,11 +45,8 @@ function ConfigInput({
 	)
 }
 
-export function Settings({
-	onDevModeChange,
-}: {
-	onDevModeChange?: (v: boolean) => void
-}) {
+export function Settings() {
+	const { setDevMode } = useApp()
 	const [cfgData, setConfigData] = useState<ConfigModels.Config | null>(null)
 	const [isLoading, setLoading] = useState(false)
 
@@ -80,8 +72,8 @@ export function Settings({
 			}),
 		)
 
-		if (key === 'dev_mode' && onDevModeChange) {
-			onDevModeChange(value as boolean)
+		if (key === 'dev_mode') {
+			setDevMode(value as boolean)
 		}
 	}
 

@@ -5,13 +5,8 @@ import { Badge } from './ui/badge'
 import { Button } from './ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs'
 import { EditorPage } from './editor/editor-page'
-import { useEffect, useState } from 'react'
-import {
-	HasEditor,
-	LoadProjectMeta,
-	CloneProject,
-	DeleteInstance,
-} from '../../wailsjs/go/main/App'
+import { useState } from 'react'
+import { CloneProject, DeleteInstance } from '../../wailsjs/go/main/App'
 import {
 	Dialog,
 	DialogContent,
@@ -21,6 +16,7 @@ import {
 	DialogTrigger,
 	DialogClose,
 } from './ui/dialog'
+import { useEditorData } from '../hooks/use-editor-data'
 
 interface InstanceDetailProps {
 	instance: instance.LocalInstance
@@ -38,33 +34,15 @@ export function InstanceDetail({
 	devMode,
 	onDeleted,
 }: InstanceDetailProps) {
-	const [hasEditor, setHasEditor] = useState(false)
-	const [editorMeta, setEditorMeta] = useState<instance.Meta | null>(null)
+	const {
+		hasEditor,
+		editorMeta,
+		reload: reloadEditor,
+	} = useEditorData(inst.slug)
 	const [activeTab, setActiveTab] = useState('overview')
 
 	const latestRelease = inst.releases?.[0]
 	const meta = latestRelease?.Meta
-
-	const loadEditorData = async () => {
-		try {
-			const has = await HasEditor(inst.slug)
-			setHasEditor(has)
-			if (has) {
-				const m = await LoadProjectMeta(inst.slug)
-				setEditorMeta(m)
-			} else {
-				setEditorMeta(null)
-			}
-		} catch {
-			setHasEditor(false)
-			setEditorMeta(null)
-		}
-	}
-
-	useEffect(() => {
-		loadEditorData()
-		setActiveTab('overview')
-	}, [inst.slug])
 
 	return (
 		<div className='flex flex-col h-full'>
@@ -105,7 +83,7 @@ export function InstanceDetail({
 						<EnableEditorButton
 							slug={inst.slug}
 							onDone={() => {
-								loadEditorData().then(() => setActiveTab('editor'))
+								reloadEditor().then(() => setActiveTab('editor'))
 							}}
 						/>
 					)}
@@ -117,7 +95,7 @@ export function InstanceDetail({
 						<EditorPage
 							slug={inst.slug}
 							initialMeta={editorMeta}
-							onRefresh={loadEditorData}
+							onRefresh={reloadEditor}
 						/>
 					</TabsContent>
 				)}

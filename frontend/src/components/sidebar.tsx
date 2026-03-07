@@ -16,82 +16,63 @@ import {
 	PlayIcon,
 	PlusIcon,
 	RefreshCwIcon,
-	SeparatorHorizontal,
 	Settings2Icon,
 } from 'lucide-react'
-import { config as ConfigData, instance } from 'wailsjs/go/models'
+import { instance } from 'wailsjs/go/models'
 import { useEffect, useState } from 'react'
 import { Button } from './ui/button'
-import { GetConfig, HasEditor, LoadProjectMeta, Run } from 'wailsjs/go/main/App'
+import { HasEditor, Run } from 'wailsjs/go/main/App'
 import fabric from '../assets/images/fabric.png'
 import forge from '../assets/images/forge.png'
 import { CreateProjectModal } from './create-modal-project'
 import { MarketplaceModal } from './marketplace'
+import { useApp } from '../context/app-context'
+import { useEditorData } from '../hooks/use-editor-data'
 
-function capitalizeFirstLetter(val: string): string {
-	return String(val).charAt(0).toUpperCase() + String(val).slice(1)
-}
-
-interface AppSidebarProps {
-	instances: instance.LocalInstance[]
-	selectedInstance: instance.LocalInstance | null
-	onSelect: (instance: instance.LocalInstance) => void
-	onRefresh?: () => void
-	isRefreshing: boolean
-	currentPage: 'detail' | 'settings' | 'account'
-	setCurrentPage: (page: 'detail' | 'settings' | 'account') => void
-	devMode: boolean
-}
-
-interface InstanceCardProps {
-	instance: instance.LocalInstance
-	isSelected: boolean
-	onClick: () => void
-}
-
-const LOADERS = {
-	fabric: fabric,
-	forge: forge,
-}
+const LOADERS: Record<string, string> = { fabric, forge }
 
 type Status = 'not_installed' | 'update' | 'ready'
 
-const COLORS = {
+const STATUS_COLORS: Record<Status, string> = {
 	not_installed: 'bg-zinc-500',
 	update: 'bg-orange-400',
 	ready: 'bg-primary',
 }
 
-const ICONS = {
+const STATUS_ICONS: Record<Status, LucideIcon> = {
 	not_installed: DownloadCloudIcon,
 	update: DownloadIcon,
 	ready: PlayIcon,
 }
 
-const MicroBagde = ({ icon: Icon }: { icon: LucideIcon }) => (
+function getInstanceStatus(inst: instance.LocalInstance): Status {
+	if (!inst.release) return 'not_installed'
+	if (inst.release.tag_name !== inst.releases[0].tag_name) return 'update'
+	return 'ready'
+}
+
+const MicroBadge = ({ icon: Icon }: { icon: LucideIcon }) => (
 	<div className='bg-accent p-1 rounded-2xl'>
 		<Icon className='size-3' />
 	</div>
 )
 
-function InstanceCard({ instance, isSelected, onClick }: InstanceCardProps) {
-	const status: Status = !instance.release
-		? 'not_installed'
-		: instance.release &&
-			  instance.release?.tag_name != instance.releases[0].tag_name
-			? 'update'
-			: 'ready'
-
-	const color = COLORS[status]
-	const [editor, setEditor] = useState<boolean>(false)
-
-	const fetch = async () => {
-		setEditor(await HasEditor(instance.slug))
-	}
+function InstanceCard({
+	instance: inst,
+	isSelected,
+	onClick,
+}: {
+	instance: instance.LocalInstance
+	isSelected: boolean
+	onClick: () => void
+}) {
+	const status = getInstanceStatus(inst)
+	const [hasEditorIcon, setHasEditorIcon] = useState(false)
+	const latest = inst.releases[0]
 
 	useEffect(() => {
-		fetch()
-	}, [])
+		HasEditor(inst.slug).then(setHasEditorIcon)
+	}, [inst.slug])
 
 	return (
 		<div onClick={onClick} className='cursor-pointer'>
@@ -101,33 +82,22 @@ function InstanceCard({ instance, isSelected, onClick }: InstanceCardProps) {
 					(isSelected ? 'bg-linear-to-r from-accent to-accent/0' : '')
 				}
 			>
-				<img
-					src={instance.releases[0].Meta.image_url}
-					className='size-16 rounded-2xl'
-				/>
+				<img src={latest.Meta.image_url} className='size-16 rounded-2xl' />
 				<div className='flex flex-col gap-1'>
-					<div className='flex items-center gap-1'>
-						<h1 className='font-bold text-l'>
-							{instance.releases[0].Meta.name}
-						</h1>
-					</div>
+					<h1 className='font-bold text-l'>{latest.Meta.name}</h1>
 					<div className='flex items-center gap-2'>
 						<div className='flex items-center gap-1'>
-							{editor && <MicroBagde icon={CodeIcon} />}
-							<MicroBagde icon={ICONS[status]} />
-							<Badge className={`${color}`}>{instance.releases[0].name}</Badge>
+							{hasEditorIcon && <MicroBadge icon={CodeIcon} />}
+							<MicroBadge icon={STATUS_ICONS[status]} />
+							<Badge className={STATUS_COLORS[status]}>{latest.name}</Badge>
 						</div>
 						<div className='flex items-center gap-1'>
 							<img
-								src={
-									LOADERS[
-										instance.releases[0].Meta.loader as keyof typeof LOADERS
-									]
-								}
+								src={LOADERS[latest.Meta.loader as keyof typeof LOADERS]}
 								className='size-4 object-contain'
-							></img>
+							/>
 							<span className='text-zinc-400 font-medium text-[15px]'>
-								{instance.releases[0].Meta.minecraft_version}
+								{latest.Meta.minecraft_version}
 							</span>
 						</div>
 					</div>
@@ -137,77 +107,96 @@ function InstanceCard({ instance, isSelected, onClick }: InstanceCardProps) {
 	)
 }
 
-export function AppSidebar({
-	instances,
-	selectedInstance,
-	onSelect,
-	onRefresh,
-	isRefreshing,
-	currentPage,
-	setCurrentPage,
-	devMode,
-}: AppSidebarProps) {
-	const [currentUser, setCurrentUser] = useState<ConfigData.User | null>(null)
-	const [isRunning, setRunning] = useState<boolean>(false)
-	const [hasEditor, setHasEditor] = useState(false)
-	const [devMeta, setDevMeta] = useState<instance.Meta | null>(null)
+function UserSection() {
+	const { currentUser, setCurrentPage } = useApp()
 
-	const fetchUser = async () => {
-		const config = await GetConfig()
-		setCurrentUser(config.user)
+	if (!currentUser) {
+		return (
+			<div className='flex items-center gap-2'>
+				<Button
+					size='icon'
+					className='rounded-xl cursor-pointer'
+					variant='outline'
+					onClick={() => setCurrentPage('account')}
+				>
+					<PlusIcon className='stroke-zinc-500' />
+				</Button>
+				<h4 className='text-sm font-medium text-zinc-500'>
+					Настройте аккаунт, чтобы играть...
+				</h4>
+			</div>
+		)
 	}
 
-	const checkEditor = async () => {
-		if (!selectedInstance) {
-			setHasEditor(false)
-			setDevMeta(null)
-			return
-		}
-		try {
-			const has = await HasEditor(selectedInstance.slug)
-			setHasEditor(has)
-			if (has) {
-				const m = await LoadProjectMeta(selectedInstance.slug)
-				setDevMeta(m)
-			} else {
-				setDevMeta(null)
-			}
-		} catch {
-			setHasEditor(false)
-			setDevMeta(null)
-		}
-	}
+	return (
+		<>
+			<div className='flex items-center gap-2'>
+				<img
+					src={`https://minotar.net/helm/${currentUser.username}/512.png`}
+					className='size-8 aspect-square rounded-lg'
+				/>
+				<div className='flex flex-col justify-center'>
+					<h4 className='text-md font-bold'>{currentUser.username}</h4>
+					<span className='text-xs font-medium text-primary'>
+						{currentUser.auth_type === 'offline'
+							? 'Неоффициальный Аккаунт'
+							: 'Microsoft Аккаунт'}
+					</span>
+				</div>
+			</div>
+			<Button
+				size='icon'
+				className='rounded-xl cursor-pointer'
+				onClick={() => setCurrentPage('account')}
+			>
+				<PencilIcon />
+			</Button>
+		</>
+	)
+}
+
+export function AppSidebar() {
+	const {
+		instances,
+		selectedInstance,
+		selectInstance,
+		currentPage,
+		setCurrentPage,
+		currentUser,
+		devMode,
+		isRefreshing,
+		refreshInstances,
+	} = useApp()
+
+	const { hasEditor, editorMeta } = useEditorData(selectedInstance?.slug)
+
+	const [isRunning, setRunning] = useState(false)
 
 	const run = async () => {
+		if (!selectedInstance || selectedInstance.releases.length < 1) return
 		setRunning(true)
-		if (!selectedInstance || selectedInstance.releases.length < 1) {
+		try {
+			await Run(selectedInstance.releases[0])
+		} finally {
 			setRunning(false)
-			return
 		}
-		await Run(selectedInstance?.releases[0])
-		setRunning(false)
 	}
 
 	const runDev = async () => {
-		if (!selectedInstance || !devMeta) return
+		if (!selectedInstance || !editorMeta) return
 		setRunning(true)
-		const devRelease = new instance.Release({
-			tag_name: 'dev',
-			name: 'dev',
-			body: '',
-			Meta: devMeta,
-		})
-		await Run(devRelease)
-		setRunning(false)
+		try {
+			const devRelease = new instance.Release({
+				tag_name: 'dev',
+				name: 'dev',
+				body: '',
+				Meta: editorMeta,
+			})
+			await Run(devRelease)
+		} finally {
+			setRunning(false)
+		}
 	}
-
-	useEffect(() => {
-		fetchUser()
-	}, [])
-
-	useEffect(() => {
-		checkEditor()
-	}, [selectedInstance])
 
 	return (
 		<Sidebar variant='floating' className='h-22/23'>
@@ -216,73 +205,26 @@ export function AppSidebar({
 					<div className='flex border min-h-10 min-w-10 size-10 rounded-xl items-center justify-center'>
 						<BoxesIcon />
 					</div>
-
 					<h1 className='font-bold'>Доступные сборки</h1>
 				</div>
 			</SidebarHeader>
+
 			<SidebarContent className='flex gap-0'>
-				{instances.map((instance, index) => {
-					return (
-						<InstanceCard
-							key={index}
-							instance={instance}
-							isSelected={selectedInstance === instance}
-							onClick={() => {
-								setCurrentPage('detail')
-								onSelect(instance)
-							}}
-						/>
-					)
-				})}
+				{instances.map((inst, index) => (
+					<InstanceCard
+						key={index}
+						instance={inst}
+						isSelected={selectedInstance === inst}
+						onClick={() => selectInstance(inst)}
+					/>
+				))}
 			</SidebarContent>
+
 			<SidebarFooter>
 				<div className='flex items-center justify-between'>
-					{currentUser == null ? (
-						<div className='flex items-center gap-2'>
-							<Button
-								size='icon'
-								className='rounded-xl cursor-pointer'
-								variant='outline'
-								onClick={() => {
-									setCurrentPage('account')
-								}}
-							>
-								<PlusIcon className='stroke-zinc-500' />
-							</Button>
-							<div className='flex flex-col justify-center'>
-								<h4 className='text-sm font-medium text-zinc-500'>
-									Настройте аккаунт, чтобы играть...
-								</h4>
-							</div>
-						</div>
-					) : (
-						<>
-							<div className='flex items-center gap-2'>
-								<img
-									src={`https://minotar.net/helm/${currentUser.username}/512.png`}
-									className='size-8 aspect-square rounded-lg'
-								></img>
-								<div className='flex flex-col justify-center'>
-									<h4 className='text-md font-bold'>{currentUser.username}</h4>
-									<span className='text-xs font-medium text-primary'>
-										{currentUser.auth_type == 'offline'
-											? 'Неоффициальный Аккаунт'
-											: 'Microsoft Аккаунт'}
-									</span>
-								</div>
-							</div>
-							<Button
-								size='icon'
-								className='rounded-xl cursor-pointer'
-								onClick={() => {
-									setCurrentPage('account')
-								}}
-							>
-								<PencilIcon />
-							</Button>
-						</>
-					)}
+					<UserSection />
 				</div>
+
 				<div className='flex gap-2'>
 					<Button
 						className='cursor-pointer flex-1'
@@ -291,7 +233,7 @@ export function AppSidebar({
 					>
 						<PlayIcon /> Играть
 					</Button>
-					{devMode && hasEditor && devMeta && (
+					{devMode && hasEditor && editorMeta && (
 						<Button
 							className='cursor-pointer'
 							variant='outline'
@@ -302,25 +244,26 @@ export function AppSidebar({
 						</Button>
 					)}
 				</div>
+
 				{currentPage === 'detail' && (
 					<Button
 						className='cursor-pointer'
-						onClick={() => {
-							setCurrentPage('settings')
-						}}
+						onClick={() => setCurrentPage('settings')}
 						disabled={isRunning}
 					>
 						<Settings2Icon /> Настройки
 					</Button>
 				)}
+
 				<Button
 					className='cursor-pointer'
-					onClick={onRefresh}
+					onClick={refreshInstances}
 					disabled={isRefreshing || isRunning}
 				>
 					<RefreshCwIcon /> Обновить список
 				</Button>
-				<MarketplaceModal onImported={() => onRefresh?.()} />
+
+				<MarketplaceModal onImported={() => refreshInstances()} />
 				{devMode && <CreateProjectModal />}
 			</SidebarFooter>
 		</Sidebar>
