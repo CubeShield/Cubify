@@ -22,7 +22,7 @@ import {
 import { config as ConfigData, instance } from 'wailsjs/go/models'
 import { useEffect, useState } from 'react'
 import { Button } from './ui/button'
-import { GetConfig, HasEditor, Run } from 'wailsjs/go/main/App'
+import { GetConfig, HasEditor, LoadProjectMeta, Run } from 'wailsjs/go/main/App'
 import fabric from '../assets/images/fabric.png'
 import forge from '../assets/images/forge.png'
 import { CreateProjectModal } from './create-modal-project'
@@ -146,10 +146,33 @@ export function AppSidebar({
 }: AppSidebarProps) {
 	const [currentUser, setCurrentUser] = useState<ConfigData.User | null>(null)
 	const [isRunning, setRunning] = useState<boolean>(false)
+	const [hasEditor, setHasEditor] = useState(false)
+	const [devMeta, setDevMeta] = useState<instance.Meta | null>(null)
 
 	const fetchUser = async () => {
 		const config = await GetConfig()
 		setCurrentUser(config.user)
+	}
+
+	const checkEditor = async () => {
+		if (!selectedInstance) {
+			setHasEditor(false)
+			setDevMeta(null)
+			return
+		}
+		try {
+			const has = await HasEditor(selectedInstance.slug)
+			setHasEditor(has)
+			if (has) {
+				const m = await LoadProjectMeta(selectedInstance.slug)
+				setDevMeta(m)
+			} else {
+				setDevMeta(null)
+			}
+		} catch {
+			setHasEditor(false)
+			setDevMeta(null)
+		}
 	}
 
 	const run = async () => {
@@ -162,9 +185,26 @@ export function AppSidebar({
 		setRunning(false)
 	}
 
+	const runDev = async () => {
+		if (!selectedInstance || !devMeta) return
+		setRunning(true)
+		const devRelease = new instance.Release({
+			tag_name: 'dev',
+			name: 'dev',
+			body: '',
+			Meta: devMeta,
+		})
+		await Run(devRelease)
+		setRunning(false)
+	}
+
 	useEffect(() => {
 		fetchUser()
 	}, [])
+
+	useEffect(() => {
+		checkEditor()
+	}, [selectedInstance])
 
 	return (
 		<Sidebar variant='floating' className='h-22/23'>
@@ -240,13 +280,25 @@ export function AppSidebar({
 						</>
 					)}
 				</div>
-				<Button
-					className='cursor-pointer'
-					onClick={run}
-					disabled={isRunning || !selectedInstance || !currentUser}
-				>
-					<PlayIcon /> Играть
-				</Button>
+				<div className='flex gap-2'>
+					<Button
+						className='cursor-pointer flex-1'
+						onClick={run}
+						disabled={isRunning || !selectedInstance || !currentUser}
+					>
+						<PlayIcon /> Играть
+					</Button>
+					{hasEditor && devMeta && (
+						<Button
+							className='cursor-pointer'
+							variant='outline'
+							onClick={runDev}
+							disabled={isRunning || !currentUser}
+						>
+							<HammerIcon /> Dev
+						</Button>
+					)}
+				</div>
 				{currentPage === 'detail' && (
 					<Button
 						className='cursor-pointer'
