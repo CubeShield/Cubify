@@ -43,6 +43,8 @@ export namespace config {
 	    auth_token: string;
 	    curseforge_api_key: string;
 	    jvm_path: string;
+	    jvm_min_ram: number;
+	    jvm_max_ram: number;
 	    cache_directory: string;
 	    instances_directory: string;
 	    bin_directory: string;
@@ -64,6 +66,8 @@ export namespace config {
 	        this.auth_token = source["auth_token"];
 	        this.curseforge_api_key = source["curseforge_api_key"];
 	        this.jvm_path = source["jvm_path"];
+	        this.jvm_min_ram = source["jvm_min_ram"];
+	        this.jvm_max_ram = source["jvm_max_ram"];
 	        this.cache_directory = source["cache_directory"];
 	        this.instances_directory = source["instances_directory"];
 	        this.bin_directory = source["bin_directory"];

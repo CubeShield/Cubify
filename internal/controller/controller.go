@@ -94,7 +94,7 @@ func (c *Controller) Run(ctx context.Context, release instance.Release, onProgre
 	}
 
 	bin := c.installer.GetExecutablePath()
-	c.mc = mc.New(bin, c.cfg.InstancesDirectory, c.cfg.JVMPath, c.l)
+	c.mc = mc.New(bin, c.cfg.InstancesDirectory, c.cfg.JVMPath, c.cfg.JVMMinRAM, c.cfg.JVMMaxRAM, c.l)
 
 	// Step 2: Prepare
 	onProgress(2, totalSteps, "Подготовка Minecraft...")
@@ -256,7 +256,7 @@ func (c *Controller) StartMicrosoftLogin(ctx context.Context) error {
 
 	bin := c.installer.GetExecutablePath()
 
-	mcInstance := mc.New(bin, c.cfg.InstancesDirectory, c.cfg.JVMPath, c.l)
+	mcInstance := mc.New(bin, c.cfg.InstancesDirectory, c.cfg.JVMPath, c.cfg.JVMMinRAM, c.cfg.JVMMaxRAM, c.l)
 
 	go func() {
 		err := mcInstance.AuthenticateMicrosoft(

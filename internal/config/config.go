@@ -26,6 +26,8 @@ type Config struct {
 	AuthToken string `json:"auth_token"`
 	CurseForgeAPIKey string `json:"curseforge_api_key"`
 	JVMPath string `json:"jvm_path"`
+	JVMMinRAM int `json:"jvm_min_ram"`
+	JVMMaxRAM int `json:"jvm_max_ram"`
 
 	CacheDirectory string `json:"cache_directory"`
 	InstancesDirectory string `json:"instances_directory"`
@@ -55,6 +57,8 @@ func Load(filename string) (*Config, error) {
 			BinDirectory: "bin",
 			EditorDirectory: "editor",
 			BuildType: "client",
+			JVMMinRAM: 512,
+			JVMMaxRAM: 2048,
 			FTP: FTPSettings{
 				Port: 21,
 			},

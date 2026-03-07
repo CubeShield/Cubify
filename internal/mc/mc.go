@@ -17,9 +17,11 @@ type Mc struct {
 	bin string
 	instancesDir string
 	jvmPath string
+	jvmMinRAM int
+	jvmMaxRAM int
 }
 
-func New(bin, instancesDir string, jvmPath string, l *logger.Logger) *Mc {
+func New(bin, instancesDir string, jvmPath string, jvmMinRAM, jvmMaxRAM int, l *logger.Logger) *Mc {
 	if err := os.MkdirAll(instancesDir, 0755); err != nil {
 		fmt.Printf("Error creating dir: %v\n", err)
 	}
@@ -28,6 +30,8 @@ func New(bin, instancesDir string, jvmPath string, l *logger.Logger) *Mc {
 		bin: bin,
 		instancesDir: instancesDir,
 		jvmPath: jvmPath,
+		jvmMinRAM: jvmMinRAM,
+		jvmMaxRAM: jvmMaxRAM,
 	}
 }
 
@@ -104,6 +108,18 @@ func (m *Mc) Run(ctx context.Context, instanceName, loader, loaderVersion, minec
 	if m.jvmPath != "" {
 		args = append(args, "--jvm")
 		args = append(args, m.jvmPath)
+	}
+
+	var jvmArgs []string
+	if m.jvmMinRAM > 0 {
+		jvmArgs = append(jvmArgs, fmt.Sprintf("-Xms%dM", m.jvmMinRAM))
+	}
+	if m.jvmMaxRAM > 0 {
+		jvmArgs = append(jvmArgs, fmt.Sprintf("-Xmx%dM", m.jvmMaxRAM))
+	}
+
+	if len(jvmArgs) > 0 {
+		args = append(args, fmt.Sprintf("--jvm-arg=%s", strings.Join(jvmArgs, ",")))
 	}
 
 	cmd := exec.CommandContext(ctx, m.bin, args...)

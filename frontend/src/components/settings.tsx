@@ -202,6 +202,39 @@ export function Settings() {
 			</FieldGroup>
 
 			<FieldGroup className='gap-2'>
+				<h3 className='text-xl font-bold mb-2'>Java</h3>
+				<FieldDescription className='mb-4'>
+					Настройки Java для запуска Minecraft
+				</FieldDescription>
+
+				<ConfigInput
+					fieldKey='jvm_path'
+					label='Путь до Java'
+					value={cfgData.jvm_path}
+					description='Кастомный путь до исполняемого файла Java (оставьте пустым для автоопределения)'
+					onChange={handleUpdate}
+				/>
+
+				<ConfigInput
+					fieldKey='jvm_min_ram'
+					label='Минимум ОЗУ (МБ)'
+					type='number'
+					value={cfgData.jvm_min_ram || ''}
+					description='Минимальное количество оперативной памяти для Minecraft (-Xms), например 512'
+					onChange={handleUpdate}
+				/>
+
+				<ConfigInput
+					fieldKey='jvm_max_ram'
+					label='Максимум ОЗУ (МБ)'
+					type='number'
+					value={cfgData.jvm_max_ram || ''}
+					description='Максимальное количество оперативной памяти для Minecraft (-Xmx), например 4096'
+					onChange={handleUpdate}
+				/>
+			</FieldGroup>
+
+			<FieldGroup className='gap-2'>
 				<Field className='mb-4'>
 					<FieldLabel>Тип сборки</FieldLabel>
 					<FieldDescription>
