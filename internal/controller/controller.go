@@ -27,7 +27,7 @@ type Controller struct {
 	cm *cache.CacheManager
 	installer *installer.Installer
 	mc *mc.Mc
-	instanceManager *instance.Manager
+	IM *instance.Manager
 }
 
 func New(cfg *config.Config, l *logger.Logger) *Controller {
@@ -37,7 +37,7 @@ func New(cfg *config.Config, l *logger.Logger) *Controller {
 		ghClient: github.New(cfg.BaseURL, cfg.AuthToken, cfg.CacheDirectory, l),
 		cm: cache.New(cfg.CacheDirectory),
 		installer: installer.New(cfg.BinDirectory),
-		instanceManager: instance.NewManager(l, file.NewManager(file.NewLocalBackend("")), cfg.InstancesDirectory),
+		IM: instance.NewManager(l, file.NewManager(file.NewLocalBackend("")), cfg.InstancesDirectory),
 	}
 }
 
@@ -68,10 +68,6 @@ func (c *Controller) Fetch() ([]instance.Instance, error) {
 	return instances, nil
 }
 
-func (c *Controller) List() ([]instance.LocalInstance, error) {
-	return c.instanceManager.List()
-}
-
 func (c *Controller) Run(release instance.Release) error {
 	if err := c.installer.RetrievePortableMC(); err != nil {
 		return err
@@ -88,14 +84,14 @@ func (c *Controller) Run(release instance.Release) error {
 		c.l.Error("Update warning: %v", err)
 		return fmt.Errorf("failed to update instance: %w", err)
 	}
-	localInstance, err := c.instanceManager.GetBySlug(instanceDirectory)
+	localInstance, err := c.IM.GetBySlug(instanceDirectory)
 	if err != nil {
 		return err
 	}
 
 	localInstance.Release = &release
 
-	if err := c.instanceManager.Put(localInstance); err != nil {
+	if err := c.IM.Put(localInstance); err != nil {
 		return err
 	}
 

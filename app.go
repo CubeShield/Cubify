@@ -3,8 +3,7 @@ package main
 import (
 	"Cubify/internal/config"
 	"Cubify/internal/controller"
-	"Cubify/internal/editor"
-	"Cubify/internal/file"
+	"Cubify/internal/git"
 	"Cubify/internal/instance"
 	logger "Cubify/internal/logging"
 	"Cubify/internal/platform"
@@ -18,10 +17,8 @@ type App struct {
 	ctx context.Context
 	cfg *config.Config
 	controller *controller.Controller
-	editorManager *editor.Manager
 	instances []instance.Instance
 	platformManager *platform.Manager
-
 }
 
 func NewApp() *App {
@@ -32,7 +29,6 @@ func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 	a.l = logger.New(ctx)
 	a.cfg, _ = config.Load("config.json")
-	a.editorManager = editor.New(file.NewManager(file.NewLocalBackend(a.cfg.InstancesDirectory)))
 	a.controller = controller.New(a.cfg, a.l)
 	a.platformManager = platform.NewManager(a.cfg.CurseForgeAPIKey)
 }
@@ -42,30 +38,30 @@ func (a *App) shutdown(ctx context.Context) {
 }
 
 
-func (a *App) CreateProject(name, desc, mcVer, loader, loaderVer, repoLink, logoPath string) (string, error) {
-	s, err := a.editorManager.CreateProject(name, desc, mcVer, loader, loaderVer, repoLink, logoPath)
+func (a *App) CreateProject(project instance.ProjectSettings) (instance.LocalInstance, error) {
+	i, err := a.controller.IM.CreateProject(project)
 	if err != nil {
-		a.l.Error("%s: %v", s, err)
+		return instance.LocalInstance{}, err
 	}
-    return s, err
+	return i, err
 }
 
-func (a *App) SaveProjectMeta(path string, meta instance.Meta) error {
-    return a.editorManager.SaveInstance(path, meta)
+func (a *App) SaveProjectMeta(slug string, meta instance.Meta) error {
+    return a.controller.IM.SaveProject(slug, meta)
 }
 
-func (a *App) LoadProjectMeta(path string) (instance.Meta, error) {
-    meta, err := a.editorManager.LoadProject(path)
+func (a *App) LoadProjectMeta(slug string) (instance.Meta, error) {
+    meta, err := a.controller.IM.LoadProject(slug)
     if err != nil { return instance.Meta{}, err }
-    return *meta, nil
+    return meta, nil
 }
 
-func (a *App) SyncProject(path string, message string) error {
-    return a.editorManager.GitPush(path, message)
+func (a *App) SyncProject(slug, message string) error {
+    return a.controller.IM.SyncProject(slug, message)
 }
 
-func (a *App) ReleaseProject(path string, tagName string) error {
-    return a.editorManager.GitRelease(path, tagName)
+func (a *App) ReleaseProject(slug, tagName string) error {
+    return a.controller.IM.ReleaseProject(slug, tagName)
 }
 
 func (a *App) SelectLogoFile() (string, error) {
@@ -98,7 +94,7 @@ func (a *App) GetInstances() []instance.Instance {
 }
 
 func (a *App) GetLocalInstances() ([]instance.LocalInstance, error) {
-	return a.controller.List()
+	return a.controller.IM.List()
 }
 
 func (a *App) GetConfig() config.Config {
@@ -110,12 +106,12 @@ func (a *App) SaveConfig(cfg config.Config) {
 	a.cfg.Save("config.json")
 }
 
-func (a *App) GetProjectHistory(path string) (*editor.GitHistory, error) {
-	return a.editorManager.GetGitHistory(path)
+func (a *App) GetProjectHistory(slug string) (*git.GitHistory, error) {
+	return a.controller.IM.GetGitHistory(slug)
 }
 
-func (a *App) CheckProjectStatus(path string) (bool, error) {
-    return a.editorManager.GetGitStatus(path)
+func (a *App) CheckProjectStatus(slug string) (bool, error) {
+    return a.controller.IM.GetGitStatus(slug)
 }
 
 func (a *App) StartMicrosoftLogin() {

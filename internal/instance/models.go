@@ -32,16 +32,10 @@ type Instance struct {
 	Releases []Release `json:"releases"`
 }
 
-type Project struct {
-	Name string      `json:"name"`
-	Path string      `json:"path"`
-	Meta Meta `json:"meta"`
-}
-
 type LocalInstance struct {
 	Instance
 	Release *Release `json:"release,omitempty"`
-	Project *Project `json:"project"`
+	DevMeta *Meta `json:"dev_meta,omitempty"`
 }
 
 
@@ -94,3 +88,5 @@ type Content struct {
 	File string `json:"file"`
 	Url string `json:"url"`
 }
+
+
