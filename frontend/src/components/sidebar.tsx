@@ -7,7 +7,11 @@ import {
 import { Badge } from './ui/badge'
 import {
 	BoxesIcon,
+	CodeIcon,
+	DownloadCloudIcon,
+	DownloadIcon,
 	HammerIcon,
+	LucideIcon,
 	PencilIcon,
 	PlayIcon,
 	PlusIcon,
@@ -18,7 +22,7 @@ import {
 import { config as ConfigData, instance } from 'wailsjs/go/models'
 import { useEffect, useState } from 'react'
 import { Button } from './ui/button'
-import { GetConfig, Run } from 'wailsjs/go/main/App'
+import { GetConfig, HasEditor, Run } from 'wailsjs/go/main/App'
 import fabric from '../assets/images/fabric.png'
 import forge from '../assets/images/forge.png'
 import { CreateProjectModal } from './create-modal-project'
@@ -48,13 +52,47 @@ const LOADERS = {
 	forge: forge,
 }
 
+type Status = 'not_installed' | 'update' | 'ready'
+
+const COLORS = {
+	not_installed: 'bg-zinc-500',
+	update: 'bg-orange-400',
+	ready: 'bg-primary',
+}
+
+const ICONS = {
+	not_installed: DownloadCloudIcon,
+	update: DownloadIcon,
+	ready: PlayIcon,
+}
+
+const MicroBagde = ({ icon: Icon }: { icon: LucideIcon }) => (
+	<div className='bg-accent p-1 rounded-2xl'>
+		<Icon className='size-3' />
+	</div>
+)
+
 function InstanceCard({ instance, isSelected, onClick }: InstanceCardProps) {
+	const status: Status = !instance.release
+		? 'not_installed'
+		: instance.release &&
+			  instance.release?.tag_name != instance.releases[0].tag_name
+			? 'update'
+			: 'ready'
+
+	const color = COLORS[status]
+	const [editor, setEditor] = useState<boolean>(false)
+
+	const fetch = async () => {
+		setEditor(await HasEditor(instance.slug))
+	}
+
+	useEffect(() => {
+		fetch()
+	}, [])
+
 	return (
 		<div onClick={onClick} className='cursor-pointer'>
-			{!instance.release && 'Необходима установка'}
-			{instance.release &&
-				instance.release?.tag_name != instance.releases[0].tag_name &&
-				'Необходимо обновление'}
 			<div
 				className={
 					'flex px-3 items-center gap-2 py-3 bg-linear-to-r hover:from-accent/50 hover:to-accent/0 transition-all ' +
@@ -67,13 +105,16 @@ function InstanceCard({ instance, isSelected, onClick }: InstanceCardProps) {
 				/>
 				<div className='flex flex-col gap-1'>
 					<div className='flex items-center gap-1'>
-						<div className='size-2 bg-lime-300 rounded-4xl'></div>
 						<h1 className='font-bold text-l'>
 							{instance.releases[0].Meta.name}
 						</h1>
 					</div>
 					<div className='flex items-center gap-2'>
-						<Badge>{instance.releases[0].name}</Badge>
+						<div className='flex items-center gap-1'>
+							{editor && <MicroBagde icon={CodeIcon} />}
+							<MicroBagde icon={ICONS[status]} />
+							<Badge className={`${color}`}>{instance.releases[0].name}</Badge>
+						</div>
 						<div className='flex items-center gap-1'>
 							<img
 								src={
