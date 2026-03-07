@@ -53,6 +53,7 @@ export function InstanceDetail({ instance: inst }: InstanceDetailProps) {
 	return (
 		<div className='flex flex-col h-full'>
 			<div className='pb-4 border-b mb-4'>
+				<img src={meta.image_url} className='size-32 rounded-3xl mb-4'></img>
 				<h2 className='text-3xl font-bold'>{meta?.name ?? inst.slug}</h2>
 				<h3 className='text-l font-medium text-zinc-400'>
 					{meta?.description}
