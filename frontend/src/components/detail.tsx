@@ -13,13 +13,13 @@ const CONTAINERS = {
 	resourcepacks: 'Ресурспаки',
 }
 
-export function InstanceDetail({ instance }: InstanceDetailProps) {
+interface ReleasesProps {
+	instance: instance.LocalInstance
+}
+
+function Releases({ instance }: ReleasesProps) {
 	return (
-		<div>
-			<h2 className='text-3xl font-bold'>{instance.releases[0].Meta.name}</h2>
-			<h3 className='text-l font-medium text-zinc-400'>
-				{instance.releases[0].Meta.description}
-			</h3>
+		<>
 			<div className='flex gap-2 mt-2'>
 				{instance.releases[0].Meta.containers.map(container => (
 					<div className='flex items-center gap-1 p-2 border rounded-xl'>
@@ -46,6 +46,18 @@ export function InstanceDetail({ instance }: InstanceDetailProps) {
 					)
 				})}
 			</div>
+		</>
+	)
+}
+
+export function InstanceDetail({ instance }: InstanceDetailProps) {
+	return (
+		<div>
+			<h2 className='text-3xl font-bold'>{instance.releases[0].Meta.name}</h2>
+			<h3 className='text-l font-medium text-zinc-400'>
+				{instance.releases[0].Meta.description}
+			</h3>
+			{/*<Releases instance={instance} />*/}
 		</div>
 	)
 }
