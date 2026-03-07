@@ -5,9 +5,9 @@ import {
 	ReleaseProject,
 	GetProjectHistory,
 	CheckProjectStatus,
-	GetContentFromURL, // <--- Добавил импорт
+	GetContentFromURL,
 } from '../../../wailsjs/go/main/App'
-import { editor, instance } from '../../../wailsjs/go/models'
+import { git, instance } from '../../../wailsjs/go/models'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs'
@@ -19,7 +19,7 @@ import {
 	PlusIcon,
 	Trash2,
 	RefreshCcw,
-	LinkIcon, // <--- Добавил иконку
+	LinkIcon,
 	Loader2,
 	SearchIcon,
 } from 'lucide-react'
@@ -39,15 +39,16 @@ import { Content } from './editor-content'
 import { TooltipProvider } from '../ui/tooltip'
 
 interface EditorPageProps {
-	project: instance.Project
+	slug: string
+	initialMeta: instance.Meta
 	onRefresh: () => void
 }
 
-export function EditorPage({ project, onRefresh }: EditorPageProps) {
-	const [meta, setMeta] = useState<instance.Meta>(project.meta)
+export function EditorPage({ slug, initialMeta, onRefresh }: EditorPageProps) {
+	const [meta, setMeta] = useState<instance.Meta>(initialMeta)
 
 	const [isGitDirty, setGitDirty] = useState(false)
-	const [commits, setCommits] = useState<editor.Commit[]>([])
+	const [commits, setCommits] = useState<git.Commit[]>([])
 	const [tags, setTags] = useState<string[]>([])
 
 	const [commitMsg, setCommitMsg] = useState('')
@@ -55,13 +56,13 @@ export function EditorPage({ project, onRefresh }: EditorPageProps) {
 	const [isLoading, setLoading] = useState(false)
 	const [activeTab, setActiveTab] = useState('general')
 
-	const [initialJson, setInitialJson] = useState(JSON.stringify(project.meta))
+	const [initialJson, setInitialJson] = useState(JSON.stringify(initialMeta))
 	const isFileDirty = JSON.stringify(meta) !== initialJson
 
 	const loadGitInfo = async () => {
-		const status = await CheckProjectStatus(project.path)
+		const status = await CheckProjectStatus(slug)
 		setGitDirty(status)
-		const g = await GetProjectHistory(project.path)
+		const g = await GetProjectHistory(slug)
 		if (g) {
 			setCommits(g.commits || [])
 			setTags(g.tags || [])
@@ -69,15 +70,15 @@ export function EditorPage({ project, onRefresh }: EditorPageProps) {
 	}
 
 	useEffect(() => {
-		setMeta(project.meta)
-		setInitialJson(JSON.stringify(project.meta))
+		setMeta(initialMeta)
+		setInitialJson(JSON.stringify(initialMeta))
 		loadGitInfo()
-	}, [project])
+	}, [slug, initialMeta])
 
 	const handleSaveFile = async () => {
 		setLoading(true)
 		try {
-			await SaveProjectMeta(project.path, meta)
+			await SaveProjectMeta(slug, meta)
 			setInitialJson(JSON.stringify(meta))
 			await loadGitInfo()
 			onRefresh()
@@ -92,7 +93,7 @@ export function EditorPage({ project, onRefresh }: EditorPageProps) {
 		if (!commitMsg) return alert('Введите сообщение коммита')
 		setLoading(true)
 		try {
-			await SyncProject(project.path, commitMsg)
+			await SyncProject(slug, commitMsg)
 			setCommitMsg('')
 			await loadGitInfo()
 			alert('Изменения отправлены!')
@@ -107,7 +108,7 @@ export function EditorPage({ project, onRefresh }: EditorPageProps) {
 		if (!tagName) return alert('Введите тег (например v1.0.1)')
 		setLoading(true)
 		try {
-			await ReleaseProject(project.path, tagName)
+			await ReleaseProject(slug, tagName)
 			setTagName('')
 			await loadGitInfo()
 			alert('Релиз создан!')
@@ -148,7 +149,7 @@ export function EditorPage({ project, onRefresh }: EditorPageProps) {
 						)}
 					</h2>
 					<span className='text-xs text-muted-foreground font-mono'>
-						{project.path}
+						{slug}
 					</span>
 				</div>
 

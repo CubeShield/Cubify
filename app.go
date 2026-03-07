@@ -13,11 +13,11 @@ import (
 )
 
 type App struct {
-	l *logger.Logger
-	ctx context.Context
-	cfg *config.Config
-	controller *controller.Controller
-	instances []instance.Instance
+	l               *logger.Logger
+	ctx             context.Context
+	cfg             *config.Config
+	controller      *controller.Controller
+	instances       []instance.Instance
 	platformManager *platform.Manager
 }
 
@@ -37,41 +37,7 @@ func (a *App) shutdown(ctx context.Context) {
 	a.cfg.Save("config.json")
 }
 
-
-func (a *App) CreateProject(project instance.ProjectSettings) (instance.LocalInstance, error) {
-	i, err := a.controller.IM.CreateProject(project)
-	if err != nil {
-		return instance.LocalInstance{}, err
-	}
-	return i, err
-}
-
-func (a *App) SaveProjectMeta(slug string, meta instance.Meta) error {
-    return a.controller.IM.SaveProject(slug, meta)
-}
-
-func (a *App) LoadProjectMeta(slug string) (instance.Meta, error) {
-    meta, err := a.controller.IM.LoadProject(slug)
-    if err != nil { return instance.Meta{}, err }
-    return meta, nil
-}
-
-func (a *App) SyncProject(slug, message string) error {
-    return a.controller.IM.SyncProject(slug, message)
-}
-
-func (a *App) ReleaseProject(slug, tagName string) error {
-    return a.controller.IM.ReleaseProject(slug, tagName)
-}
-
-func (a *App) SelectLogoFile() (string, error) {
-    return runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
-        Title: "Выберите логотип",
-        Filters: []runtime.FileFilter{
-            {DisplayName: "Images", Pattern: "*.png;*.jpg;*.jpeg"},
-        },
-    })
-}
+// --- Instance operations ---
 
 func (a *App) FetchInstances() []instance.Instance {
 	fetchedInstances, err := a.controller.Fetch()
@@ -80,9 +46,9 @@ func (a *App) FetchInstances() []instance.Instance {
 		return a.instances
 	}
 	finalInstances := []instance.Instance{}
-	for _, instance := range fetchedInstances {
-		if len(instance.Releases) > 0 {
-			finalInstances = append(finalInstances, instance)
+	for _, inst := range fetchedInstances {
+		if len(inst.Releases) > 0 {
+			finalInstances = append(finalInstances, inst)
 		}
 	}
 	a.instances = finalInstances
@@ -97,6 +63,48 @@ func (a *App) GetLocalInstances() ([]instance.LocalInstance, error) {
 	return a.controller.IM.List()
 }
 
+func (a *App) Run(release instance.Release) {
+	if err := a.controller.Run(release); err != nil {
+		a.l.Error("Error while running: %v", err)
+	}
+}
+
+// --- Project / Editor operations ---
+
+func (a *App) CreateProject(project instance.ProjectSettings) (instance.LocalInstance, error) {
+	return a.controller.IM.CreateProject(project)
+}
+
+func (a *App) HasEditor(slug string) bool {
+	return a.controller.IM.HasEditor(slug)
+}
+
+func (a *App) SaveProjectMeta(slug string, meta instance.Meta) error {
+	return a.controller.IM.SaveProject(slug, meta)
+}
+
+func (a *App) LoadProjectMeta(slug string) (instance.Meta, error) {
+	return a.controller.IM.LoadProject(slug)
+}
+
+func (a *App) SyncProject(slug, message string) error {
+	return a.controller.IM.SyncProject(slug, message)
+}
+
+func (a *App) ReleaseProject(slug, tagName string) error {
+	return a.controller.IM.ReleaseProject(slug, tagName)
+}
+
+func (a *App) GetProjectHistory(slug string) (*git.GitHistory, error) {
+	return a.controller.IM.GetGitHistory(slug)
+}
+
+func (a *App) CheckProjectStatus(slug string) (bool, error) {
+	return a.controller.IM.GetGitStatus(slug)
+}
+
+// --- Config ---
+
 func (a *App) GetConfig() config.Config {
 	return *a.cfg
 }
@@ -106,25 +114,26 @@ func (a *App) SaveConfig(cfg config.Config) {
 	a.cfg.Save("config.json")
 }
 
-func (a *App) GetProjectHistory(slug string) (*git.GitHistory, error) {
-	return a.controller.IM.GetGitHistory(slug)
-}
-
-func (a *App) CheckProjectStatus(slug string) (bool, error) {
-    return a.controller.IM.GetGitStatus(slug)
-}
+// --- Auth ---
 
 func (a *App) StartMicrosoftLogin() {
 	if err := a.controller.StartMicrosoftLogin(a.ctx); err != nil {
-		
+		a.l.Error("Error while starting login: %v", err)
 	}
 }
 
-func (a *App) Run(release instance.Release) {
-	if err := a.controller.Run(release); err != nil {
-		a.l.Error("Error while fetch instances: %v", err)
-	}
+// --- UI helpers ---
+
+func (a *App) SelectLogoFile() (string, error) {
+	return runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
+		Title: "Выберите логотип",
+		Filters: []runtime.FileFilter{
+			{DisplayName: "Images", Pattern: "*.png;*.jpg;*.jpeg"},
+		},
+	})
 }
+
+// --- Platform lookups ---
 
 func (a *App) GetContentFromURL(url string) (instance.Content, error) {
 	data, err := a.platformManager.GetModFromURL(a.ctx, url)
@@ -133,7 +142,6 @@ func (a *App) GetContentFromURL(url string) (instance.Content, error) {
 	}
 	return data, err
 }
-
 
 func (a *App) GetContentSiteURL(source string, modID string) (string, error) {
 	return a.platformManager.GetContentSiteURL(instance.Source(source), modID)

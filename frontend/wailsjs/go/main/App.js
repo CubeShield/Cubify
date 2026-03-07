@@ -46,6 +46,10 @@ export function GetProjectHistory(arg1) {
   return window['go']['main']['App']['GetProjectHistory'](arg1);
 }
 
+export function HasEditor(arg1) {
+  return window['go']['main']['App']['HasEditor'](arg1);
+}
+
 export function LoadProjectMeta(arg1) {
   return window['go']['main']['App']['LoadProjectMeta'](arg1);
 }

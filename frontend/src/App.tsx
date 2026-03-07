@@ -10,16 +10,15 @@ import { StatusBar } from './components/status-bar'
 import { LogProvider } from './context/log-context'
 import { LogViewer } from './components/log-viewer'
 
+type Page = 'detail' | 'settings' | 'account'
+
 function App() {
 	const [instances, setInstances] = useState<instance.LocalInstance[]>([])
 	const [selectedInstance, setSelectedInstance] =
 		useState<instance.LocalInstance | null>(null)
 
 	const [isRefreshing, setIsRefreshing] = useState<boolean>(false)
-
-	const [currentPage, setCurrentPage] = useState<
-		'detail' | 'settings' | 'account' | 'editor'
-	>('editor')
+	const [currentPage, setCurrentPage] = useState<Page>('detail')
 
 	const getInstances = async () => {
 		setIsRefreshing(true)
@@ -39,9 +38,7 @@ function App() {
 						instances={instances}
 						selectedInstance={selectedInstance}
 						onSelect={setSelectedInstance}
-						onRefresh={() => {
-							getInstances()
-						}}
+						onRefresh={getInstances}
 						isRefreshing={isRefreshing}
 						currentPage={currentPage}
 						setCurrentPage={setCurrentPage}

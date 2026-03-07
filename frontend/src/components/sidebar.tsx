@@ -15,7 +15,7 @@ import {
 	SeparatorHorizontal,
 	Settings2Icon,
 } from 'lucide-react'
-import { config as ConfigData, editor, instance } from 'wailsjs/go/models'
+import { config as ConfigData, instance } from 'wailsjs/go/models'
 import { useEffect, useState } from 'react'
 import { Button } from './ui/button'
 import { GetConfig, Run } from 'wailsjs/go/main/App'
@@ -33,8 +33,8 @@ interface AppSidebarProps {
 	onSelect: (instance: instance.LocalInstance) => void
 	onRefresh?: () => void
 	isRefreshing: boolean
-	currentPage: 'detail' | 'settings' | 'account' | 'editor'
-	setCurrentPage: (page: 'detail' | 'settings' | 'account' | 'editor') => void
+	currentPage: 'detail' | 'settings' | 'account'
+	setCurrentPage: (page: 'detail' | 'settings' | 'account') => void
 }
 
 interface InstanceCardProps {

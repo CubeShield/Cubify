@@ -5,24 +5,33 @@ import (
 	"Cubify/internal/git"
 	logger "Cubify/internal/logging"
 	"Cubify/internal/utils"
+	"fmt"
 	"path/filepath"
+	"strings"
 )
 
-
 type Manager struct {
-	l *logger.Logger
-	fm file.Manager
-	pm *ProjectManager
+	l                  *logger.Logger
+	fm                 file.Manager
+	gm                 *git.Manager
 	instancesDirectory string
 }
 
 func NewManager(l *logger.Logger, fm file.Manager, instancesDirectory string) *Manager {
 	return &Manager{
-		l: l,
-		fm: fm,
-		pm: NewProjectManager(fm),
+		l:                  l,
+		fm:                 fm,
+		gm:                 git.New(),
 		instancesDirectory: instancesDirectory,
 	}
+}
+
+func (m *Manager) editorPath(slug string) string {
+	return filepath.Join(m.instancesDirectory, slug, "editor")
+}
+
+func (m *Manager) HasEditor(slug string) bool {
+	return m.fm.Exists(m.editorPath(slug))
 }
 
 func (m *Manager) List() ([]LocalInstance, error) {
@@ -68,35 +77,85 @@ func (m *Manager) Delete(slug string) error {
 }
 
 func (m *Manager) SaveProject(slug string, meta Meta) error {
-	return m.pm.Save(slug, meta)
+	return m.fm.SaveJson(filepath.Join(m.editorPath(slug), "instance.json"), meta)
 }
 
 func (m *Manager) LoadProject(slug string) (Meta, error) {
-	return m.pm.Load(slug)
+	var meta Meta
+	if err := m.fm.ReadJson(filepath.Join(m.editorPath(slug), "instance.json"), &meta); err != nil {
+		return Meta{}, err
+	}
+	return meta, nil
 }
 
 func (m *Manager) SyncProject(slug, message string) error {
-	return m.pm.Commit(slug, message)
+	return m.gm.GitPush(m.editorPath(slug), message)
 }
 
 func (m *Manager) ReleaseProject(slug, tagName string) error {
-	return m.pm.Release(slug, tagName)
+	return m.gm.GitRelease(m.editorPath(slug), tagName)
+}
+
+func (m *Manager) GetGitHistory(slug string) (*git.GitHistory, error) {
+	return m.gm.GetGitHistory(m.editorPath(slug))
+}
+
+func (m *Manager) GetGitStatus(slug string) (bool, error) {
+	return m.gm.GetGitStatus(m.editorPath(slug))
 }
 
 func (m *Manager) CreateProject(project ProjectSettings) (LocalInstance, error) {
-	if err := m.pm.Create(project); err != nil {
+	slug := utils.InstanceSlug(project.Name)
+	editorDir := m.editorPath(slug)
+
+	parts := strings.Split(project.RepoLink, "/")
+	if len(parts) != 2 {
+		return LocalInstance{}, fmt.Errorf("invalid repo format, use 'owner/repo'")
+	}
+	owner, repo := parts[0], parts[1]
+
+	rawImgUrl := fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/main/logo.png", owner, repo)
+
+	meta := Meta{
+		Name:             project.Name,
+		Description:      project.Description,
+		MinecraftVersion: project.MinecraftVersion,
+		Loader:           project.Loader,
+		LoaderVersion:    project.LoaderVersion,
+		ImageURL:         rawImgUrl,
+		Containers:       []Container{},
+	}
+
+	if err := m.fm.SaveJson(filepath.Join(editorDir, "instance.json"), meta); err != nil {
 		return LocalInstance{}, err
 	}
 
-	meta, err := m.pm.Load(utils.InstanceSlug(project.Name))
-	if err != nil {
+	if err := m.fm.Save(filepath.Join(editorDir, ".github", "workflows", "release.yml"), strings.NewReader(ReleaseWorkflow)); err != nil {
+		return LocalInstance{}, err
+	}
+
+	remoteURL := fmt.Sprintf("git@github.com:%s/%s.git", owner, repo)
+	if err := git.Run(editorDir, "init"); err != nil {
+		return LocalInstance{}, err
+	}
+	_ = git.Run(editorDir, "branch", "-M", "main")
+	if err := git.Run(editorDir, "remote", "add", "origin", remoteURL); err != nil {
+		return LocalInstance{}, err
+	}
+	if err := git.Run(editorDir, "add", "."); err != nil {
+		return LocalInstance{}, err
+	}
+	if err := git.Run(editorDir, "commit", "-m", "Initial commit by Cubify"); err != nil {
+		return LocalInstance{}, err
+	}
+	if err := git.Run(editorDir, "push", "-u", "origin", "main"); err != nil {
 		return LocalInstance{}, err
 	}
 
 	localInstance := LocalInstance{
 		Instance: Instance{
 			Repo: project.RepoLink,
-			Slug: utils.InstanceSlug(project.Name),
+			Slug: slug,
 		},
 		DevMeta: &meta,
 	}
@@ -106,12 +165,4 @@ func (m *Manager) CreateProject(project ProjectSettings) (LocalInstance, error) 
 	}
 
 	return localInstance, nil
-}
-
-func (m *Manager) GetGitHistory(slug string) (*git.GitHistory, error) {
-	return m.pm.GetGitHistory(slug)
-}
-
-func(m *Manager) GetGitStatus(slug string) (bool, error) {
-    return m.pm.GetGitStatus(slug)
 }

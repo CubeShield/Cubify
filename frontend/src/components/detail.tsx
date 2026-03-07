@@ -1,28 +1,83 @@
-import { editor, instance } from 'wailsjs/go/models'
+import { instance } from 'wailsjs/go/models'
 import dayjs from 'dayjs'
 import { BoxIcon } from 'lucide-react'
 import { Badge } from './ui/badge'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs'
 import { EditorPage } from './editor/editor-page'
+import { useEffect, useState } from 'react'
+import { HasEditor, LoadProjectMeta } from '../../wailsjs/go/main/App'
 
 interface InstanceDetailProps {
 	instance: instance.LocalInstance
-	project?: instance.Project
 }
 
-const CONTAINERS = {
+const CONTAINERS: Record<string, string> = {
 	mods: 'Моды',
 	resourcepacks: 'Ресурспаки',
 }
 
-export function InstanceDetail({ instance, project }: InstanceDetailProps) {
+export function InstanceDetail({ instance: inst }: InstanceDetailProps) {
+	const [hasEditor, setHasEditor] = useState(false)
+	const [editorMeta, setEditorMeta] = useState<instance.Meta | null>(null)
+	const [activeTab, setActiveTab] = useState('overview')
+
+	const latestRelease = inst.releases?.[0]
+	const meta = latestRelease?.Meta
+
+	const loadEditorData = async () => {
+		try {
+			const has = await HasEditor(inst.slug)
+			setHasEditor(has)
+			if (has) {
+				const m = await LoadProjectMeta(inst.slug)
+				setEditorMeta(m)
+			} else {
+				setEditorMeta(null)
+			}
+		} catch {
+			setHasEditor(false)
+			setEditorMeta(null)
+		}
+	}
+
+	useEffect(() => {
+		loadEditorData()
+		setActiveTab('overview')
+	}, [inst.slug])
+
 	return (
-		<div>
-			<h2 className='text-3xl font-bold'>{instance.releases[0].Meta.name}</h2>
-			<h3 className='text-l font-medium text-zinc-400'>
-				{instance.releases[0].Meta.description}
-			</h3>
-			{/*<Releases instance={instance} />*/}
-			{project && <EditorPage project={project} onRefresh={() => {}} />}
+		<div className='flex flex-col h-full'>
+			<div className='pb-4 border-b mb-4'>
+				<h2 className='text-3xl font-bold'>{meta?.name ?? inst.slug}</h2>
+				<h3 className='text-l font-medium text-zinc-400'>
+					{meta?.description}
+				</h3>
+			</div>
+
+			<Tabs
+				value={activeTab}
+				onValueChange={setActiveTab}
+				className='flex-1 flex flex-col'
+			>
+				<TabsList>
+					<TabsTrigger value='overview'>Обзор</TabsTrigger>
+					{hasEditor && <TabsTrigger value='editor'>Редактор</TabsTrigger>}
+				</TabsList>
+
+				<TabsContent value='overview' className='flex-1 pt-4'>
+					<Releases instance={inst} />
+				</TabsContent>
+
+				{hasEditor && editorMeta && (
+					<TabsContent value='editor' className='flex-1 pt-4'>
+						<EditorPage
+							slug={inst.slug}
+							initialMeta={editorMeta}
+							onRefresh={loadEditorData}
+						/>
+					</TabsContent>
+				)}
+			</Tabs>
 		</div>
 	)
 }
@@ -31,34 +86,46 @@ interface ReleasesProps {
 	instance: instance.LocalInstance
 }
 
-function Releases({ instance }: ReleasesProps) {
+function Releases({ instance: inst }: ReleasesProps) {
+	const latestRelease = inst.releases?.[0]
+
+	if (!latestRelease) {
+		return (
+			<div className='text-muted-foreground text-center py-10'>
+				Нет доступных релизов
+			</div>
+		)
+	}
+
 	return (
 		<>
 			<div className='flex gap-2 mt-2'>
-				{instance.releases[0].Meta.containers.map(container => (
-					<div className='flex items-center gap-1 p-2 border rounded-xl'>
+				{latestRelease.Meta.containers?.map((container, idx) => (
+					<div
+						key={idx}
+						className='flex items-center gap-1 p-2 border rounded-xl'
+					>
 						<BoxIcon className='size-4' />
-						{CONTAINERS[container.content_type as keyof typeof CONTAINERS]}
-						<Badge className=''>{container.content.length}</Badge>
+						{CONTAINERS[container.content_type] ?? container.content_type}
+						<Badge>{container.content?.length ?? 0}</Badge>
 					</div>
 				))}
 			</div>
 			<div className='flex flex-col gap-3 mt-4'>
-				{instance.releases.map((release, index) => {
-					return (
-						<div className='border rounded-2xl p-3 flex flex-col gap-2'>
-							<div className='flex flex-col gap-1'>
-								<h1 className='font-semibold text-2xl'>
-									Обновление {release.name}
-								</h1>
-								<Badge>
-									{dayjs(release.created_at).format('D MMMM HH:mm')}
-								</Badge>
-							</div>
-							<span>{release.body}</span>
+				{inst.releases.map((release, index) => (
+					<div
+						key={index}
+						className='border rounded-2xl p-3 flex flex-col gap-2'
+					>
+						<div className='flex flex-col gap-1'>
+							<h1 className='font-semibold text-2xl'>
+								Обновление {release.name}
+							</h1>
+							<Badge>{dayjs(release.created_at).format('D MMMM HH:mm')}</Badge>
 						</div>
-					)
-				})}
+						<span>{release.body}</span>
+					</div>
+				))}
 			</div>
 		</>
 	)

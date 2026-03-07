@@ -26,6 +26,8 @@ export function GetLocalInstances():Promise<Array<instance.LocalInstance>>;
 
 export function GetProjectHistory(arg1:string):Promise<git.GitHistory>;
 
+export function HasEditor(arg1:string):Promise<boolean>;
+
 export function LoadProjectMeta(arg1:string):Promise<instance.Meta>;
 
 export function ReleaseProject(arg1:string,arg2:string):Promise<void>;
