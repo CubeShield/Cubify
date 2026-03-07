@@ -216,7 +216,7 @@ func (a *App) GetConfig() config.Config {
 }
 
 func (a *App) SaveConfig(cfg config.Config) {
-	a.cfg = &cfg
+	*a.cfg = cfg
 	a.cfg.Save("config.json")
 }
 
