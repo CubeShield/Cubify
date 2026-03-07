@@ -51,6 +51,11 @@ type Commit struct {
 	Date    string `json:"date"`
 }
 
+type GitHistory struct {
+	Commits []Commit `json:"commits"`
+	Tags    []string `json:"tags"`
+}
+
 type Manager struct {
 	ProjectsDir string
 }
@@ -125,12 +130,10 @@ func (m *Manager) CreateProject(name, desc, mcVer, loader, loaderVer, repoLink, 
 	return projectPath, nil
 }
 
-// SaveInstance обновляет instance.json
 func (m *Manager) SaveInstance(projectPath string, meta instance.Meta) error {
 	return saveJSON(filepath.Join(projectPath, "instance.json"), meta)
 }
 
-// GitOperations
 func (m *Manager) GitPush(projectPath, message string) error {
 	if err := runGit(projectPath, "add", "."); err != nil { return err }
 	if err := runGit(projectPath, "commit", "-m", message); err != nil { return err }
@@ -138,19 +141,14 @@ func (m *Manager) GitPush(projectPath, message string) error {
 }
 
 func (m *Manager) GitRelease(projectPath, tagName string) error {
-	// Создаем тег
 	if err := runGit(projectPath, "tag", tagName); err != nil { return err }
-	// Пушим тег
 	return runGit(projectPath, "push", "origin", tagName)
 }
 
-// Вспомогательные функции
+
 func runGit(dir string, args ...string) error {
 	cmd := exec.Command("git", args...)
 	cmd.Dir = dir
-	// Можно перенаправить вывод, если нужно дебажить
-	// cmd.Stdout = os.Stdout
-	// cmd.Stderr = os.Stderr
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("git %s failed: %s, output: %s", args[0], err, string(output))
@@ -175,7 +173,6 @@ func saveJSON(path string, data interface{}) error {
 	return os.WriteFile(path, bytes, 0644)
 }
 
-// LoadProject читает instance.json из папки
 func (m *Manager) LoadProject(path string) (*instance.Meta, error) {
 	bytes, err := os.ReadFile(filepath.Join(path, "instance.json"))
 	if err != nil {
@@ -203,7 +200,6 @@ func (m *Manager) ListProjects() ([]Project, error) {
 		fullPath := filepath.Join(m.ProjectsDir, entry.Name())
 		metaPath := filepath.Join(fullPath, "instance.json")
 
-		// Если нет instance.json, это не наш проект
 		if _, err := os.Stat(metaPath); os.IsNotExist(err) {
 			continue
 		}
@@ -223,7 +219,6 @@ func (m *Manager) ListProjects() ([]Project, error) {
 }
 
 func (m *Manager) GetGitStatus(projectPath string) (bool, error) {
-	// git status --porcelain выводит строки только если есть изменения
 	cmd := exec.Command("git", "status", "--porcelain")
 	cmd.Dir = projectPath
 	output, err := cmd.Output()
@@ -237,15 +232,10 @@ func (m *Manager) GetGitHistory(projectPath string) (*GitHistory, error) {
 	commits := []Commit{}
 	tags := []string{}
 
-	// 1. Получаем коммиты
-	// Используем специальный разделитель "|||", чтобы не ломалось об текст коммита
-	// %h - хеш, %s - сообщение, %cr - относительная дата (2 hours ago)
 	cmdLog := exec.Command("git", "log", "-n", "10", "--pretty=format:%h|||%s|||%cr")
 	cmdLog.Dir = projectPath
 	
 	outLog, err := cmdLog.Output()
-	// Если ошибка (например, нет коммитов в репо), мы просто возвращаем пустой список, 
-	// но не падаем с ошибкой для всего метода.
 	if err == nil {
 		lines := strings.Split(strings.TrimSpace(string(outLog)), "\n")
 		for _, line := range lines {
@@ -261,11 +251,9 @@ func (m *Manager) GetGitHistory(projectPath string) (*GitHistory, error) {
 			}
 		}
 	} else {
-		// Для отладки можно вывести ошибку в консоль
 		fmt.Printf("Git log warning in %s: %v\n", projectPath, err)
 	}
 
-	// 2. Получаем теги
 	cmdTags := exec.Command("git", "tag", "--sort=-creatordate") 
 	cmdTags.Dir = projectPath
 	outTags, err := cmdTags.Output()

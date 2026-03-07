@@ -1,6 +1,7 @@
 package file
 
 import (
+	"errors"
 	"io"
 	"os"
 	"path/filepath"
@@ -67,4 +68,12 @@ func (l *LocalBackend) Save(path string, data io.Reader) error {
 
 func (l *LocalBackend) Delete(path string) error {
 	return os.Remove(l.fullPath(path))
+}
+
+func (l *LocalBackend) Exists(path string) bool {
+	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
+		return false
+
+	}
+	return true
 }

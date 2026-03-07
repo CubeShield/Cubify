@@ -27,6 +27,7 @@ type StorageBackend interface {
 	ListDir(path string) ([]FileEntry, error) 
 	Save(path string, data io.Reader) error
 	Delete(path string) error
+	Exists(path string) bool
 }
 
 type Manager interface {
@@ -38,6 +39,7 @@ type Manager interface {
 	Delete(path string) error
 	SaveJson(path string, data any) error
 	ReadJson(path string, ptr any) error
+	Exists(path string) bool
 }
 type fileManager struct {
 	backend StorageBackend
@@ -142,4 +144,8 @@ func (m *fileManager) ReadJson(path string, ptr any) error {
 		return fmt.Errorf("json decode error: %w", err)
 	}
 	return nil
+}
+
+func (m *fileManager) Exists(path string) bool {
+	return m.backend.Exists(path)
 }

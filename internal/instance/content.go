@@ -62,3 +62,7 @@ func (m *Manager) Put(localInstance LocalInstance) error {
 func (m *Manager) Delete(slug string) error {
 	return nil
 }
+
+func (m *Manager) SetupEditor(localInstance LocalInstance) error {
+	return nil
+}

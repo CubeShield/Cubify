@@ -35,6 +35,7 @@ type Instance struct {
 type LocalInstance struct {
 	Instance
 	Release *Release `json:"release,omitempty"`
+	Dev bool `json:"dev"`
 }
 
 
