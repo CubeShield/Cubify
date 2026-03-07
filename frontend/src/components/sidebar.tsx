@@ -202,9 +202,8 @@ export function AppSidebar() {
 		await startRun(devRelease)
 	}
 
-	const buttonLabel = isRunning && progress
-		? progress.label
-		: STATUS_LABELS[instanceStatus]
+	const buttonLabel =
+		isRunning && progress ? progress.label : STATUS_LABELS[instanceStatus]
 
 	const ButtonIcon = isRunning ? LoaderIcon : StatusIcon
 
@@ -241,7 +240,8 @@ export function AppSidebar() {
 						onClick={run}
 						disabled={isRunning || !selectedInstance || !currentUser}
 					>
-						<ButtonIcon className={isRunning ? 'animate-spin' : ''} /> {buttonLabel}
+						<ButtonIcon className={isRunning ? 'animate-spin' : ''} />{' '}
+						{buttonLabel}
 					</Button>
 					{isRunning && (
 						<Button
