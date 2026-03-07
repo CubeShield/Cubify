@@ -10,8 +10,6 @@ export function CreateProject(arg1:string,arg2:string,arg3:string,arg4:string,ar
 
 export function FetchInstances():Promise<Array<instance.Instance>>;
 
-export function FetchLocalProjects():Promise<Array<instance.Project>>;
-
 export function GetConfig():Promise<config.Config>;
 
 export function GetContentFromURL(arg1:string):Promise<instance.Content>;

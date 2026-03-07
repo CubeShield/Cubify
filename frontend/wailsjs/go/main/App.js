@@ -14,10 +14,6 @@ export function FetchInstances() {
   return window['go']['main']['App']['FetchInstances']();
 }
 
-export function FetchLocalProjects() {
-  return window['go']['main']['App']['FetchLocalProjects']();
-}
-
 export function GetConfig() {
   return window['go']['main']['App']['GetConfig']();
 }

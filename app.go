@@ -4,6 +4,7 @@ import (
 	"Cubify/internal/config"
 	"Cubify/internal/controller"
 	"Cubify/internal/editor"
+	"Cubify/internal/file"
 	"Cubify/internal/instance"
 	logger "Cubify/internal/logging"
 	"Cubify/internal/platform"
@@ -31,7 +32,7 @@ func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 	a.l = logger.New(ctx)
 	a.cfg, _ = config.Load("config.json")
-	a.editorManager = editor.New(a.cfg.EditorDirectory)
+	a.editorManager = editor.New(file.NewManager(file.NewLocalBackend(a.cfg.InstancesDirectory)))
 	a.controller = controller.New(a.cfg, a.l)
 	a.platformManager = platform.NewManager(a.cfg.CurseForgeAPIKey)
 }
@@ -107,15 +108,6 @@ func (a *App) GetConfig() config.Config {
 func (a *App) SaveConfig(cfg config.Config) {
 	a.cfg = &cfg
 	a.cfg.Save("config.json")
-}
-
-func (a *App) FetchLocalProjects() []instance.Project {
-	projects, err := a.editorManager.ListProjects()
-	if err != nil {
-		a.l.Error("Failed to list projects: %v", err)
-		return []instance.Project{}
-	}
-	return projects
 }
 
 func (a *App) GetProjectHistory(path string) (*editor.GitHistory, error) {
