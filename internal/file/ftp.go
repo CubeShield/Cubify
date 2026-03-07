@@ -3,6 +3,7 @@ package file
 import (
 	"io"
 	pathpkg "path"
+	"strings"
 
 	"github.com/jlaffaye/ftp"
 )
@@ -55,8 +56,37 @@ func (f *FtpBackend) ListDir(p string) ([]FileEntry, error) {
 	return result, nil
 }
 
+func (f *FtpBackend) ensureDir(dir string) error {
+	if dir == "" || dir == "/" || dir == "." {
+		return nil
+	}
+
+	parts := strings.Split(strings.Trim(dir, "/"), "/")
+	current := ""
+	if strings.HasPrefix(dir, "/") {
+		current = "/"
+	}
+
+	for _, part := range parts {
+		if current == "/" {
+			current = "/" + part
+		} else if current == "" {
+			current = part
+		} else {
+			current = current + "/" + part
+		}
+		_ = f.Conn.MakeDir(current)
+	}
+	return nil
+}
+
 func (f *FtpBackend) Save(path string, data io.Reader) error {
-	return f.Conn.Stor(f.ftpPath(path), data)
+	full := f.ftpPath(path)
+	dir := pathpkg.Dir(full)
+	if err := f.ensureDir(dir); err != nil {
+		return err
+	}
+	return f.Conn.Stor(full, data)
 }
 
 func (f *FtpBackend) Delete(path string) error {
