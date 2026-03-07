@@ -1,6 +1,6 @@
 import { instance } from 'wailsjs/go/models'
 import dayjs from 'dayjs'
-import { BoxIcon, CodeIcon, Loader2 } from 'lucide-react'
+import { BoxIcon, CodeIcon, Loader2, Trash2Icon } from 'lucide-react'
 import { Badge } from './ui/badge'
 import { Button } from './ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs'
@@ -10,11 +10,22 @@ import {
 	HasEditor,
 	LoadProjectMeta,
 	CloneProject,
+	DeleteInstance,
 } from '../../wailsjs/go/main/App'
+import {
+	Dialog,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
+	DialogFooter,
+	DialogTrigger,
+	DialogClose,
+} from './ui/dialog'
 
 interface InstanceDetailProps {
 	instance: instance.LocalInstance
 	devMode: boolean
+	onDeleted?: () => void
 }
 
 const CONTAINERS: Record<string, string> = {
@@ -25,6 +36,7 @@ const CONTAINERS: Record<string, string> = {
 export function InstanceDetail({
 	instance: inst,
 	devMode,
+	onDeleted,
 }: InstanceDetailProps) {
 	const [hasEditor, setHasEditor] = useState(false)
 	const [editorMeta, setEditorMeta] = useState<instance.Meta | null>(null)
@@ -57,11 +69,25 @@ export function InstanceDetail({
 	return (
 		<div className='flex flex-col h-full'>
 			<div className='pb-4 border-b mb-4'>
-				<img src={meta.image_url} className='size-32 rounded-3xl mb-4'></img>
-				<h2 className='text-3xl font-bold'>{meta?.name ?? inst.slug}</h2>
-				<h3 className='text-l font-medium text-zinc-400'>
-					{meta?.description}
-				</h3>
+				<div className='flex items-start justify-between'>
+					<div>
+						<img
+							src={meta.image_url}
+							className='size-32 rounded-3xl mb-4'
+						></img>
+						<h2 className='text-3xl font-bold'>
+							{meta?.name ?? inst.slug}
+						</h2>
+						<h3 className='text-l font-medium text-zinc-400'>
+							{meta?.description}
+						</h3>
+					</div>
+					<DeleteInstanceButton
+						slug={inst.slug}
+						name={meta?.name ?? inst.slug}
+						onDeleted={onDeleted}
+					/>
+				</div>
 			</div>
 
 			<Tabs
@@ -193,5 +219,75 @@ function Releases({ instance: inst }: ReleasesProps) {
 				))}
 			</div>
 		</>
+	)
+}
+
+function DeleteInstanceButton({
+	slug,
+	name,
+	onDeleted,
+}: {
+	slug: string
+	name: string
+	onDeleted?: () => void
+}) {
+	const [open, setOpen] = useState(false)
+	const [isDeleting, setDeleting] = useState(false)
+
+	const handleDelete = async () => {
+		setDeleting(true)
+		try {
+			await DeleteInstance(slug)
+			setOpen(false)
+			onDeleted?.()
+		} catch (e) {
+			console.error(e)
+		} finally {
+			setDeleting(false)
+		}
+	}
+
+	return (
+		<Dialog open={open} onOpenChange={setOpen}>
+			<DialogTrigger asChild>
+				<Button
+					size='icon'
+					variant='outline'
+					className='shrink-0 cursor-pointer text-destructive hover:bg-destructive hover:text-white'
+				>
+					<Trash2Icon className='size-4' />
+				</Button>
+			</DialogTrigger>
+			<DialogContent>
+				<DialogHeader>
+					<DialogTitle>Удалить сборку?</DialogTitle>
+				</DialogHeader>
+				<p className='text-sm text-muted-foreground'>
+					Вы уверены, что хотите удалить <strong>{name}</strong>? Будут удалены
+					все локальные данные сборки, включая файлы редактора. Это действие
+					нельзя отменить.
+				</p>
+				<DialogFooter>
+					<DialogClose asChild>
+						<Button variant='outline' className='cursor-pointer'>
+							Отмена
+						</Button>
+					</DialogClose>
+					<Button
+						variant='destructive'
+						onClick={handleDelete}
+						disabled={isDeleting}
+						className='cursor-pointer'
+					>
+						{isDeleting ? (
+							<Loader2 className='size-4 animate-spin' />
+						) : (
+							<Trash2Icon className='size-4' />
+						)}
+						Удалить
+					</Button>
+				</DialogFooter>
+			</DialogContent>
+		</Dialog>
 	)
 }

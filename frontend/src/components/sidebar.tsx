@@ -26,6 +26,7 @@ import { GetConfig, HasEditor, LoadProjectMeta, Run } from 'wailsjs/go/main/App'
 import fabric from '../assets/images/fabric.png'
 import forge from '../assets/images/forge.png'
 import { CreateProjectModal } from './create-modal-project'
+import { MarketplaceModal } from './marketplace'
 
 function capitalizeFirstLetter(val: string): string {
 	return String(val).charAt(0).toUpperCase() + String(val).slice(1)
@@ -319,6 +320,7 @@ export function AppSidebar({
 				>
 					<RefreshCwIcon /> Обновить список
 				</Button>
+				<MarketplaceModal onImported={() => onRefresh?.()} />
 				{devMode && <CreateProjectModal />}
 			</SidebarFooter>
 		</Sidebar>

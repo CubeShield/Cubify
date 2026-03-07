@@ -14,6 +14,10 @@ export function CreateProject(arg1) {
   return window['go']['main']['App']['CreateProject'](arg1);
 }
 
+export function DeleteInstance(arg1) {
+  return window['go']['main']['App']['DeleteInstance'](arg1);
+}
+
 export function FetchInstances() {
   return window['go']['main']['App']['FetchInstances']();
 }
@@ -52,6 +56,10 @@ export function GetProjectHistory(arg1) {
 
 export function HasEditor(arg1) {
   return window['go']['main']['App']['HasEditor'](arg1);
+}
+
+export function ImportInstance(arg1) {
+  return window['go']['main']['App']['ImportInstance'](arg1);
 }
 
 export function LoadProjectMeta(arg1) {

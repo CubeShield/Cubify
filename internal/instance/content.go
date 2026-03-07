@@ -75,7 +75,8 @@ func (m *Manager) Put(localInstance LocalInstance) error {
 }
 
 func (m *Manager) Delete(slug string) error {
-	return nil
+	instancePath := filepath.Join(m.instancesDirectory, slug)
+	return os.RemoveAll(instancePath)
 }
 
 func (m *Manager) SaveProject(slug string, meta Meta) error {

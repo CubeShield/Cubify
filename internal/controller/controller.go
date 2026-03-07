@@ -43,26 +43,36 @@ func New(cfg *config.Config, l *logger.Logger) *Controller {
 
 
 func (c *Controller) Fetch() ([]instance.Instance, error) {
-	index, err := c.ghClient.GetIndex(c.cfg.IndexURL)
-	if err != nil {
-		return nil, err
-	}
-	
+	seenRepos := map[string]bool{}
 	instances := []instance.Instance{}
-	for _, instanceRepo := range index.Instances {
-		instance, err := c.ghClient.GetInstance(instanceRepo)
+
+	for _, indexURL := range c.cfg.IndexURLs {
+		index, err := c.ghClient.GetIndex(indexURL)
 		if err != nil {
-			c.l.Error("Error while getting instance %s: %v", instanceRepo, err)
-			continue
-		}
-		if len(instance.Releases) <= 0 {
-			c.l.Info("Skipping %s, no available releases", instanceRepo)
+			c.l.Error("failed to fetch index %s: %v", indexURL, err)
 			continue
 		}
 
-		instance.Slug = utils.InstanceSlug(instance.Releases[0].Meta.Name)
-		instance.Repo = instanceRepo
-		instances = append(instances, *instance)
+		for _, instanceRepo := range index.Instances {
+			if seenRepos[instanceRepo] {
+				continue
+			}
+			seenRepos[instanceRepo] = true
+
+			inst, err := c.ghClient.GetInstance(instanceRepo)
+			if err != nil {
+				c.l.Error("Error while getting instance %s: %v", instanceRepo, err)
+				continue
+			}
+			if len(inst.Releases) <= 0 {
+				c.l.Info("Skipping %s, no available releases", instanceRepo)
+				continue
+			}
+
+			inst.Slug = utils.InstanceSlug(inst.Releases[0].Meta.Name)
+			inst.Repo = instanceRepo
+			instances = append(instances, *inst)
+		}
 	}
 
 	return instances, nil
@@ -132,6 +142,31 @@ func (c *Controller) updateInstanceContent(instancePath string, releaseContainer
 	}
 
 	return nil
+}
+
+func (c *Controller) ImportInstance(repo string) (instance.LocalInstance, error) {
+	remote, err := c.ghClient.GetInstance(repo)
+	if err != nil {
+		return instance.LocalInstance{}, fmt.Errorf("failed to fetch instance from github: %w", err)
+	}
+	if len(remote.Releases) == 0 {
+		return instance.LocalInstance{}, fmt.Errorf("no releases found for %s", repo)
+	}
+
+	slug := utils.InstanceSlug(remote.Releases[0].Meta.Name)
+	remote.Repo = repo
+	remote.Slug = slug
+
+	li := instance.LocalInstance{
+		Instance: *remote,
+	}
+
+	if err := c.IM.Put(li); err != nil {
+		return instance.LocalInstance{}, fmt.Errorf("failed to save instance: %w", err)
+	}
+
+	c.l.Info("imported instance %s (%s)", slug, repo)
+	return li, nil
 }
 
 func (c *Controller) RefreshLocalReleases() error {

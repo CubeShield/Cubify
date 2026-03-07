@@ -65,7 +65,14 @@ function App() {
 						)}
 						{currentPage === 'detail' &&
 							(selectedInstance ? (
-								<InstanceDetail instance={selectedInstance} devMode={devMode} />
+								<InstanceDetail
+									instance={selectedInstance}
+									devMode={devMode}
+									onDeleted={() => {
+										setSelectedInstance(null)
+										getInstances()
+									}}
+								/>
 							) : (
 								<div className='text-muted-foreground flex items-center justify-center h-full'>
 									Выберите инстанс в меню слева

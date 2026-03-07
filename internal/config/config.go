@@ -13,7 +13,7 @@ type User struct {
 
 type Config struct {
 	Nickname string `json:"nickname"`
-	IndexURL string `json:"index_url"`
+	IndexURLs []string `json:"index_urls"`
 	BaseURL string `json:"base_url"`
 	AuthToken string `json:"auth_token"`
 	CurseForgeAPIKey string `json:"curseforge_api_key"`
@@ -34,7 +34,7 @@ func Load(filename string) (*Config, error) {
 	if _, err := os.Stat(filename); os.IsNotExist(err) {
 		defaultConfig := &Config{
 			Nickname: "Lyroq1s",
-			IndexURL: "https://raw.githubusercontent.com/CubeShield/CubeInstances/refs/heads/main/index.json",
+			IndexURLs: []string{"https://raw.githubusercontent.com/CubeShield/CubeInstances/refs/heads/main/index.json"},
 			BaseURL: "https://api.github.com",
 			AuthToken: "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",
 			CurseForgeAPIKey: "$2a$10$mwWdWOppKD0R9/BlrO5XbeYXXaW.VpIzv3ZT/JQmzt2uXDaDbTM7S",

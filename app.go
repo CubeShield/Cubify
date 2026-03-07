@@ -111,6 +111,14 @@ func (a *App) RefreshLocalReleases() error {
 	return a.controller.RefreshLocalReleases()
 }
 
+func (a *App) ImportInstance(repo string) (instance.LocalInstance, error) {
+	return a.controller.ImportInstance(repo)
+}
+
+func (a *App) DeleteInstance(slug string) error {
+	return a.controller.IM.Delete(slug)
+}
+
 // --- Config ---
 
 func (a *App) GetConfig() config.Config {

@@ -12,7 +12,7 @@ import {
 import { Button } from './ui/button'
 import { useEffect, useState } from 'react'
 import { GetConfig, SaveConfig } from 'wailsjs/go/main/App'
-import { SaveIcon } from 'lucide-react'
+import { PlusIcon, SaveIcon, Trash2Icon } from 'lucide-react'
 
 interface ConfigInputProps {
 	value: string | number | undefined
@@ -149,13 +149,52 @@ export function Settings({
 					onChange={handleUpdate}
 				/>
 
-				<ConfigInput
-					fieldKey='index_url'
-					label='Index URL'
-					value={cfgData.index_url}
-					description='Ссылка на репозиторий с манифестом'
-					onChange={handleUpdate}
-				/>
+				<Field className='mb-4'>
+					<FieldLabel>Индексы сборок</FieldLabel>
+					<FieldDescription>
+						Ссылки на JSON-манифесты со списками сборок
+					</FieldDescription>
+					<div className='flex flex-col gap-2 mt-2'>
+						{(cfgData.index_urls ?? []).map((url, idx) => (
+							<div key={idx} className='flex gap-2'>
+								<Input
+									value={url}
+									placeholder='https://...index.json'
+									onChange={e => {
+										const updated = [...(cfgData.index_urls ?? [])]
+										updated[idx] = e.target.value
+										handleUpdate('index_urls', updated)
+									}}
+								/>
+								<Button
+									size='icon'
+									variant='outline'
+									className='shrink-0 cursor-pointer'
+									onClick={() => {
+										const updated = (cfgData.index_urls ?? []).filter(
+											(_, i) => i !== idx,
+										)
+										handleUpdate('index_urls', updated)
+									}}
+								>
+									<Trash2Icon className='size-4' />
+								</Button>
+							</div>
+						))}
+						<Button
+							variant='outline'
+							className='cursor-pointer'
+							onClick={() => {
+								handleUpdate('index_urls', [
+									...(cfgData.index_urls ?? []),
+									'',
+								])
+							}}
+						>
+							<PlusIcon className='size-4' /> Добавить индекс
+						</Button>
+					</div>
+				</Field>
 
 				<ConfigInput
 					fieldKey='auth_token'

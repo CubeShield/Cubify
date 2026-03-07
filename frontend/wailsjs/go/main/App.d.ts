@@ -10,6 +10,8 @@ export function CloneProject(arg1:string):Promise<void>;
 
 export function CreateProject(arg1:instance.ProjectSettings):Promise<instance.LocalInstance>;
 
+export function DeleteInstance(arg1:string):Promise<void>;
+
 export function FetchInstances():Promise<Array<instance.Instance>>;
 
 export function GetConfig():Promise<config.Config>;
@@ -29,6 +31,8 @@ export function GetLocalInstances():Promise<Array<instance.LocalInstance>>;
 export function GetProjectHistory(arg1:string):Promise<git.GitHistory>;
 
 export function HasEditor(arg1:string):Promise<boolean>;
+
+export function ImportInstance(arg1:string):Promise<instance.LocalInstance>;
 
 export function LoadProjectMeta(arg1:string):Promise<instance.Meta>;
 
