@@ -1,32 +1,14 @@
 import { useEffect, useState } from 'react'
-import {
-	FetchInstances,
-	FetchLocalProjects,
-	GetLocalInstances,
-} from '../wailsjs/go/main/App'
-import { editor, instance } from '../wailsjs/go/models'
-import { Button } from './components/ui/button'
-import {
-	Sidebar,
-	SidebarContent,
-	SidebarFooter,
-	SidebarGroup,
-	SidebarHeader,
-	SidebarProvider,
-	SidebarTrigger,
-} from './components/ui/sidebar'
+import { GetLocalInstances } from '../wailsjs/go/main/App'
+import { instance } from '../wailsjs/go/models'
+import { SidebarProvider } from './components/ui/sidebar'
 import { AppSidebar } from './components/sidebar'
-import { Badge } from './components/ui/badge'
-import dayjs from 'dayjs'
-import { BoxIcon } from 'lucide-react'
 import { InstanceDetail } from './components/detail'
 import { Settings } from './components/settings'
 import { User } from './components/user'
 import { StatusBar } from './components/status-bar'
 import { LogProvider } from './context/log-context'
 import { LogViewer } from './components/log-viewer'
-import { CreateProjectModal } from './components/create-modal-project'
-import { EditorPage } from './components/editor/editor-page'
 
 function App() {
 	const [instances, setInstances] = useState<instance.LocalInstance[]>([])
