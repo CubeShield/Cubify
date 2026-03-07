@@ -127,14 +127,15 @@ function EnableEditorButton({
 			<div className='flex flex-col gap-1'>
 				<span className='font-medium'>Режим разработки</span>
 				<span className='text-sm text-muted-foreground'>
-					Склонировать репозиторий, чтобы редактировать сборку
+					Склонировать репозиторий, чтобы редактировать сборку, используйте это,
+					только если у вас есть Git
 				</span>
 			</div>
 			<Button onClick={handleClone} disabled={isCloning}>
 				{isCloning ? (
-					<Loader2 className='mr-2 h-4 w-4 animate-spin' />
+					<Loader2 className='size-3 animate-spin' />
 				) : (
-					<CodeIcon className='mr-2 h-4 w-4' />
+					<CodeIcon className='size-4' />
 				)}
 				{isCloning ? 'Клонирование...' : 'Включить режим разработки'}
 			</Button>
@@ -160,7 +161,7 @@ function Releases({ instance: inst }: ReleasesProps) {
 				{latestRelease.Meta.containers?.map((container, idx) => (
 					<div
 						key={idx}
-						className='flex items-center gap-1 p-2 border rounded-xl'
+						className='flex items-center gap-1 p-2 border rounded-xl bg-muted/30'
 					>
 						<BoxIcon className='size-4' />
 						{CONTAINERS[container.content_type] ?? container.content_type}
@@ -172,7 +173,7 @@ function Releases({ instance: inst }: ReleasesProps) {
 				{inst.releases.map((release, index) => (
 					<div
 						key={index}
-						className='border rounded-2xl p-3 flex flex-col gap-2'
+						className='border rounded-2xl p-3 flex flex-col gap-2 bg-muted/30'
 					>
 						<div className='flex flex-col gap-1'>
 							<h1 className='font-semibold text-2xl'>
