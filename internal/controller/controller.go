@@ -14,6 +14,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"time"
 
 	"github.com/jlaffaye/ftp"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -289,7 +290,8 @@ func (c *Controller) ConnectFTP() (*ftp.ServerConn, error) {
 	}
 
 	addr := fmt.Sprintf("%s:%d", ftpCfg.Host, port)
-	conn, err := ftp.Dial(addr)
+	c.l.Info("Dialing FTP %s...", addr)
+	conn, err := ftp.Dial(addr, ftp.DialWithTimeout(15*time.Second))
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to FTP %s: %w", addr, err)
 	}

@@ -122,31 +122,33 @@ func (a *App) DeployToServer(release instance.Release) {
 	a.deployCancel = cancel
 	a.deployMu.Unlock()
 
-	defer func() {
-		a.deployMu.Lock()
-		a.deployCancel = nil
-		a.deployMu.Unlock()
-	}()
+	go func() {
+		defer func() {
+			a.deployMu.Lock()
+			a.deployCancel = nil
+			a.deployMu.Unlock()
+		}()
 
-	onProgress := func(step, total int, label string) {
-		runtime.EventsEmit(a.ctx, "deploy:progress", map[string]interface{}{
-			"step":  step,
-			"total": total,
-			"label": label,
-		})
-	}
+		onProgress := func(step, total int, label string) {
+			runtime.EventsEmit(a.ctx, "deploy:progress", map[string]interface{}{
+				"step":  step,
+				"total": total,
+				"label": label,
+			})
+		}
 
-	if err := a.controller.DeployToServer(deployCtx, release, onProgress); err != nil {
-		if deployCtx.Err() != nil {
-			a.l.Info("Deploy cancelled")
-			runtime.EventsEmit(a.ctx, "deploy:cancelled", nil)
+		if err := a.controller.DeployToServer(deployCtx, release, onProgress); err != nil {
+			if deployCtx.Err() != nil {
+				a.l.Info("Deploy cancelled")
+				runtime.EventsEmit(a.ctx, "deploy:cancelled", nil)
+				return
+			}
+			a.l.Error("Error while deploying: %v", err)
+			runtime.EventsEmit(a.ctx, "deploy:error", err.Error())
 			return
 		}
-		a.l.Error("Error while deploying: %v", err)
-		runtime.EventsEmit(a.ctx, "deploy:error", err.Error())
-		return
-	}
-	runtime.EventsEmit(a.ctx, "deploy:done", nil)
+		runtime.EventsEmit(a.ctx, "deploy:done", nil)
+	}()
 }
 
 func (a *App) CancelDeploy() {

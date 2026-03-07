@@ -12,7 +12,7 @@ import { Badge } from './ui/badge'
 import { Button } from './ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs'
 import { EditorPage } from './editor/editor-page'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
 	CloneProject,
 	DeleteInstance,
@@ -36,6 +36,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from './ui/select'
+import { EventsOn, EventsOff } from '../../wailsjs/runtime/runtime'
 
 interface InstanceDetailProps {
 	instance: instance.LocalInstance
@@ -180,7 +181,32 @@ function Releases({ instance: inst, devMode }: ReleasesProps) {
 	const [deployError, setDeployError] = useState<string | null>(null)
 	const [deploySuccess, setDeploySuccess] = useState(false)
 
-	const handleDeploy = async () => {
+	useEffect(() => {
+		const onDone = () => {
+			setDeploying(false)
+			setDeploySuccess(true)
+		}
+		const onError = (msg: string) => {
+			setDeploying(false)
+			setDeployError(msg || 'Неизвестная ошибка')
+		}
+		const onCancelled = () => {
+			setDeploying(false)
+			setDeployError('Деплой отменён')
+		}
+
+		EventsOn('deploy:done', onDone)
+		EventsOn('deploy:error', onError)
+		EventsOn('deploy:cancelled', onCancelled)
+
+		return () => {
+			EventsOff('deploy:done')
+			EventsOff('deploy:error')
+			EventsOff('deploy:cancelled')
+		}
+	}, [])
+
+	const handleDeploy = () => {
 		const release = inst.releases.find(
 			r => r.tag_name === selectedDeployVersion,
 		)
@@ -189,14 +215,7 @@ function Releases({ instance: inst, devMode }: ReleasesProps) {
 		setDeploying(true)
 		setDeployError(null)
 		setDeploySuccess(false)
-		try {
-			await DeployToServer(release)
-			setDeploySuccess(true)
-		} catch (e) {
-			setDeployError(String(e))
-		} finally {
-			setDeploying(false)
-		}
+		DeployToServer(release)
 	}
 
 	const handleCancelDeploy = () => {
