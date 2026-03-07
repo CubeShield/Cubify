@@ -32,6 +32,8 @@ export function HasEditor(arg1:string):Promise<boolean>;
 
 export function LoadProjectMeta(arg1:string):Promise<instance.Meta>;
 
+export function RefreshLocalReleases():Promise<void>;
+
 export function ReleaseProject(arg1:string,arg2:string):Promise<void>;
 
 export function Run(arg1:instance.Release):Promise<void>;

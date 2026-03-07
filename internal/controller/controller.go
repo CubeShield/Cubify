@@ -134,6 +134,41 @@ func (c *Controller) updateInstanceContent(instancePath string, releaseContainer
 	return nil
 }
 
+func (c *Controller) RefreshLocalReleases() error {
+	localInstances, err := c.IM.List()
+	if err != nil {
+		return fmt.Errorf("failed to list local instances: %w", err)
+	}
+
+	for _, li := range localInstances {
+		if li.Repo == "" {
+			continue
+		}
+
+		remote, err := c.ghClient.GetInstance(li.Repo)
+		if err != nil {
+			c.l.Error("failed to refresh releases for %s: %v", li.Repo, err)
+			continue
+		}
+
+		if len(remote.Releases) <= 0 {
+			c.l.Error("remote not contain any releases, so skip %s: %v", li.Repo, err)
+			continue
+		}
+
+		li.Releases = remote.Releases
+
+		if err := c.IM.Put(li); err != nil {
+			c.l.Error("failed to save updated instance %s: %v", li.Slug, err)
+			continue
+		}
+
+		c.l.Info("refreshed %d releases for %s", len(remote.Releases), li.Repo)
+	}
+
+	return nil
+}
+
 func (c *Controller) StartMicrosoftLogin(ctx context.Context) error {
 	if err := c.installer.RetrievePortableMC(); err != nil {
 		return err

@@ -107,6 +107,10 @@ func (a *App) CheckProjectStatus(slug string) (bool, error) {
 	return a.controller.IM.GetGitStatus(slug)
 }
 
+func (a *App) RefreshLocalReleases() error {
+	return a.controller.RefreshLocalReleases()
+}
+
 // --- Config ---
 
 func (a *App) GetConfig() config.Config {

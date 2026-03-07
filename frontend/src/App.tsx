@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { GetLocalInstances } from '../wailsjs/go/main/App'
+import { GetLocalInstances, RefreshLocalReleases } from '../wailsjs/go/main/App'
 import { instance } from '../wailsjs/go/models'
 import { SidebarProvider } from './components/ui/sidebar'
 import { AppSidebar } from './components/sidebar'
@@ -22,6 +22,7 @@ function App() {
 
 	const getInstances = async () => {
 		setIsRefreshing(true)
+		await RefreshLocalReleases()
 		setInstances(await GetLocalInstances())
 		setIsRefreshing(false)
 	}

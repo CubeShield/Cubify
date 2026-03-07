@@ -58,6 +58,10 @@ export function LoadProjectMeta(arg1) {
   return window['go']['main']['App']['LoadProjectMeta'](arg1);
 }
 
+export function RefreshLocalReleases() {
+  return window['go']['main']['App']['RefreshLocalReleases']();
+}
+
 export function ReleaseProject(arg1, arg2) {
   return window['go']['main']['App']['ReleaseProject'](arg1, arg2);
 }
