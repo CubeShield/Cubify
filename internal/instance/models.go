@@ -37,6 +37,7 @@ type LocalInstance struct {
 	Instance
 	Release *Release `json:"release,omitempty"`
 	DevMeta *Meta `json:"dev_meta,omitempty"`
+	ExtraContainers []Container `json:"extra_containers,omitempty"`
 }
 
 
@@ -69,6 +70,7 @@ const (
 	SourceCurseForge Source = "curseforge"
 	SourceModrinth Source = "modrinth"
 	SourceURL Source = "url"
+	SourceLocal Source = "local"
 )
 
 type From string

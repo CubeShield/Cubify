@@ -116,7 +116,15 @@ func (c *Controller) Run(ctx context.Context, release instance.Release, onProgre
 	if buildType == "" {
 		buildType = "client"
 	}
-	if err := c.updateInstanceContent(ctx, fullInstancePath, release.Meta.Containers, buildType); err != nil {
+
+	// Merge extra containers (user-added content) with release containers
+	containers := release.Meta.Containers
+	localInstance, liErr := c.IM.GetBySlug(instanceDirectory)
+	if liErr == nil && len(localInstance.ExtraContainers) > 0 {
+		containers = instance.MergeContainers(containers, localInstance.ExtraContainers)
+	}
+
+	if err := c.updateInstanceContent(ctx, fullInstancePath, containers, buildType); err != nil {
 		c.l.Error("Update warning: %v", err)
 		return fmt.Errorf("failed to update instance: %w", err)
 	}

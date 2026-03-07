@@ -1,5 +1,6 @@
 export { InstanceDetail } from './instance-detail'
 export { ContainerCard } from './container-card'
+export { AddContentDialog } from './add-content-dialog'
 export { DeleteInstanceButton } from './delete-instance-button'
 export { EnableEditorButton } from './enable-editor-button'
 export { DeploySection } from './deploy-section'

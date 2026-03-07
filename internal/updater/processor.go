@@ -118,6 +118,10 @@ func (p *ContentProcessor) delete(content instance.Content) error {
 }
 
 func (p *ContentProcessor) install(ctx context.Context, content instance.Content) error {
+	if content.Url == "" {
+		p.l.Info("Skipping %s (local file, already in place)", content.File)
+		return nil
+	}
 	p.l.Info("Downloading %s", content.File)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, content.Url, nil)

@@ -4,6 +4,10 @@ import {instance} from '../models';
 import {config} from '../models';
 import {git} from '../models';
 
+export function AddExtraContent(arg1:string,arg2:string,arg3:instance.Content):Promise<void>;
+
+export function AddExtraContentFromFile(arg1:string,arg2:string):Promise<instance.Content>;
+
 export function CancelDeploy():Promise<void>;
 
 export function CancelRun():Promise<void>;
@@ -45,6 +49,8 @@ export function LoadProjectMeta(arg1:string):Promise<instance.Meta>;
 export function RefreshLocalReleases():Promise<void>;
 
 export function ReleaseProject(arg1:string,arg2:string,arg3:string):Promise<void>;
+
+export function RemoveExtraContent(arg1:string,arg2:string,arg3:string):Promise<void>;
 
 export function Run(arg1:instance.Release):Promise<void>;
 

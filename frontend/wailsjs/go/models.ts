@@ -461,6 +461,7 @@ export namespace instance {
 	    releases: Release[];
 	    release?: Release;
 	    dev_meta?: Meta;
+	    extra_containers?: Container[];
 	
 	    static createFrom(source: any = {}) {
 	        return new LocalInstance(source);
@@ -473,6 +474,7 @@ export namespace instance {
 	        this.releases = this.convertValues(source["releases"], Release);
 	        this.release = this.convertValues(source["release"], Release);
 	        this.dev_meta = this.convertValues(source["dev_meta"], Meta);
+	        this.extra_containers = this.convertValues(source["extra_containers"], Container);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

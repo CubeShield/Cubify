@@ -8,6 +8,7 @@ import (
 	logger "Cubify/internal/logging"
 	"Cubify/internal/platform"
 	"context"
+	"fmt"
 	"sync"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -237,6 +238,39 @@ func (a *App) SelectLogoFile() (string, error) {
 			{DisplayName: "Images", Pattern: "*.png;*.jpg;*.jpeg"},
 		},
 	})
+}
+
+// --- Extra content (user-added) ---
+
+func (a *App) AddExtraContent(slug, contentType string, content instance.Content) error {
+	return a.controller.IM.AddExtraContent(slug, contentType, content)
+}
+
+func (a *App) AddExtraContentFromFile(slug, contentType string) (instance.Content, error) {
+	var filters []runtime.FileFilter
+	switch contentType {
+	case "resourcepacks":
+		filters = []runtime.FileFilter{{DisplayName: "Resource Packs", Pattern: "*.zip"}}
+	default:
+		filters = []runtime.FileFilter{{DisplayName: "Minecraft Mods", Pattern: "*.jar"}}
+	}
+
+	path, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
+		Title:   "Выберите файл",
+		Filters: filters,
+	})
+	if err != nil {
+		return instance.Content{}, err
+	}
+	if path == "" {
+		return instance.Content{}, fmt.Errorf("no file selected")
+	}
+
+	return a.controller.IM.AddExtraContentFromFile(slug, contentType, path)
+}
+
+func (a *App) RemoveExtraContent(slug, contentType, fileName string) error {
+	return a.controller.IM.RemoveExtraContent(slug, contentType, fileName)
 }
 
 // --- Platform lookups ---

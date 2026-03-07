@@ -6,6 +6,7 @@ import (
 	logger "Cubify/internal/logging"
 	"Cubify/internal/utils"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -235,4 +236,123 @@ func (m *Manager) CreateProject(project ProjectSettings) (LocalInstance, error) 
 	}
 
 	return localInstance, nil
+}
+
+// ── Extra content (user-added mods/resourcepacks) ──
+
+func (m *Manager) AddExtraContent(slug, contentType string, content Content) error {
+	inst, err := m.GetBySlug(slug)
+	if err != nil {
+		return fmt.Errorf("instance not found: %w", err)
+	}
+
+	found := false
+	for i, c := range inst.ExtraContainers {
+		if c.ContentType == contentType {
+			inst.ExtraContainers[i].Content = append(inst.ExtraContainers[i].Content, content)
+			found = true
+			break
+		}
+	}
+	if !found {
+		inst.ExtraContainers = append(inst.ExtraContainers, Container{
+			ContentType: contentType,
+			Content:     []Content{content},
+		})
+	}
+
+	return m.Put(inst)
+}
+
+func (m *Manager) AddExtraContentFromFile(slug, contentType, filePath string) (Content, error) {
+	filename := filepath.Base(filePath)
+	nameNoExt := strings.TrimSuffix(filename, filepath.Ext(filename))
+
+	destDir := filepath.Join(m.instancesDirectory, slug, contentType)
+	if err := os.MkdirAll(destDir, 0755); err != nil {
+		return Content{}, fmt.Errorf("failed to create dir: %w", err)
+	}
+
+	destPath := filepath.Join(destDir, fmt.Sprintf("[Cubify] %s", filename))
+
+	src, err := os.Open(filePath)
+	if err != nil {
+		return Content{}, fmt.Errorf("failed to open source file: %w", err)
+	}
+	defer src.Close()
+
+	dst, err := os.Create(destPath)
+	if err != nil {
+		return Content{}, fmt.Errorf("failed to create dest file: %w", err)
+	}
+	defer dst.Close()
+
+	if _, err := io.Copy(dst, src); err != nil {
+		return Content{}, fmt.Errorf("failed to copy file: %w", err)
+	}
+
+	content := Content{
+		Name:   nameNoExt,
+		Type:   TypeBoth,
+		Source: SourceLocal,
+		File:   filename,
+	}
+
+	if err := m.AddExtraContent(slug, contentType, content); err != nil {
+		return Content{}, err
+	}
+
+	return content, nil
+}
+
+func (m *Manager) RemoveExtraContent(slug, contentType, fileName string) error {
+	inst, err := m.GetBySlug(slug)
+	if err != nil {
+		return fmt.Errorf("instance not found: %w", err)
+	}
+
+	for i, c := range inst.ExtraContainers {
+		if c.ContentType == contentType {
+			newContent := []Content{}
+			for _, item := range c.Content {
+				if item.File != fileName {
+					newContent = append(newContent, item)
+				}
+			}
+			if len(newContent) == 0 {
+				inst.ExtraContainers = append(inst.ExtraContainers[:i], inst.ExtraContainers[i+1:]...)
+			} else {
+				inst.ExtraContainers[i].Content = newContent
+			}
+			break
+		}
+	}
+
+	// Delete physical file
+	physicalPath := filepath.Join(m.instancesDirectory, slug, contentType, fmt.Sprintf("[Cubify] %s", fileName))
+	os.Remove(physicalPath)
+
+	return m.Put(inst)
+}
+
+// MergeContainers merges extra containers into release containers for Run.
+func MergeContainers(release, extra []Container) []Container {
+	merged := make([]Container, len(release))
+	copy(merged, release)
+
+	for _, ec := range extra {
+		found := false
+		for i, mc := range merged {
+			if mc.ContentType == ec.ContentType {
+				merged[i].Content = append(merged[i].Content, ec.Content...)
+				found = true
+				break
+			}
+		}
+		if !found {
+			merged = append(merged, ec)
+		}
+	}
+
+	return merged
 }
