@@ -75,9 +75,7 @@ export function InstanceDetail({
 							src={meta.image_url}
 							className='size-32 rounded-3xl mb-4'
 						></img>
-						<h2 className='text-3xl font-bold'>
-							{meta?.name ?? inst.slug}
-						</h2>
+						<h2 className='text-3xl font-bold'>{meta?.name ?? inst.slug}</h2>
 						<h3 className='text-l font-medium text-zinc-400'>
 							{meta?.description}
 						</h3>

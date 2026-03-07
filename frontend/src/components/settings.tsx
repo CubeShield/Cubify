@@ -185,10 +185,7 @@ export function Settings({
 							variant='outline'
 							className='cursor-pointer'
 							onClick={() => {
-								handleUpdate('index_urls', [
-									...(cfgData.index_urls ?? []),
-									'',
-								])
+								handleUpdate('index_urls', [...(cfgData.index_urls ?? []), ''])
 							}}
 						>
 							<PlusIcon className='size-4' /> Добавить индекс
