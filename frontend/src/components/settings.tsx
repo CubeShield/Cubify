@@ -1,5 +1,7 @@
 import { config as ConfigModels } from 'wailsjs/go/models'
 import { Input } from './ui/input'
+import { Switch } from './ui/switch'
+import { Label } from './ui/label'
 import {
 	Field,
 	FieldDescription,
@@ -48,7 +50,11 @@ function ConfigInput({
 	)
 }
 
-export function Settings() {
+export function Settings({
+	onDevModeChange,
+}: {
+	onDevModeChange?: (v: boolean) => void
+}) {
 	const [cfgData, setConfigData] = useState<ConfigModels.Config | null>(null)
 	const [isLoading, setLoading] = useState(false)
 
@@ -73,6 +79,10 @@ export function Settings() {
 				[key]: value,
 			}),
 		)
+
+		if (key === 'dev_mode' && onDevModeChange) {
+			onDevModeChange(value as boolean)
+		}
 	}
 
 	const handleSave = async () => {
@@ -154,6 +164,24 @@ export function Settings() {
 					description='Токен для увеличения лимитов API'
 					onChange={handleUpdate}
 				/>
+			</FieldGroup>
+
+			<FieldGroup className='gap-2'>
+				<Field className='mb-4'>
+					<div className='flex items-center justify-between'>
+						<div className='flex flex-col gap-1'>
+							<Label>Режим разработчика</Label>
+							<FieldDescription>
+								Включает редактор сборок, кнопку создания проекта и запуск
+								Dev-версии
+							</FieldDescription>
+						</div>
+						<Switch
+							checked={cfgData.dev_mode ?? false}
+							onCheckedChange={checked => handleUpdate('dev_mode', checked)}
+						/>
+					</div>
+				</Field>
 			</FieldGroup>
 		</div>
 	)

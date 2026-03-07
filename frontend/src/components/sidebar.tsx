@@ -39,6 +39,7 @@ interface AppSidebarProps {
 	isRefreshing: boolean
 	currentPage: 'detail' | 'settings' | 'account'
 	setCurrentPage: (page: 'detail' | 'settings' | 'account') => void
+	devMode: boolean
 }
 
 interface InstanceCardProps {
@@ -143,6 +144,7 @@ export function AppSidebar({
 	isRefreshing,
 	currentPage,
 	setCurrentPage,
+	devMode,
 }: AppSidebarProps) {
 	const [currentUser, setCurrentUser] = useState<ConfigData.User | null>(null)
 	const [isRunning, setRunning] = useState<boolean>(false)
@@ -288,7 +290,7 @@ export function AppSidebar({
 					>
 						<PlayIcon /> Играть
 					</Button>
-					{hasEditor && devMeta && (
+					{devMode && hasEditor && devMeta && (
 						<Button
 							className='cursor-pointer'
 							variant='outline'
@@ -317,7 +319,7 @@ export function AppSidebar({
 				>
 					<RefreshCwIcon /> Обновить список
 				</Button>
-				<CreateProjectModal />
+				{devMode && <CreateProjectModal />}
 			</SidebarFooter>
 		</Sidebar>
 	)

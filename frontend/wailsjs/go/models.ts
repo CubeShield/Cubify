@@ -27,6 +27,7 @@ export namespace config {
 	    instances_directory: string;
 	    bin_directory: string;
 	    editor_directory: string;
+	    dev_mode: boolean;
 	    user: User;
 	
 	    static createFrom(source: any = {}) {
@@ -45,6 +46,7 @@ export namespace config {
 	        this.instances_directory = source["instances_directory"];
 	        this.bin_directory = source["bin_directory"];
 	        this.editor_directory = source["editor_directory"];
+	        this.dev_mode = source["dev_mode"];
 	        this.user = this.convertValues(source["user"], User);
 	    }
 	

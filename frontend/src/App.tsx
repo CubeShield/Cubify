@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react'
-import { GetLocalInstances, RefreshLocalReleases } from '../wailsjs/go/main/App'
+import {
+	GetConfig,
+	GetLocalInstances,
+	RefreshLocalReleases,
+} from '../wailsjs/go/main/App'
 import { instance } from '../wailsjs/go/models'
 import { SidebarProvider } from './components/ui/sidebar'
 import { AppSidebar } from './components/sidebar'
@@ -19,6 +23,7 @@ function App() {
 
 	const [isRefreshing, setIsRefreshing] = useState<boolean>(false)
 	const [currentPage, setCurrentPage] = useState<Page>('detail')
+	const [devMode, setDevMode] = useState<boolean>(false)
 
 	const getInstances = async () => {
 		setIsRefreshing(true)
@@ -27,8 +32,14 @@ function App() {
 		setIsRefreshing(false)
 	}
 
+	const fetchDevMode = async () => {
+		const cfg = await GetConfig()
+		setDevMode(cfg.dev_mode ?? false)
+	}
+
 	useEffect(() => {
 		getInstances()
+		fetchDevMode()
 	}, [])
 
 	return (
@@ -43,15 +54,18 @@ function App() {
 						isRefreshing={isRefreshing}
 						currentPage={currentPage}
 						setCurrentPage={setCurrentPage}
+						devMode={devMode}
 					/>
 					<main className='flex-1 p-6'>
-						{currentPage === 'settings' && <Settings />}
+						{currentPage === 'settings' && (
+							<Settings onDevModeChange={setDevMode} />
+						)}
 						{currentPage === 'account' && (
 							<User setCurrentPage={setCurrentPage} />
 						)}
 						{currentPage === 'detail' &&
 							(selectedInstance ? (
-								<InstanceDetail instance={selectedInstance} />
+								<InstanceDetail instance={selectedInstance} devMode={devMode} />
 							) : (
 								<div className='text-muted-foreground flex items-center justify-center h-full'>
 									Выберите инстанс в меню слева

@@ -24,6 +24,8 @@ type Config struct {
 	BinDirectory string `json:"bin_directory"`
 	EditorDirectory string `json:"editor_directory"`
 
+	DevMode bool `json:"dev_mode"`
+
 	User User `json:"user"`
 }
 

@@ -14,6 +14,7 @@ import {
 
 interface InstanceDetailProps {
 	instance: instance.LocalInstance
+	devMode: boolean
 }
 
 const CONTAINERS: Record<string, string> = {
@@ -21,7 +22,10 @@ const CONTAINERS: Record<string, string> = {
 	resourcepacks: 'Ресурспаки',
 }
 
-export function InstanceDetail({ instance: inst }: InstanceDetailProps) {
+export function InstanceDetail({
+	instance: inst,
+	devMode,
+}: InstanceDetailProps) {
 	const [hasEditor, setHasEditor] = useState(false)
 	const [editorMeta, setEditorMeta] = useState<instance.Meta | null>(null)
 	const [activeTab, setActiveTab] = useState('overview')
@@ -67,11 +71,13 @@ export function InstanceDetail({ instance: inst }: InstanceDetailProps) {
 			>
 				<TabsList>
 					<TabsTrigger value='overview'>Обзор</TabsTrigger>
-					{hasEditor && <TabsTrigger value='editor'>Редактор</TabsTrigger>}
+					{devMode && hasEditor && (
+						<TabsTrigger value='editor'>Редактор</TabsTrigger>
+					)}
 				</TabsList>
 
 				<TabsContent value='overview' className='flex-1 pt-4'>
-					{!hasEditor && inst.repo && (
+					{devMode && !hasEditor && inst.repo && (
 						<EnableEditorButton
 							slug={inst.slug}
 							onDone={() => {
@@ -82,7 +88,7 @@ export function InstanceDetail({ instance: inst }: InstanceDetailProps) {
 					<Releases instance={inst} />
 				</TabsContent>
 
-				{hasEditor && editorMeta && (
+				{devMode && hasEditor && editorMeta && (
 					<TabsContent value='editor' className='flex-1 pt-4'>
 						<EditorPage
 							slug={inst.slug}
