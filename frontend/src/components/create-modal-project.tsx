@@ -18,6 +18,7 @@ import {
 } from './ui/select'
 import { PlusIcon, UploadIcon } from 'lucide-react'
 import { CreateProject, SelectLogoFile } from 'wailsjs/go/main/App'
+import { instance } from 'wailsjs/go/models'
 
 export function CreateProjectModal() {
 	const [name, setName] = useState('')
@@ -37,7 +38,15 @@ export function CreateProjectModal() {
 	const handleCreate = async () => {
 		setLoading(true)
 		try {
-			await CreateProject(name, desc, mcVer, loader, loaderVer, repo, logoPath)
+			await CreateProject({
+				Name: name,
+				Description: desc,
+				MinecraftVersion: mcVer,
+				Loader: loader,
+				LoaderVersion: loaderVer,
+				RepoLink: repo,
+				LogoPath: logoPath,
+			})
 			alert('Проект создан и инициализирован!')
 		} catch (e) {
 			alert('Ошибка: ' + e)

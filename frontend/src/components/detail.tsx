@@ -1,11 +1,16 @@
 import { instance } from 'wailsjs/go/models'
 import dayjs from 'dayjs'
-import { BoxIcon } from 'lucide-react'
+import { BoxIcon, CodeIcon, Loader2 } from 'lucide-react'
 import { Badge } from './ui/badge'
+import { Button } from './ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs'
 import { EditorPage } from './editor/editor-page'
 import { useEffect, useState } from 'react'
-import { HasEditor, LoadProjectMeta } from '../../wailsjs/go/main/App'
+import {
+	HasEditor,
+	LoadProjectMeta,
+	CloneProject,
+} from '../../wailsjs/go/main/App'
 
 interface InstanceDetailProps {
 	instance: instance.LocalInstance
@@ -65,6 +70,14 @@ export function InstanceDetail({ instance: inst }: InstanceDetailProps) {
 				</TabsList>
 
 				<TabsContent value='overview' className='flex-1 pt-4'>
+					{!hasEditor && inst.repo && (
+						<EnableEditorButton
+							slug={inst.slug}
+							onDone={() => {
+								loadEditorData().then(() => setActiveTab('editor'))
+							}}
+						/>
+					)}
 					<Releases instance={inst} />
 				</TabsContent>
 
@@ -84,6 +97,50 @@ export function InstanceDetail({ instance: inst }: InstanceDetailProps) {
 
 interface ReleasesProps {
 	instance: instance.LocalInstance
+}
+
+function EnableEditorButton({
+	slug,
+	onDone,
+}: {
+	slug: string
+	onDone: () => void
+}) {
+	const [isCloning, setCloning] = useState(false)
+	const [error, setError] = useState<string | null>(null)
+
+	const handleClone = async () => {
+		setCloning(true)
+		setError(null)
+		try {
+			await CloneProject(slug)
+			onDone()
+		} catch (e) {
+			setError(String(e))
+		} finally {
+			setCloning(false)
+		}
+	}
+
+	return (
+		<div className='flex flex-col items-start gap-2 mb-4 p-4 border rounded-xl bg-muted/30'>
+			<div className='flex flex-col gap-1'>
+				<span className='font-medium'>Режим разработки</span>
+				<span className='text-sm text-muted-foreground'>
+					Склонировать репозиторий, чтобы редактировать сборку
+				</span>
+			</div>
+			<Button onClick={handleClone} disabled={isCloning}>
+				{isCloning ? (
+					<Loader2 className='mr-2 h-4 w-4 animate-spin' />
+				) : (
+					<CodeIcon className='mr-2 h-4 w-4' />
+				)}
+				{isCloning ? 'Клонирование...' : 'Включить режим разработки'}
+			</Button>
+			{error && <span className='text-sm text-destructive'>{error}</span>}
+		</div>
+	)
 }
 
 function Releases({ instance: inst }: ReleasesProps) {

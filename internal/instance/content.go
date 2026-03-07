@@ -104,6 +104,28 @@ func (m *Manager) GetGitStatus(slug string) (bool, error) {
 	return m.gm.GetGitStatus(m.editorPath(slug))
 }
 
+// CloneProject clones the GitHub repo into the editor folder for an existing instance.
+func (m *Manager) CloneProject(slug string) error {
+	inst, err := m.GetBySlug(slug)
+	if err != nil {
+		return fmt.Errorf("instance not found: %w", err)
+	}
+	if inst.Repo == "" {
+		return fmt.Errorf("instance has no repo link")
+	}
+	if m.HasEditor(slug) {
+		return fmt.Errorf("editor already exists for %s", slug)
+	}
+
+	remoteURL := fmt.Sprintf("https://github.com/%s.git", inst.Repo)
+	editorDir := m.editorPath(slug)
+
+	if err := git.Run(".", "clone", remoteURL, editorDir); err != nil {
+		return fmt.Errorf("git clone failed: %w", err)
+	}
+	return nil
+}
+
 func (m *Manager) CreateProject(project ProjectSettings) (LocalInstance, error) {
 	slug := utils.InstanceSlug(project.Name)
 	editorDir := m.editorPath(slug)

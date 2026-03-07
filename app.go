@@ -79,6 +79,10 @@ func (a *App) HasEditor(slug string) bool {
 	return a.controller.IM.HasEditor(slug)
 }
 
+func (a *App) CloneProject(slug string) error {
+	return a.controller.IM.CloneProject(slug)
+}
+
 func (a *App) SaveProjectMeta(slug string, meta instance.Meta) error {
 	return a.controller.IM.SaveProject(slug, meta)
 }
