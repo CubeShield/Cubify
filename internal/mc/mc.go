@@ -4,6 +4,7 @@ import (
 	logger "Cubify/internal/logging"
 	"Cubify/internal/utils"
 	"bufio"
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -71,10 +72,10 @@ func (m *Mc) AuthenticateMicrosoft(callbackCode func(string, string), callbackSu
 	return cmd.Wait()
 }
 
-func (m *Mc) Prepare(instanceName, loader, loaderVersion, minecraftVersion string) error {
+func (m *Mc) Prepare(ctx context.Context, instanceName, loader, loaderVersion, minecraftVersion string) error {
 	path := fmt.Sprintf("%s/%s", m.instancesDir, utils.InstanceSlug(instanceName))
 	version := fmt.Sprintf("%s:%s", loader, minecraftVersion)
-	cmd := exec.Command(m.bin,
+	cmd := exec.CommandContext(ctx, m.bin,
 		"--main-dir", path,
 		"start",
 		"--dry", 
@@ -85,7 +86,7 @@ func (m *Mc) Prepare(instanceName, loader, loaderVersion, minecraftVersion strin
 }
 
 
-func (m *Mc) Run(instanceName, loader, loaderVersion, minecraftVersion, uuid, username string) error {
+func (m *Mc) Run(ctx context.Context, instanceName, loader, loaderVersion, minecraftVersion, uuid, username string) error {
 	path := fmt.Sprintf("%s/%s", m.instancesDir, utils.InstanceSlug(instanceName))
 	version := fmt.Sprintf("%s:%s", loader, minecraftVersion)
 
@@ -105,7 +106,7 @@ func (m *Mc) Run(instanceName, loader, loaderVersion, minecraftVersion, uuid, us
 		args = append(args, m.jvmPath)
 	}
 
-	cmd := exec.Command(m.bin, args...)
+	cmd := exec.CommandContext(ctx, m.bin, args...)
 	
 	return m.executeWithLogging(cmd)
 }

@@ -8,6 +8,7 @@ import (
 	logger "Cubify/internal/logging"
 	"Cubify/internal/platform"
 	"context"
+	"sync"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
@@ -19,6 +20,9 @@ type App struct {
 	controller      *controller.Controller
 	instances       []instance.Instance
 	platformManager *platform.Manager
+
+	runMu     sync.Mutex
+	runCancel context.CancelFunc
 }
 
 func NewApp() *App {
@@ -64,8 +68,46 @@ func (a *App) GetLocalInstances() ([]instance.LocalInstance, error) {
 }
 
 func (a *App) Run(release instance.Release) {
-	if err := a.controller.Run(release); err != nil {
+	a.runMu.Lock()
+	if a.runCancel != nil {
+		a.runCancel()
+	}
+	runCtx, cancel := context.WithCancel(a.ctx)
+	a.runCancel = cancel
+	a.runMu.Unlock()
+
+	defer func() {
+		a.runMu.Lock()
+		a.runCancel = nil
+		a.runMu.Unlock()
+	}()
+
+	onProgress := func(step, total int, label string) {
+		runtime.EventsEmit(a.ctx, "run:progress", map[string]interface{}{
+			"step":  step,
+			"total": total,
+			"label": label,
+		})
+	}
+
+	if err := a.controller.Run(runCtx, release, onProgress); err != nil {
+		if runCtx.Err() != nil {
+			a.l.Info("Run cancelled")
+			runtime.EventsEmit(a.ctx, "run:cancelled", nil)
+			return
+		}
 		a.l.Error("Error while running: %v", err)
+		runtime.EventsEmit(a.ctx, "run:error", err.Error())
+		return
+	}
+	runtime.EventsEmit(a.ctx, "run:done", nil)
+}
+
+func (a *App) CancelRun() {
+	a.runMu.Lock()
+	defer a.runMu.Unlock()
+	if a.runCancel != nil {
+		a.runCancel()
 	}
 }
 

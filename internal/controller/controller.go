@@ -78,22 +78,47 @@ func (c *Controller) Fetch() ([]instance.Instance, error) {
 	return instances, nil
 }
 
-func (c *Controller) Run(release instance.Release) error {
+func (c *Controller) Run(ctx context.Context, release instance.Release, onProgress func(step, total int, label string)) error {
+	const totalSteps = 4
+
+	// Step 1: RetrievePortableMC
+	onProgress(1, totalSteps, "Загрузка PortableMC...")
 	if err := c.installer.RetrievePortableMC(); err != nil {
 		return err
 	}
 
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+
 	bin := c.installer.GetExecutablePath()
 	c.mc = mc.New(bin, c.cfg.InstancesDirectory, c.cfg.JVMPath, c.l)
+
+	// Step 2: Prepare
+	onProgress(2, totalSteps, "Подготовка Minecraft...")
 	c.l.Info("Preparing Minecraft...")
-	c.mc.Prepare(release.Meta.Name, release.Meta.Loader, release.Meta.LoaderVersion, release.Meta.MinecraftVersion)
+	if err := c.mc.Prepare(ctx, release.Meta.Name, release.Meta.Loader, release.Meta.LoaderVersion, release.Meta.MinecraftVersion); err != nil {
+		return fmt.Errorf("prepare failed: %w", err)
+	}
+
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+
+	// Step 3: Update content
+	onProgress(3, totalSteps, "Обновление контента...")
 	c.l.Info("Checking for updates...")
 	instanceDirectory := utils.InstanceSlug(release.Meta.Name)
 	fullInstancePath := filepath.Join(c.cfg.InstancesDirectory, instanceDirectory)
-	if err := c.updateInstanceContent(fullInstancePath, release.Meta.Containers); err != nil {
+	if err := c.updateInstanceContent(ctx, fullInstancePath, release.Meta.Containers); err != nil {
 		c.l.Error("Update warning: %v", err)
 		return fmt.Errorf("failed to update instance: %w", err)
 	}
+
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+
 	localInstance, err := c.IM.GetBySlug(instanceDirectory)
 	if err != nil {
 		return err
@@ -105,14 +130,17 @@ func (c *Controller) Run(release instance.Release) error {
 		return err
 	}
 
-	
+	// Step 4: Launch
+	onProgress(4, totalSteps, "Запуск Minecraft...")
 	c.l.Info("Launching Minecraft!")
-	c.mc.Run(release.Meta.Name, release.Meta.Loader, release.Meta.LoaderVersion, release.Meta.MinecraftVersion, c.cfg.User.UUID, c.cfg.Nickname)
+	if err := c.mc.Run(ctx, release.Meta.Name, release.Meta.Loader, release.Meta.LoaderVersion, release.Meta.MinecraftVersion, c.cfg.User.UUID, c.cfg.Nickname); err != nil {
+		return fmt.Errorf("run failed: %w", err)
+	}
 	return nil
 }
 
 
-func (c *Controller) updateInstanceContent(instancePath string, releaseContainers []instance.Container) error {
+func (c *Controller) updateInstanceContent(ctx context.Context, instancePath string, releaseContainers []instance.Container) error {
 	m := file.NewManager(file.NewLocalBackend(instancePath))
 
 	var installedContainers []instance.Container
@@ -129,10 +157,13 @@ func (c *Controller) updateInstanceContent(instancePath string, releaseContainer
 	}
 
 	for _, newContainer := range releaseContainers {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
 		oldContainer := findInstalled(newContainer.ContentType)
 		
 		processor := updater.NewContentProcessor(newContainer, oldContainer, m, c.l)
-		if err := processor.Process(); err != nil {
+		if err := processor.Process(ctx); err != nil {
 			return err
 		}
 	}

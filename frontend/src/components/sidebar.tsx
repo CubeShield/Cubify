@@ -17,17 +17,20 @@ import {
 	PlusIcon,
 	RefreshCwIcon,
 	Settings2Icon,
+	XIcon,
+	LoaderIcon,
 } from 'lucide-react'
 import { instance } from 'wailsjs/go/models'
 import { useEffect, useState } from 'react'
 import { Button } from './ui/button'
-import { HasEditor, Run } from 'wailsjs/go/main/App'
+import { HasEditor } from 'wailsjs/go/main/App'
 import fabric from '../assets/images/fabric.png'
 import forge from '../assets/images/forge.png'
 import { CreateProjectModal } from './create-modal-project'
 import { MarketplaceModal } from './marketplace'
 import { useApp } from '../context/app-context'
 import { useEditorData } from '../hooks/use-editor-data'
+import { useRun } from '../context/run-context'
 
 const LOADERS: Record<string, string> = { fabric, forge }
 
@@ -43,6 +46,12 @@ const STATUS_ICONS: Record<Status, LucideIcon> = {
 	not_installed: DownloadCloudIcon,
 	update: DownloadIcon,
 	ready: PlayIcon,
+}
+
+const STATUS_LABELS: Record<Status, string> = {
+	not_installed: 'Установить',
+	update: 'Обновить',
+	ready: 'Играть',
 }
 
 function getInstanceStatus(inst: instance.LocalInstance): Status {
@@ -170,33 +179,34 @@ export function AppSidebar() {
 
 	const { hasEditor, editorMeta } = useEditorData(selectedInstance?.slug)
 
-	const [isRunning, setRunning] = useState(false)
+	const { isRunning, progress, startRun, cancelRun } = useRun()
+
+	const instanceStatus: Status = selectedInstance
+		? getInstanceStatus(selectedInstance)
+		: 'not_installed'
+	const StatusIcon = STATUS_ICONS[instanceStatus]
 
 	const run = async () => {
 		if (!selectedInstance || selectedInstance.releases.length < 1) return
-		setRunning(true)
-		try {
-			await Run(selectedInstance.releases[0])
-		} finally {
-			setRunning(false)
-		}
+		await startRun(selectedInstance.releases[0])
 	}
 
 	const runDev = async () => {
 		if (!selectedInstance || !editorMeta) return
-		setRunning(true)
-		try {
-			const devRelease = new instance.Release({
-				tag_name: 'dev',
-				name: 'dev',
-				body: '',
-				Meta: editorMeta,
-			})
-			await Run(devRelease)
-		} finally {
-			setRunning(false)
-		}
+		const devRelease = new instance.Release({
+			tag_name: 'dev',
+			name: 'dev',
+			body: '',
+			Meta: editorMeta,
+		})
+		await startRun(devRelease)
 	}
+
+	const buttonLabel = isRunning && progress
+		? progress.label
+		: STATUS_LABELS[instanceStatus]
+
+	const ButtonIcon = isRunning ? LoaderIcon : StatusIcon
 
 	return (
 		<Sidebar variant='floating' className='h-22/23'>
@@ -231,8 +241,18 @@ export function AppSidebar() {
 						onClick={run}
 						disabled={isRunning || !selectedInstance || !currentUser}
 					>
-						<PlayIcon /> Играть
+						<ButtonIcon className={isRunning ? 'animate-spin' : ''} /> {buttonLabel}
 					</Button>
+					{isRunning && (
+						<Button
+							className='cursor-pointer'
+							variant='destructive'
+							size='icon'
+							onClick={cancelRun}
+						>
+							<XIcon />
+						</Button>
+					)}
 					{devMode && hasEditor && editorMeta && (
 						<Button
 							className='cursor-pointer'

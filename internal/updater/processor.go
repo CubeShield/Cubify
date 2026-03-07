@@ -4,6 +4,7 @@ import (
 	"Cubify/internal/file"
 	"Cubify/internal/instance"
 	logger "Cubify/internal/logging"
+	"context"
 	"fmt"
 	"net/http"
 	"path/filepath"
@@ -47,13 +48,16 @@ func (p *ContentProcessor) toSet(contentList []instance.Content) map[string]inst
 	return set
 }
 
-func (p *ContentProcessor) Process() error {
+func (p *ContentProcessor) Process(ctx context.Context) error {
 	p.l.Info("Handling container %s", p.contentType)
 
 	apiSet := p.toSet(p.apiContent)
 	installedSet := p.toSet(p.installedContent)
 
 	for fileName := range installedSet {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
 		if _, exists := apiSet[fileName]; !exists {
 			if err := p.delete(installedSet[fileName]); err != nil {
 				p.l.Error("Failed while deleting %s: %v", fileName, err)
@@ -63,8 +67,11 @@ func (p *ContentProcessor) Process() error {
 
 
 	for fileName := range apiSet {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
 		if _, exists := installedSet[fileName]; !exists {
-			if err := p.install(apiSet[fileName]); err != nil {
+			if err := p.install(ctx, apiSet[fileName]); err != nil {
 				p.l.Error("Failed while downloading %s: %v", fileName, err)
 			}
 		}
@@ -80,10 +87,15 @@ func (p *ContentProcessor) delete(content instance.Content) error {
 	return p.fm.Delete(relativePath)
 }
 
-func (p *ContentProcessor) install(content instance.Content) error {
+func (p *ContentProcessor) install(ctx context.Context, content instance.Content) error {
 	p.l.Info("Downloading %s", content.File)
 
-	resp, err := p.httpClient.Get(content.Url)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, content.Url, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create request for %s: %w", content.Url, err)
+	}
+
+	resp, err := p.httpClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed while downloading file %s: %w", content.Url, err)
 	}

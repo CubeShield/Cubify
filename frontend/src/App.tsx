@@ -7,6 +7,7 @@ import { StatusBar } from './components/status-bar'
 import { LogProvider } from './context/log-context'
 import { LogViewer } from './components/log-viewer'
 import { AppProvider, useApp } from './context/app-context'
+import { RunProvider } from './context/run-context'
 
 function MainContent() {
 	const {
@@ -45,12 +46,14 @@ function App() {
 		<div id='App'>
 			<LogProvider>
 				<AppProvider>
-					<SidebarProvider>
-						<AppSidebar />
-						<MainContent />
-						<LogViewer />
-						<StatusBar />
-					</SidebarProvider>
+					<RunProvider>
+						<SidebarProvider>
+							<AppSidebar />
+							<MainContent />
+							<LogViewer />
+							<StatusBar />
+						</SidebarProvider>
+					</RunProvider>
 				</AppProvider>
 			</LogProvider>
 		</div>

@@ -4,6 +4,8 @@ import {instance} from '../models';
 import {config} from '../models';
 import {git} from '../models';
 
+export function CancelRun():Promise<void>;
+
 export function CheckProjectStatus(arg1:string):Promise<boolean>;
 
 export function CloneProject(arg1:string):Promise<void>;
