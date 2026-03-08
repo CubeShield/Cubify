@@ -16,11 +16,14 @@ import {
 	SaveIcon,
 	Tag,
 	HistoryIcon,
+	PackageIcon,
+	PaletteIcon,
 	PlusIcon,
 	Trash2,
 	LinkIcon,
 	Loader2,
 	SearchIcon,
+	BoxIcon,
 } from 'lucide-react'
 import Fuse from 'fuse.js'
 import {
@@ -31,11 +34,16 @@ import {
 	DialogTrigger,
 } from '../ui/dialog'
 import { Badge } from '../ui/badge'
-import { Card } from '../ui/card'
 import { Label } from '../ui/label'
 import { Textarea } from '../ui/textarea'
 import { Content } from './editor-content'
 import { TooltipProvider } from '../ui/tooltip'
+import { Separator } from '../ui/separator'
+
+const CONTAINER_CFG: Record<string, { label: string; icon: typeof BoxIcon }> = {
+	mods: { label: 'Моды', icon: PackageIcon },
+	resourcepacks: { label: 'Ресурспаки', icon: PaletteIcon },
+}
 
 interface EditorPageProps {
 	slug: string
@@ -131,145 +139,167 @@ export function EditorPage({ slug, initialMeta, onRefresh }: EditorPageProps) {
 
 	return (
 		<div className='flex flex-col h-full gap-4'>
-			<div className='flex items-center justify-between pb-4 border-b'>
-				<div className='flex flex-col'>
-					<h2 className='text-2xl font-bold flex items-center gap-2'>
-						{meta.name}
-						{isFileDirty && (
-							<Badge variant='destructive' className='animate-pulse'>
-								Не сохранено
-							</Badge>
-						)}
-						{!isFileDirty && isGitDirty && (
-							<Badge
-								variant='outline'
-								className='border-yellow-500 text-yellow-500'
-							>
-								Изменено (Git)
-							</Badge>
-						)}
-					</h2>
-					<span className='text-xs text-muted-foreground font-mono'>
-						{slug}
-					</span>
-				</div>
+			{/* ── Editor header ── */}
+			<div className='relative overflow-hidden rounded-2xl border bg-card'>
+				<div className='relative flex items-center justify-between gap-4 p-5'>
+					<div className='min-w-0'>
+						<div className='flex items-center gap-2.5'>
+							<h2 className='text-xl font-bold tracking-tight truncate'>
+								{meta.name}
+							</h2>
+							{isFileDirty && (
+								<span className='inline-flex items-center rounded-md border border-destructive/30 bg-destructive/10 text-destructive px-2 py-0.5 text-[10px] font-medium animate-pulse'>
+									Не сохранено
+								</span>
+							)}
+							{!isFileDirty && isGitDirty && (
+								<span className='inline-flex items-center rounded-md border border-yellow-500/30 bg-yellow-500/10 text-yellow-500 px-2 py-0.5 text-[10px] font-medium'>
+									Изменено (Git)
+								</span>
+							)}
+						</div>
+						<span className='text-[11px] text-muted-foreground font-mono mt-0.5'>
+							{slug}
+						</span>
+					</div>
 
-				<div className='flex items-center gap-2'>
-					<Button
-						onClick={handleSaveFile}
-						disabled={!isFileDirty || isLoading}
-						variant={isFileDirty ? 'default' : 'secondary'}
-					>
-						<SaveIcon className='mr-2 h-4 w-4' />
-						Сохранить
-					</Button>
+					<div className='flex items-center gap-2 shrink-0'>
+						<Button
+							onClick={handleSaveFile}
+							disabled={!isFileDirty || isLoading}
+							className='rounded-lg cursor-pointer'
+							variant={isFileDirty ? 'default' : 'outline'}
+							size='sm'
+						>
+							<SaveIcon className='size-3.5' />
+							Сохранить
+						</Button>
 
-					<Dialog>
-						<DialogTrigger asChild>
-							<Button variant='outline' disabled={isFileDirty || !isGitDirty}>
-								<GitCommitVertical className='mr-2 h-4 w-4' />
-								Push Changes
-							</Button>
-						</DialogTrigger>
-						<DialogContent>
-							<DialogHeader>
-								<DialogTitle>Отправить изменения</DialogTitle>
-							</DialogHeader>
-							<div className='space-y-4 py-4'>
-								<Label>Сообщение коммита</Label>
-								<Textarea
-									placeholder='feat: added sodium mod'
-									value={commitMsg}
-									onChange={e => setCommitMsg(e.target.value)}
-								/>
+						<Dialog>
+							<DialogTrigger asChild>
 								<Button
-									onClick={handleSync}
-									disabled={isLoading}
-									className='w-full'
+									variant='outline'
+									disabled={isFileDirty || !isGitDirty}
+									className='rounded-lg cursor-pointer'
+									size='sm'
 								>
-									Commit & Push
+									<GitCommitVertical className='size-3.5' />
+									Push
 								</Button>
-							</div>
-						</DialogContent>
-					</Dialog>
-
-					<Dialog>
-						<DialogTrigger asChild>
-							<Button variant='ghost' size='icon'>
-								<HistoryIcon className='h-5 w-5' />
-							</Button>
-						</DialogTrigger>
-						<DialogContent className='max-w-2xl max-h-[80vh] overflow-auto'>
-							<DialogHeader>
-								<DialogTitle>История проекта</DialogTitle>
-							</DialogHeader>
-							<div className='grid gap-6'>
-								<div className='flex flex-col gap-3 p-4 border rounded-lg bg-muted/20'>
-									<Label>Новый релиз</Label>
-									<div className='flex gap-2 items-end'>
-										<div className='grid w-full gap-1.5'>
-											<Input
-												placeholder='v1.0.0'
-												value={tagName}
-												onChange={e => setTagName(e.target.value)}
-											/>
-										</div>
-										<Button onClick={handleRelease} disabled={isLoading}>
-											<Tag className='mr-2 h-4 w-4' /> Создать
-										</Button>
-									</div>
+							</DialogTrigger>
+							<DialogContent>
+								<DialogHeader>
+									<DialogTitle>Отправить изменения</DialogTitle>
+								</DialogHeader>
+								<div className='space-y-4 py-4'>
+									<Label>Сообщение коммита</Label>
 									<Textarea
-										placeholder='Сообщение к релизу (необязательно)'
-										value={releaseMessage}
-										onChange={e => setReleaseMessage(e.target.value)}
-										className='text-sm'
-										rows={2}
+										placeholder='feat: added sodium mod'
+										value={commitMsg}
+										onChange={e => setCommitMsg(e.target.value)}
 									/>
-									<p className='text-xs text-muted-foreground'>
-										Changelog генерируется автоматически. Сообщение будет
-										добавлено в описание релиза.
-									</p>
+									<Button
+										onClick={handleSync}
+										disabled={isLoading}
+										className='w-full'
+									>
+										Commit & Push
+									</Button>
 								</div>
+							</DialogContent>
+						</Dialog>
 
-								<div>
-									<h4 className='font-bold mb-2'>Теги</h4>
-									<div className='flex flex-wrap gap-2'>
-										{tags.map(t => (
-											<Badge key={t} variant='secondary'>
-												{t}
-											</Badge>
-										))}
-										{tags.length === 0 && (
-											<span className='text-muted-foreground text-sm'>
-												Нет тегов
-											</span>
-										)}
-									</div>
-								</div>
-								<div>
-									<h4 className='font-bold mb-2'>Последние коммиты</h4>
-									<div className='space-y-2'>
-										{commits.map(c => (
-											<div
-												key={c.hash}
-												className='flex justify-between text-sm border-b pb-2'
-											>
-												<span className='font-mono text-xs bg-muted px-1 rounded'>
-													{c.hash}
-												</span>
-												<span className='truncate flex-1 mx-4'>
-													{c.message}
-												</span>
-												<span className='text-muted-foreground text-xs whitespace-nowrap'>
-													{c.date}
-												</span>
+						<Dialog>
+							<DialogTrigger asChild>
+								<Button
+									variant='ghost'
+									size='icon'
+									className='rounded-lg size-8 cursor-pointer'
+								>
+									<HistoryIcon className='size-4' />
+								</Button>
+							</DialogTrigger>
+							<DialogContent className='max-w-2xl max-h-[80vh] overflow-auto'>
+								<DialogHeader>
+									<DialogTitle>История проекта</DialogTitle>
+								</DialogHeader>
+								<div className='grid gap-6'>
+									<div className='flex flex-col gap-3 p-4 rounded-xl border bg-muted/20'>
+										<Label>Новый релиз</Label>
+										<div className='flex gap-2 items-end'>
+											<div className='grid w-full gap-1.5'>
+												<Input
+													placeholder='v1.0.0'
+													value={tagName}
+													onChange={e => setTagName(e.target.value)}
+												/>
 											</div>
-										))}
+											<Button
+												onClick={handleRelease}
+												disabled={isLoading}
+												className='rounded-lg cursor-pointer'
+											>
+												<Tag className='size-3.5' /> Создать
+											</Button>
+										</div>
+										<Textarea
+											placeholder='Сообщение к релизу (необязательно)'
+											value={releaseMessage}
+											onChange={e => setReleaseMessage(e.target.value)}
+											className='text-sm'
+											rows={2}
+										/>
+										<p className='text-xs text-muted-foreground'>
+											Changelog генерируется автоматически. Сообщение будет
+											добавлено в описание релиза.
+										</p>
+									</div>
+
+									<div>
+										<h4 className='text-sm font-semibold mb-2'>Теги</h4>
+										<div className='flex flex-wrap gap-1.5'>
+											{tags.map(t => (
+												<span
+													key={t}
+													className='inline-flex items-center rounded-md border border-border px-2 py-0.5 text-[10px] font-mono text-muted-foreground'
+												>
+													{t}
+												</span>
+											))}
+											{tags.length === 0 && (
+												<span className='text-muted-foreground text-sm'>
+													Нет тегов
+												</span>
+											)}
+										</div>
+									</div>
+									<div>
+										<h4 className='text-sm font-semibold mb-2'>
+											Последние коммиты
+										</h4>
+										<div className='space-y-1'>
+											{commits.map(c => (
+												<div
+													key={c.hash}
+													className='flex justify-between items-center text-xs px-3 py-2 rounded-lg bg-muted/30 border'
+												>
+													<span className='font-mono text-[10px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground'>
+														{c.hash}
+													</span>
+													<span className='truncate flex-1 mx-3 text-foreground'>
+														{c.message}
+													</span>
+													<span className='text-muted-foreground text-[10px] whitespace-nowrap'>
+														{c.date}
+													</span>
+												</div>
+											))}
+										</div>
 									</div>
 								</div>
-							</div>
-						</DialogContent>
-					</Dialog>
+							</DialogContent>
+						</Dialog>
+					</div>
 				</div>
 			</div>
 
@@ -283,42 +313,63 @@ export function EditorPage({ slug, initialMeta, onRefresh }: EditorPageProps) {
 					<TabsTrigger value='containers'>Контейнеры</TabsTrigger>
 				</TabsList>
 
-				<TabsContent value='general' className='space-y-4 pt-4'>
-					<div className='grid grid-cols-2 gap-4'>
-						<div className='space-y-2'>
-							<Label>Название</Label>
-							<Input
-								value={meta.name}
-								onChange={e => updateMeta('name', e.target.value)}
-							/>
+				<TabsContent value='general' className='pt-4'>
+					<div className='border rounded-xl overflow-hidden bg-card'>
+						<div className='px-4 py-3 bg-muted/40'>
+							<span className='font-semibold text-sm'>Настройки сборки</span>
 						</div>
-						<div className='space-y-2'>
-							<Label>Версия Minecraft</Label>
-							<Input
-								value={meta.minecraft_version}
-								onChange={e => updateMeta('minecraft_version', e.target.value)}
-							/>
-						</div>
-						<div className='space-y-2'>
-							<Label>Loader</Label>
-							<Input
-								value={meta.loader}
-								onChange={e => updateMeta('loader', e.target.value)}
-							/>
-						</div>
-						<div className='space-y-2'>
-							<Label>Loader Version</Label>
-							<Input
-								value={meta.loader_version}
-								onChange={e => updateMeta('loader_version', e.target.value)}
-							/>
-						</div>
-						<div className='col-span-2 space-y-2'>
-							<Label>Описание</Label>
-							<Textarea
-								value={meta.description}
-								onChange={e => updateMeta('description', e.target.value)}
-							/>
+						<Separator />
+						<div className='p-4 grid grid-cols-2 gap-3'>
+							<div className='space-y-1.5'>
+								<Label className='text-xs text-muted-foreground'>
+									Название
+								</Label>
+								<Input
+									value={meta.name}
+									onChange={e => updateMeta('name', e.target.value)}
+									className='h-8 text-xs'
+								/>
+							</div>
+							<div className='space-y-1.5'>
+								<Label className='text-xs text-muted-foreground'>
+									Версия Minecraft
+								</Label>
+								<Input
+									value={meta.minecraft_version}
+									onChange={e =>
+										updateMeta('minecraft_version', e.target.value)
+									}
+									className='h-8 text-xs'
+								/>
+							</div>
+							<div className='space-y-1.5'>
+								<Label className='text-xs text-muted-foreground'>Loader</Label>
+								<Input
+									value={meta.loader}
+									onChange={e => updateMeta('loader', e.target.value)}
+									className='h-8 text-xs'
+								/>
+							</div>
+							<div className='space-y-1.5'>
+								<Label className='text-xs text-muted-foreground'>
+									Loader Version
+								</Label>
+								<Input
+									value={meta.loader_version}
+									onChange={e => updateMeta('loader_version', e.target.value)}
+									className='h-8 text-xs'
+								/>
+							</div>
+							<div className='col-span-2 space-y-1.5'>
+								<Label className='text-xs text-muted-foreground'>
+									Описание
+								</Label>
+								<Textarea
+									value={meta.description}
+									onChange={e => updateMeta('description', e.target.value)}
+									className='text-xs'
+								/>
+							</div>
 						</div>
 					</div>
 				</TabsContent>
@@ -496,20 +547,20 @@ function ContainerEditor({
 		<TooltipProvider>
 			<div className='flex flex-col gap-4 h-full'>
 				<div className='flex gap-2'>
-					<Button
-						size='sm'
-						variant='outline'
+					<button
+						className='inline-flex items-center gap-1.5 rounded-lg border border-dashed border-border hover:border-primary/40 hover:bg-primary/5 px-3 py-1.5 text-xs text-muted-foreground hover:text-primary transition-colors cursor-pointer'
 						onClick={() => addContainer('mods')}
 					>
-						+ Моды
-					</Button>
-					<Button
-						size='sm'
-						variant='outline'
+						<PlusIcon className='size-3' />
+						Моды
+					</button>
+					<button
+						className='inline-flex items-center gap-1.5 rounded-lg border border-dashed border-border hover:border-primary/40 hover:bg-primary/5 px-3 py-1.5 text-xs text-muted-foreground hover:text-primary transition-colors cursor-pointer'
 						onClick={() => addContainer('resourcepacks')}
 					>
-						+ Ресурспаки
-					</Button>
+						<PlusIcon className='size-3' />
+						Ресурспаки
+					</button>
 				</div>
 
 				<div className='space-y-4 pb-10'>
@@ -535,8 +586,12 @@ function ContainerEditor({
 						/>
 					))}
 					{meta.containers.length === 0 && (
-						<div className='text-center text-muted-foreground py-10'>
-							Нет контейнеров. Добавьте контейнер для модов или ресурспаков.
+						<div className='flex flex-col items-center justify-center py-16 text-muted-foreground'>
+							<BoxIcon className='size-10 mb-3 opacity-40' />
+							<p className='text-sm'>Нет контейнеров</p>
+							<p className='text-xs opacity-60 mt-1'>
+								Добавьте контейнер для модов или ресурспаков
+							</p>
 						</div>
 					)}
 				</div>
@@ -590,50 +645,69 @@ function ContainerCard({
 	isUrlLoading: boolean
 	onAddFromUrl: (cIdx: number) => void
 }) {
+	const cfg = CONTAINER_CFG[container.content_type] ?? {
+		label: container.content_type,
+		icon: BoxIcon,
+	}
+	const Icon = cfg.icon
+
 	return (
-		<Card className='p-4 border-l-4 border-l-primary'>
-			<div className='flex justify-between items-center mb-4'>
+		<div className='border rounded-xl overflow-hidden bg-card'>
+			{/* header */}
+			<div className='flex items-center justify-between px-4 py-3 bg-muted/40'>
 				<div className='flex items-center gap-2'>
-					<h3 className='font-bold text-lg capitalize'>
-						{container.content_type}
-					</h3>
-					<Badge variant='secondary'>
-						{filteredContent.length} / {container.content.length} Элемент(ов)
-					</Badge>
+					<div className='flex items-center justify-center size-8 rounded-lg bg-primary/15'>
+						<Icon className='size-4 text-primary' />
+					</div>
+					<span className='font-semibold text-sm'>{cfg.label}</span>
 				</div>
-				<Button
-					size='icon'
-					variant='ghost'
-					onClick={() => onDeleteContainer(cIdx)}
-				>
-					<Trash2 className='text-destructive h-4 w-4' />
-				</Button>
+				<div className='flex items-center gap-1.5'>
+					{searchQuery &&
+						filteredContent.length !== container.content.length && (
+							<span className='inline-flex items-center rounded-md border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground font-medium'>
+								{filteredContent.length} найдено
+							</span>
+						)}
+					<Badge variant='secondary' className='text-xs tabular-nums'>
+						{container.content.length}
+					</Badge>
+					<button
+						onClick={() => onDeleteContainer(cIdx)}
+						className='ml-1 flex items-center justify-center size-7 rounded-lg hover:bg-destructive/15 text-muted-foreground hover:text-destructive transition-colors cursor-pointer'
+					>
+						<Trash2 className='size-3.5' />
+					</button>
+				</div>
 			</div>
+			<Separator />
 
-			<div className='relative mb-4'>
-				<SearchIcon className='absolute left-3 top-1/2 transform -translate-y-1/2 size-4 text-muted-foreground' />
-				<Input
-					type='text'
-					placeholder='Искать по названию, файлу, URL...'
-					value={searchQuery}
-					onChange={e => onSearchChange(cIdx, e.target.value)}
-					className='pl-9'
-				/>
-			</div>
-
-			{searchQuery && filteredContent.length === 0 && (
-				<div className='flex flex-col items-center justify-center py-6 text-center bg-muted/30 rounded-lg mb-4'>
-					<SearchIcon className='size-10 text-muted-foreground/30 mb-2' />
-					<p className='text-sm text-muted-foreground'>
-						Ничего не найдено по запросу
-					</p>
-					<p className='text-xs text-muted-foreground/70 mt-1'>
-						"{searchQuery}"
-					</p>
+			{/* search */}
+			{container.content.length > 3 && (
+				<div className='px-4 pt-3'>
+					<div className='relative'>
+						<SearchIcon className='absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground' />
+						<Input
+							type='text'
+							placeholder='Поиск по названию, файлу, URL...'
+							value={searchQuery}
+							onChange={e => onSearchChange(cIdx, e.target.value)}
+							className='pl-9 h-8 text-xs'
+						/>
+					</div>
 				</div>
 			)}
 
-			<div className='space-y-2'>
+			{/* empty search state */}
+			{searchQuery && filteredContent.length === 0 && (
+				<div className='px-4 py-6 flex flex-col items-center text-sm text-muted-foreground'>
+					<SearchIcon className='size-8 opacity-30 mb-2' />
+					<p>Ничего не найдено</p>
+					<p className='text-xs opacity-60 mt-0.5'>«{searchQuery}»</p>
+				</div>
+			)}
+
+			{/* items */}
+			<div className='p-3 space-y-2'>
 				{filteredContent.map(item => {
 					const originalIdx = container.content.indexOf(item)
 					return (
@@ -650,15 +724,14 @@ function ContainerCard({
 				})}
 			</div>
 
-			<div className='flex gap-2 pt-2'>
-				<Button
-					variant='ghost'
-					size='sm'
-					className='flex-1 border-dashed border'
+			{/* add actions */}
+			<div className='flex gap-2 px-4 pb-3'>
+				<button
+					className='flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-border hover:border-primary/40 hover:bg-primary/5 px-3 py-2 text-xs text-muted-foreground hover:text-primary transition-colors cursor-pointer'
 					onClick={() => onAddContent(cIdx)}
 				>
-					<PlusIcon className='h-4 w-4' /> Добавить вручную
-				</Button>
+					<PlusIcon className='size-3.5' /> Добавить вручную
+				</button>
 
 				<Dialog
 					open={openUrlDialog === cIdx}
@@ -668,13 +741,9 @@ function ContainerCard({
 					}}
 				>
 					<DialogTrigger asChild>
-						<Button
-							variant='outline'
-							size='sm'
-							className='flex-1 border-dashed border-primary/50 hover:bg-primary/10'
-						>
-							<LinkIcon className='h-4 w-4' /> Из URL
-						</Button>
+						<button className='flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-primary/30 hover:border-primary/50 hover:bg-primary/5 px-3 py-2 text-xs text-primary/70 hover:text-primary transition-colors cursor-pointer'>
+							<LinkIcon className='size-3.5' /> Из URL
+						</button>
 					</DialogTrigger>
 					<DialogContent>
 						<DialogHeader>
@@ -688,14 +757,14 @@ function ContainerCard({
 								onChange={e => setUrlToAdd(e.target.value)}
 							/>
 							<Button
-								className='w-full'
+								className='w-full rounded-lg cursor-pointer'
 								onClick={() => onAddFromUrl(cIdx)}
 								disabled={isUrlLoading || !urlToAdd}
 							>
 								{isUrlLoading ? (
-									<Loader2 className='mr-2 h-4 w-4 animate-spin' />
+									<Loader2 className='size-3.5 animate-spin' />
 								) : (
-									<PlusIcon className='mr-2 h-4 w-4' />
+									<PlusIcon className='size-3.5' />
 								)}
 								Добавить
 							</Button>
@@ -703,6 +772,6 @@ function ContainerCard({
 					</DialogContent>
 				</Dialog>
 			</div>
-		</Card>
+		</div>
 	)
 }

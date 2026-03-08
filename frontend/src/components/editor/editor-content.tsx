@@ -59,14 +59,13 @@ const SmallButton = ({
 }) => (
 	<Tooltip>
 		<TooltipTrigger asChild>
-			<Button
+			<button
 				onClick={onClick}
 				disabled={disabled}
-				variant='outline'
-				size='icon'
+				className='flex items-center justify-center size-7 rounded-lg border border-border hover:bg-primary/15 hover:border-primary/30 text-muted-foreground hover:text-primary transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:border-border disabled:hover:text-muted-foreground'
 			>
-				<Icon />
-			</Button>
+				<Icon className='size-3.5' />
+			</button>
 		</TooltipTrigger>
 		<TooltipContent>
 			<p>{tooltip}</p>
@@ -91,7 +90,7 @@ const InfoInput = ({
 }) => (
 	<InputGroup>
 		<InputGroupInput
-			className={`h-8 text-xs ${mono ? 'font-mono' : ''}`}
+			className={`h-7 text-[11px] rounded-lg border-border bg-background ${mono ? 'font-mono' : ''}`}
 			value={value}
 			onChange={e => onChange(e.target.value)}
 			placeholder={placeholder}
@@ -101,7 +100,7 @@ const InfoInput = ({
 			<InputGroupAddon align='inline-end'>
 				<Tooltip>
 					<TooltipTrigger>
-						<InfoIcon className='size-4' />
+						<InfoIcon className='size-3.5 text-muted-foreground/60' />
 					</TooltipTrigger>
 					<TooltipContent>
 						<p>{tooltip}</p>
@@ -295,84 +294,31 @@ export const Content = memo(function Content({
 	)
 
 	return (
-		<div className='flex flex-col gap-3 bg-muted/40 p-2 rounded-lg border border-transparent hover:border-border transition-colors'>
-			{/* Header: image + name/type/file */}
-			<div className='flex items-center gap-3 justify-between'>
+		<div className='rounded-xl border bg-card overflow-hidden transition-colors hover:border-primary/20'>
+			{/* Header: image + name/source badge */}
+			<div className='flex items-center gap-3 px-3 py-2.5 bg-muted/30'>
 				{item.image_url !== '' && (
-					<img src={item.image_url} className='size-20 rounded-xl' />
+					<img
+						src={item.image_url}
+						className='size-10 rounded-lg shadow-sm ring-1 ring-white/10 shrink-0 object-cover'
+					/>
 				)}
-				<div className='flex flex-col gap-2 w-full'>
-					<div className='w-full flex gap-2 items-center'>
-						<InfoInput
-							onChange={onFieldChange('name')}
-							placeholder='Имя'
-							value={item.name}
-							tooltip='Название, отображается у клиентов в лаунчере'
-						/>
-						<Select
-							value={item.type}
-							onValueChange={val => updateContent(cIdx, iIdx, 'type', val)}
-						>
-							<SelectTrigger className='h-8 w-full'>
-								<SelectValue placeholder='Тип' />
-							</SelectTrigger>
-							<SelectContent>
-								<SelectItem value='both'>
-									<CloudSyncIcon /> Общий
-								</SelectItem>
-								<SelectItem value='client'>
-									<ComputerIcon /> Клиент
-								</SelectItem>
-								<SelectItem value='server'>
-									<ServerIcon /> Сервер
-								</SelectItem>
-							</SelectContent>
-						</Select>
+				<div className='flex-1 min-w-0'>
+					<div className='flex items-center gap-2'>
+						<span className='text-sm font-semibold truncate'>
+							{item.name || 'Без названия'}
+						</span>
+						{!isRaw && (
+							<span className='inline-flex items-center rounded-md border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground font-medium shrink-0'>
+								{item.source}
+							</span>
+						)}
 					</div>
-					<InfoInput
-						onChange={onFieldChange('file')}
-						placeholder='Файл'
-						value={item.file}
-						tooltip='Название файла, в котором будет сохранен контент'
-					/>
+					<p className='text-[10px] text-muted-foreground font-mono truncate mt-0.5'>
+						{item.file}
+					</p>
 				</div>
-			</div>
-
-			{/* URL / IDs row */}
-			<div className='flex w-full justify-between gap-2'>
-				{isRaw ? (
-					<InfoInput
-						onChange={onFieldChange('url')}
-						placeholder='Download URL'
-						value={item.url}
-						mono
-						tooltip='Ссылка на контент'
-					/>
-				) : (
-					<>
-						<InfoInput
-							onChange={onFieldChange('mod_id')}
-							placeholder='Abxd123'
-							value={item.mod_id}
-							mono
-							disabled
-							tooltip='ModID контента на сайте (Чтобы изменить, воспользуйтесь кнопкой Изменить контент)'
-						/>
-						<InfoInput
-							onChange={onFieldChange('file_id')}
-							placeholder='mc-123'
-							value={item.file_id}
-							mono
-							disabled
-							tooltip='FileID контента на сайте (Чтобы изменить, воспользуйтесь кнопкой Изменить контент)'
-						/>
-					</>
-				)}
-			</div>
-
-			{/* Actions row */}
-			<div className='flex w-full justify-between'>
-				<div className='flex w-full gap-2'>
+				<div className='flex items-center gap-1 shrink-0'>
 					<SmallButton
 						icon={EarthIcon}
 						tooltip='Сайт контента'
@@ -398,9 +344,83 @@ export const Content = memo(function Content({
 						replaceContent={replaceContent}
 					/>
 				</div>
-				<Button variant='destructive' onClick={() => removeContent(cIdx, iIdx)}>
-					<Trash2 /> Удалить
-				</Button>
+			</div>
+
+			{/* Editable fields */}
+			<div className='px-3 py-2.5 space-y-2'>
+				<div className='flex gap-2 items-center'>
+					<InfoInput
+						onChange={onFieldChange('name')}
+						placeholder='Имя'
+						value={item.name}
+						tooltip='Название, отображается у клиентов в лаунчере'
+					/>
+					<Select
+						value={item.type}
+						onValueChange={val => updateContent(cIdx, iIdx, 'type', val)}
+					>
+						<SelectTrigger className='h-7 w-full text-[11px] rounded-lg'>
+							<SelectValue placeholder='Тип' />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value='both'>
+								<CloudSyncIcon /> Общий
+							</SelectItem>
+							<SelectItem value='client'>
+								<ComputerIcon /> Клиент
+							</SelectItem>
+							<SelectItem value='server'>
+								<ServerIcon /> Сервер
+							</SelectItem>
+						</SelectContent>
+					</Select>
+				</div>
+				<InfoInput
+					onChange={onFieldChange('file')}
+					placeholder='Файл'
+					value={item.file}
+					tooltip='Название файла, в котором будет сохранен контент'
+				/>
+				<div className='flex gap-2'>
+					{isRaw ? (
+						<InfoInput
+							onChange={onFieldChange('url')}
+							placeholder='Download URL'
+							value={item.url}
+							mono
+							tooltip='Ссылка на контент'
+						/>
+					) : (
+						<>
+							<InfoInput
+								onChange={onFieldChange('mod_id')}
+								placeholder='Abxd123'
+								value={item.mod_id}
+								mono
+								disabled
+								tooltip='ModID контента на сайте'
+							/>
+							<InfoInput
+								onChange={onFieldChange('file_id')}
+								placeholder='mc-123'
+								value={item.file_id}
+								mono
+								disabled
+								tooltip='FileID контента на сайте'
+							/>
+						</>
+					)}
+				</div>
+			</div>
+
+			{/* Delete action */}
+			<div className='flex items-center justify-end px-3 py-2 border-t border-border bg-muted/20'>
+				<button
+					onClick={() => removeContent(cIdx, iIdx)}
+					className='inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs text-destructive hover:bg-destructive/10 transition-colors cursor-pointer'
+				>
+					<Trash2 className='size-3' /> Удалить
+				</button>
 			</div>
 		</div>
 	)
