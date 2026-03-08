@@ -141,7 +141,7 @@ func (m *Manager) CloneProject(slug string) error {
 		return fmt.Errorf("editor already exists for %s", slug)
 	}
 
-	remoteURL := fmt.Sprintf("https://github.com/%s.git", inst.Repo)
+	remoteURL := fmt.Sprintf("git@github.com:%s.git", inst.Repo)
 	absDir := m.absPath(m.editorPath(slug))
 
 	if err := git.Run(".", "clone", remoteURL, absDir); err != nil {
