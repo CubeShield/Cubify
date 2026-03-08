@@ -41,19 +41,24 @@ function MainContent() {
 	)
 }
 
+function AppRunProvider({ children }: { children: React.ReactNode }) {
+	const { reloadLocalInstances } = useApp()
+	return <RunProvider onRunDone={reloadLocalInstances}>{children}</RunProvider>
+}
+
 function App() {
 	return (
 		<div id='App'>
 			<LogProvider>
 				<AppProvider>
-					<RunProvider>
+					<AppRunProvider>
 						<SidebarProvider>
 							<AppSidebar />
 							<MainContent />
 							<LogViewer />
 							<StatusBar />
 						</SidebarProvider>
-					</RunProvider>
+					</AppRunProvider>
 				</AppProvider>
 			</LogProvider>
 		</div>

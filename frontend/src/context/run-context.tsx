@@ -31,7 +31,13 @@ export function useRun() {
 	return ctx
 }
 
-export function RunProvider({ children }: { children: ReactNode }) {
+export function RunProvider({
+	children,
+	onRunDone,
+}: {
+	children: ReactNode
+	onRunDone?: () => void
+}) {
 	const [isRunning, setIsRunning] = useState(false)
 	const [progress, setProgress] = useState<RunProgress | null>(null)
 
@@ -42,6 +48,7 @@ export function RunProvider({ children }: { children: ReactNode }) {
 		const onDone = () => {
 			setIsRunning(false)
 			setProgress(null)
+			onRunDone?.()
 		}
 		const onError = () => {
 			setIsRunning(false)

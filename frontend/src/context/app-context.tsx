@@ -29,6 +29,7 @@ interface AppContextType {
 
 	isRefreshing: boolean
 	refreshInstances: () => Promise<void>
+	reloadLocalInstances: () => Promise<void>
 
 	config: ConfigData.Config | null
 	currentUser: ConfigData.User | null
@@ -74,6 +75,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
 		}
 	}, [])
 
+	const reloadLocalInstances = useCallback(async () => {
+		setInstances(await GetLocalInstances())
+	}, [])
+
 	const selectInstance = useCallback((inst: instance.LocalInstance | null) => {
 		setSelectedInstance(inst)
 		if (inst) setCurrentPage('detail')
@@ -98,6 +103,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 				setDevMode,
 				isRefreshing,
 				refreshInstances,
+				reloadLocalInstances,
 				config,
 				currentUser,
 				reloadConfig,
