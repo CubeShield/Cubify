@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
 )
 
 type Mc struct {
@@ -79,12 +80,15 @@ func (m *Mc) AuthenticateMicrosoft(callbackCode func(string, string), callbackSu
 func (m *Mc) Prepare(ctx context.Context, instanceName, loader, loaderVersion, minecraftVersion string) error {
 	path := fmt.Sprintf("%s/%s", m.instancesDir, utils.InstanceSlug(instanceName))
 	version := fmt.Sprintf("%s:%s", loader, minecraftVersion)
-	cmd := exec.CommandContext(ctx, m.bin,
+	args := []string{
 		"--main-dir", path,
 		"start",
 		"--dry", 
 		"--jvm-policy", "system-then-mojang",
-		version)
+		version,
+	}
+	m.l.Info("executing with args: %s", strings.Join(args, " "))
+	cmd := exec.CommandContext(ctx, m.bin, args...)
 	
 	return m.executeWithLogging(cmd)
 }
@@ -122,40 +126,77 @@ func (m *Mc) Run(ctx context.Context, instanceName, loader, loaderVersion, minec
 		args = append(args, fmt.Sprintf("--jvm-arg=%s", strings.Join(jvmArgs, ",")))
 	}
 
+	m.l.Info("executing with args: %s", strings.Join(args, " "))
 	cmd := exec.CommandContext(ctx, m.bin, args...)
 	
 	return m.executeWithLogging(cmd)
 }
 
 func (m *Mc) executeWithLogging(cmd *exec.Cmd) error {
-	stdoutReader, stdoutWriter := io.Pipe()
-	stderrReader, stderrWriter := io.Pipe()
-
-	cmd.Stdout = stdoutWriter
-	cmd.Stderr = stderrWriter
-
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return err
+	}
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		return err
+	}
 
 	if err := cmd.Start(); err != nil {
 		return err
 	}
-	go readOutput(stdoutReader, m.l, false)
-	go readOutput(stderrReader, m.l, true)
-	if err := cmd.Wait(); err != nil {
-		return err
-	}
-	return nil
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		readOutput(stdout, m.l, false)
+	}()
+	go func() {
+		defer wg.Done()
+		readOutput(stderr, m.l, true)
+	}()
+	wg.Wait()
+
+	return cmd.Wait()
 }
 
 
 func readOutput(reader io.Reader, l *logger.Logger, isErr bool) {
 	scanner := bufio.NewScanner(reader)
+	scanner.Split(scanLinesOrCR)
 	for scanner.Scan() {
-		text := scanner.Text()
+		text := strings.TrimSpace(scanner.Text())
+		if text == "" {
+			continue
+		}
 		if !isErr {
 			l.Info("[MC] %s", text)
 		} else {
 			l.Error("[MC] %s", text)
 		}
-		
 	}
+}
+
+// scanLinesOrCR splits on \n, \r\n, or standalone \r so that
+// carriage-return progress updates are forwarded immediately.
+func scanLinesOrCR(data []byte, atEOF bool) (advance int, token []byte, err error) {
+	if atEOF && len(data) == 0 {
+		return 0, nil, nil
+	}
+	for i := 0; i < len(data); i++ {
+		switch data[i] {
+		case '\n':
+			return i + 1, data[:i], nil
+		case '\r':
+			if i+1 < len(data) && data[i+1] == '\n' {
+				return i + 2, data[:i], nil
+			}
+			return i + 1, data[:i], nil
+		}
+	}
+	if atEOF {
+		return len(data), data, nil
+	}
+	return 0, nil, nil
 }
