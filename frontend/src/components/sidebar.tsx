@@ -223,7 +223,7 @@ export function AppSidebar() {
 
 	const instanceStatus: Status = selectedInstance
 		? getInstanceStatus(selectedInstance)
-		: 'not_installed'
+		: 'ready'
 	const StatusIcon = STATUS_ICONS[instanceStatus]
 
 	const run = async () => {
@@ -292,21 +292,20 @@ export function AppSidebar() {
 				{/* Action buttons */}
 				<div className='flex flex-col gap-2'>
 					<div className='flex gap-2'>
-						{selectedInstance && (
-							<Button
-								className='cursor-pointer flex-1 rounded-lg'
-								onClick={run}
-								disabled={
-									isRunning ||
-									!selectedInstance ||
-									!currentUser ||
-									currentUser?.username == ''
-								}
-							>
-								<ButtonIcon className={isRunning ? 'animate-spin' : ''} />{' '}
-								{buttonLabel}
-							</Button>
-						)}
+						<Button
+							className='cursor-pointer flex-1 rounded-lg'
+							onClick={run}
+							disabled={
+								isRunning ||
+								!selectedInstance ||
+								!currentUser ||
+								currentUser?.username == ''
+							}
+						>
+							<ButtonIcon className={isRunning ? 'animate-spin' : ''} />{' '}
+							{buttonLabel}
+						</Button>
+
 						{isRunning && (
 							<Button
 								className='cursor-pointer rounded-lg'

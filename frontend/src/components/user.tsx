@@ -1,10 +1,19 @@
 import { config as ConfigData } from '../../wailsjs/go/models'
-import { Field, FieldDescription, FieldLabel } from './ui/field'
 import { Button } from './ui/button'
-import { LinkIcon, SaveIcon, Loader2 } from 'lucide-react'
+import {
+	CheckCircle2Icon,
+	LinkIcon,
+	Loader2,
+	SaveIcon,
+	ShieldIcon,
+	UserIcon,
+	WifiOffIcon,
+} from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs'
 import { Input } from './ui/input'
+import { Label } from './ui/label'
+import { Separator } from './ui/separator'
 import {
 	GetConfig,
 	SaveConfig,
@@ -92,116 +101,187 @@ export function User() {
 	}
 
 	return (
-		<div className='p-6 max-w-2xl'>
-			<div className='flex justify-between items-center mb-6'>
-				<h2 className='text-3xl font-bold'>
-					Аккаунт{' '}
-					<span className='text-sm text-muted-foreground font-normal'>
-						({authType === 'microsoft' ? 'Лицензия' : 'Оффлайн'})
-					</span>
-				</h2>
+		<div className='max-w-2xl'>
+			{/* Hero header */}
+			<div className='relative overflow-hidden rounded-2xl border bg-card mb-6'>
+				<div className='relative flex items-center gap-4 p-6'>
+					{username ? (
+						<img
+							src={`https://minotar.net/helm/${username}/512.png`}
+							className='size-16 rounded-xl shadow-lg ring-1 ring-white/10 shrink-0'
+							alt={username}
+						/>
+					) : (
+						<div className='flex items-center justify-center size-16 rounded-xl bg-primary/15 shadow-lg shrink-0'>
+							<UserIcon className='size-7 text-primary' />
+						</div>
+					)}
+					<div className='flex-1 min-w-0'>
+						<h2 className='text-2xl font-bold tracking-tight'>
+							{username || 'Аккаунт'}
+						</h2>
+						<div className='flex items-center gap-2 mt-1.5'>
+							<span
+								className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-medium ${
+									authType === 'microsoft'
+										? 'border-primary/30 bg-primary/10 text-primary'
+										: 'border-border text-muted-foreground'
+								}`}
+							>
+								{authType === 'microsoft' ? (
+									<ShieldIcon className='size-3' />
+								) : (
+									<WifiOffIcon className='size-3' />
+								)}
+								{authType === 'microsoft' ? 'Microsoft' : 'Неоффициальный'}
+							</span>
+						</div>
+					</div>
+				</div>
 			</div>
-			<div>
-				<Tabs
-					value={authType}
-					onValueChange={v => setAuthType(v)}
-					className='w-full'
-				>
-					<TabsList className='w-full'>
-						<TabsTrigger value='offline' className='cursor-pointer w-1/2'>
-							Оффлайн (Пиратка)
-						</TabsTrigger>
-						<TabsTrigger value='microsoft' className='cursor-pointer w-1/2'>
-							Microsoft
-						</TabsTrigger>
-					</TabsList>
 
-					<TabsContent value='offline'>
-						<Field className='mb-4 mt-4'>
-							<FieldLabel>Никнейм</FieldLabel>
-							<Input
-								type='text'
-								placeholder='Стив'
-								value={username}
-								onChange={v => setUsername(v.target.value)}
-							/>
-							<FieldDescription>
-								Никнейм для игры на пиратских серверах
-							</FieldDescription>
-						</Field>
-						<Button className='cursor-pointer' onClick={saveOfflineUser}>
-							<SaveIcon className='mr-2 h-4 w-4' />
-							Сохранить
-						</Button>
-					</TabsContent>
+			{/* Auth tabs */}
+			<Tabs
+				value={authType}
+				onValueChange={v => setAuthType(v)}
+				className='w-full'
+			>
+				<TabsList className='w-full'>
+					<TabsTrigger value='offline' className='cursor-pointer w-1/2'>
+						<WifiOffIcon className='size-3.5' />
+						Неоффициальный
+					</TabsTrigger>
+					<TabsTrigger value='microsoft' className='cursor-pointer w-1/2'>
+						<ShieldIcon className='size-3.5' />
+						Microsoft
+					</TabsTrigger>
+				</TabsList>
 
-					<TabsContent value='microsoft' className='mt-4 space-y-4'>
-						{authType === 'microsoft' && msAuthState === 'idle' && (
-							<div className='bg-green-500/10 border border-green-500/20 p-4 rounded-lg text-green-600 mb-4'>
-								Вы авторизованы как <strong>{username}</strong>
-							</div>
-						)}
-
-						{msAuthState === 'idle' || msAuthState === 'success' ? (
-							<div>
-								<p className='text-muted-foreground mb-4'>
-									Используйте этот метод для игры на лицензионных серверах.
+				{/* Offline tab */}
+				<TabsContent value='offline' className='pt-4'>
+					<div className='border rounded-xl overflow-hidden bg-card'>
+						<div className='px-4 py-3 bg-muted/40'>
+							<span className='font-semibold text-sm'>
+								Неоффициальный аккаунт
+							</span>
+						</div>
+						<Separator />
+						<div className='p-4 space-y-4'>
+							<div className='space-y-1.5'>
+								<Label className='text-xs text-muted-foreground'>Никнейм</Label>
+								<Input
+									type='text'
+									placeholder='Стив'
+									value={username}
+									onChange={v => setUsername(v.target.value)}
+									className='h-9'
+								/>
+								<p className='text-[11px] text-muted-foreground'>
+									Никнейм для игры на пиратских серверах
 								</p>
-								<Button className='cursor-pointer' onClick={startMicrosoftAuth}>
-									<LinkIcon className='mr-2 h-4 w-4' />
-									{authType === 'microsoft'
-										? 'Сменить аккаунт'
-										: 'Привязать аккаунт'}
-								</Button>
 							</div>
-						) : (
-							<div className='border rounded-lg p-6 flex flex-col items-center text-center animate-in fade-in'>
-								{msAuthState === 'waiting_code' && (
-									<div className='flex flex-col items-center'>
-										<Loader2 className='h-8 w-8 animate-spin mb-2 text-primary' />
-										<p>Получение кода авторизации...</p>
+							<Button
+								className='cursor-pointer rounded-lg w-full'
+								onClick={saveOfflineUser}
+							>
+								<SaveIcon className='size-3.5' />
+								Сохранить
+							</Button>
+						</div>
+					</div>
+				</TabsContent>
+
+				{/* Microsoft tab */}
+				<TabsContent value='microsoft' className='pt-4'>
+					<div className='border rounded-xl overflow-hidden bg-card'>
+						<div className='px-4 py-3 bg-muted/40'>
+							<span className='font-semibold text-sm'>Аккаунт Microsoft</span>
+						</div>
+						<Separator />
+						<div className='p-4 space-y-4'>
+							{/* Already authenticated */}
+							{authType === 'microsoft' && msAuthState === 'idle' && (
+								<div className='flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4'>
+									<CheckCircle2Icon className='size-5 text-primary shrink-0' />
+									<div>
+										<p className='text-sm font-semibold'>
+											Авторизован как{' '}
+											<span className='text-primary'>{username}</span>
+										</p>
+										<p className='text-[11px] text-muted-foreground mt-0.5'>
+											Доступ к лицензионным серверам
+										</p>
 									</div>
-								)}
+								</div>
+							)}
 
-								{msAuthState === 'waiting_auth' && (
-									<>
-										<span className='mb-2 text-muted-foreground'>
-											Перейдите по ссылке и введите код:
-										</span>
-										<a
-											href={verificationUrl}
-											target='_blank'
-											rel='noreferrer'
-											className='text-xl font-bold text-blue-500 hover:underline mb-4'
+							{(msAuthState === 'idle' || msAuthState === 'success') && (
+								<div className='space-y-3'>
+									<p className='text-xs text-muted-foreground'>
+										Привяжите аккаунт Microsoft для игры на лицензионных
+										серверах.
+									</p>
+									<Button
+										className='cursor-pointer rounded-lg w-full'
+										variant={authType === 'microsoft' ? 'outline' : 'default'}
+										onClick={startMicrosoftAuth}
+									>
+										<LinkIcon className='size-3.5' />
+										{authType === 'microsoft'
+											? 'Сменить аккаунт'
+											: 'Привязать аккаунт'}
+									</Button>
+								</div>
+							)}
+
+							{/* Waiting states */}
+							{msAuthState === 'waiting_code' && (
+								<div className='flex flex-col items-center py-8'>
+									<Loader2 className='size-8 animate-spin text-primary mb-3' />
+									<p className='text-sm text-muted-foreground'>
+										Получение кода авторизации...
+									</p>
+								</div>
+							)}
+
+							{msAuthState === 'waiting_auth' && (
+								<div className='flex flex-col items-center py-4 space-y-4'>
+									<p className='text-xs text-muted-foreground'>
+										Перейдите по ссылке и введите код:
+									</p>
+
+									<a
+										href={verificationUrl}
+										target='_blank'
+										rel='noreferrer'
+										className='inline-flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/5 px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary/10 transition-colors'
+									>
+										<LinkIcon className='size-3.5' />
+										{verificationUrl}
+									</a>
+
+									<div className='rounded-xl border bg-muted/30 p-5 w-full max-w-xs'>
+										<h1
+											className='font-mono font-bold text-4xl tracking-widest text-center select-all cursor-pointer text-foreground'
+											onClick={() => navigator.clipboard.writeText(deviceCode)}
 										>
-											{verificationUrl}
-										</a>
+											{deviceCode}
+										</h1>
+										<p className='text-[10px] text-muted-foreground mt-2 text-center'>
+											Нажмите, чтобы скопировать
+										</p>
+									</div>
 
-										<div className='bg-secondary p-4 rounded-xl mb-4 w-full max-w-xs'>
-											<h1
-												className='font-mono font-bold text-4xl tracking-widest text-center select-all cursor-pointer'
-												onClick={() =>
-													navigator.clipboard.writeText(deviceCode)
-												}
-											>
-												{deviceCode}
-											</h1>
-											<p className='text-xs text-muted-foreground mt-2 text-center'>
-												(Нажмите, чтобы скопировать)
-											</p>
-										</div>
-
-										<div className='flex items-center text-sm text-muted-foreground'>
-											<Loader2 className='h-3 w-3 animate-spin mr-2' />
-											Ожидание действий в браузере...
-										</div>
-									</>
-								)}
-							</div>
-						)}
-					</TabsContent>
-				</Tabs>
-			</div>
+									<div className='flex items-center gap-2 text-xs text-muted-foreground'>
+										<Loader2 className='size-3 animate-spin' />
+										Ожидание действий в браузере...
+									</div>
+								</div>
+							)}
+						</div>
+					</div>
+				</TabsContent>
+			</Tabs>
 		</div>
 	)
 }
