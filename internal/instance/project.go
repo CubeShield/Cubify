@@ -132,12 +132,57 @@ jobs:
               json.dump(changelog, f, ensure_ascii=False, indent=2)
           PYEOF
 
+      - name: Process local files
+        run: |
+          python3 - <<'PYEOF'
+          import json, os, glob
+
+          with open("instance.json") as f:
+              meta = json.load(f)
+
+          repo = os.environ.get("GITHUB_REPOSITORY", "")
+          tag = os.environ.get("GITHUB_REF_NAME", "")
+          local_files = []
+
+          for container in meta.get("containers", []):
+              ct = container.get("content_type", "")
+              for item in container.get("content", []):
+                  if item.get("source") == "local" and item.get("file"):
+                      file_path = os.path.join(ct, item["file"])
+                      if os.path.exists(file_path):
+                          item["url"] = f"https://github.com/{repo}/releases/download/{tag}/{item['file']}"
+                          local_files.append(file_path)
+
+          with open("instance.json", "w") as f:
+              json.dump(meta, f, ensure_ascii=False, indent=2)
+
+          with open("local_files.txt", "w") as f:
+              for lf in local_files:
+                  f.write(lf + "\n")
+          PYEOF
+
+      - name: Collect local file assets
+        id: local_assets
+        run: |
+          EXTRA_FILES=""
+          if [ -f local_files.txt ]; then
+            while IFS= read -r line; do
+              if [ -n "$line" ] && [ -f "$line" ]; then
+                EXTRA_FILES="${EXTRA_FILES}${line}"$'\n'
+              fi
+            done < local_files.txt
+          fi
+          echo "files<<EOF" >> $GITHUB_OUTPUT
+          echo "$EXTRA_FILES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
       - name: Create Release & Upload Assets
         uses: softprops/action-gh-release@v2
         with:
           files: |
             instance.json
             changelog.json
+            ${{ steps.local_assets.outputs.files }}
           body_path: release_message.txt
           generate_release_notes: true
           draft: false

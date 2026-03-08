@@ -10,6 +10,10 @@ export function AddExtraContentFromFile(arg1, arg2) {
   return window['go']['main']['App']['AddExtraContentFromFile'](arg1, arg2);
 }
 
+export function AddProjectContentFromFile(arg1, arg2) {
+  return window['go']['main']['App']['AddProjectContentFromFile'](arg1, arg2);
+}
+
 export function CancelDeploy() {
   return window['go']['main']['App']['CancelDeploy']();
 }

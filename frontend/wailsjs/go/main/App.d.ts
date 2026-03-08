@@ -9,6 +9,8 @@ export function AddExtraContent(arg1:string,arg2:string,arg3:instance.Content):P
 
 export function AddExtraContentFromFile(arg1:string,arg2:string):Promise<instance.Content>;
 
+export function AddProjectContentFromFile(arg1:string,arg2:string):Promise<instance.Content>;
+
 export function CancelDeploy():Promise<void>;
 
 export function CancelRun():Promise<void>;

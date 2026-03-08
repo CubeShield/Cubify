@@ -239,6 +239,33 @@ func (m *Manager) CreateProject(project ProjectSettings) (LocalInstance, error) 
 	return localInstance, nil
 }
 
+// ── Project content (editor, git-tracked) ──
+
+func (m *Manager) AddProjectContentFromFile(slug, contentType, filePath string) (Content, error) {
+	filename := filepath.Base(filePath)
+	nameNoExt := strings.TrimSuffix(filename, filepath.Ext(filename))
+
+	src, err := os.Open(filePath)
+	if err != nil {
+		return Content{}, fmt.Errorf("failed to open source file: %w", err)
+	}
+	defer src.Close()
+
+	destRelPath := filepath.Join(m.editorPath(slug), contentType, filename)
+	if err := m.fm.Save(destRelPath, src); err != nil {
+		return Content{}, fmt.Errorf("failed to save file: %w", err)
+	}
+
+	content := Content{
+		Name:   nameNoExt,
+		Type:   TypeBoth,
+		Source: SourceLocal,
+		File:   filename,
+	}
+
+	return content, nil
+}
+
 // ── Extra content (user-added mods/resourcepacks) ──
 
 func (m *Manager) AddExtraContent(slug, contentType string, content Content) error {

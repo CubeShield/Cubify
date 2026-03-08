@@ -6,6 +6,7 @@ import {
 	GetProjectHistory,
 	CheckProjectStatus,
 	GetContentFromURL,
+	AddProjectContentFromFile,
 } from '../../../wailsjs/go/main/App'
 import { git, instance } from '../../../wailsjs/go/models'
 import { Button } from '../ui/button'
@@ -24,6 +25,7 @@ import {
 	Loader2,
 	SearchIcon,
 	BoxIcon,
+	FileIcon,
 } from 'lucide-react'
 import Fuse from 'fuse.js'
 import {
@@ -375,7 +377,7 @@ export function EditorPage({ slug, initialMeta, onRefresh }: EditorPageProps) {
 				</TabsContent>
 
 				<TabsContent value='containers' className='flex-1'>
-					<ContainerEditor meta={meta} setMeta={setMeta} />
+					<ContainerEditor meta={meta} setMeta={setMeta} slug={slug} />
 				</TabsContent>
 			</Tabs>
 		</div>
@@ -385,9 +387,11 @@ export function EditorPage({ slug, initialMeta, onRefresh }: EditorPageProps) {
 function ContainerEditor({
 	meta,
 	setMeta,
+	slug,
 }: {
 	meta: instance.Meta
 	setMeta: React.Dispatch<React.SetStateAction<instance.Meta>>
+	slug: string
 }) {
 	const [openUrlDialog, setOpenUrlDialog] = useState<number | null>(null)
 	const [urlToAdd, setUrlToAdd] = useState('')
@@ -501,6 +505,22 @@ function ContainerEditor({
 		[urlToAdd, cloneMeta, setMeta],
 	)
 
+	const handleAddFromFile = useCallback(
+		async (cIdx: number) => {
+			try {
+				const contentType = meta.containers[cIdx].content_type
+				const content = await AddProjectContentFromFile(slug, contentType)
+				const newMeta = cloneMeta()
+				newMeta.containers[cIdx].content.push(content)
+				setMeta(newMeta)
+			} catch (e) {
+				if (String(e).includes('no file selected')) return
+				alert('Ошибка добавления файла: ' + e)
+			}
+		},
+		[meta.containers, slug, cloneMeta, setMeta],
+	)
+
 	const updateContent = useCallback(
 		(
 			cIdx: number,
@@ -583,6 +603,7 @@ function ContainerEditor({
 							setUrlToAdd={setUrlToAdd}
 							isUrlLoading={isUrlLoading}
 							onAddFromUrl={handleAddFromUrl}
+							onAddFromFile={handleAddFromFile}
 						/>
 					))}
 					{meta.containers.length === 0 && (
@@ -618,6 +639,7 @@ function ContainerCard({
 	setUrlToAdd,
 	isUrlLoading,
 	onAddFromUrl,
+	onAddFromFile,
 }: {
 	container: instance.Container
 	cIdx: number
@@ -644,6 +666,7 @@ function ContainerCard({
 	setUrlToAdd: (v: string) => void
 	isUrlLoading: boolean
 	onAddFromUrl: (cIdx: number) => void
+	onAddFromFile: (cIdx: number) => void
 }) {
 	const cfg = CONTAINER_CFG[container.content_type] ?? {
 		label: container.content_type,
@@ -771,6 +794,13 @@ function ContainerCard({
 						</div>
 					</DialogContent>
 				</Dialog>
+
+				<button
+					className='flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-border hover:border-primary/40 hover:bg-primary/5 px-3 py-2 text-xs text-muted-foreground hover:text-primary transition-colors cursor-pointer'
+					onClick={() => onAddFromFile(cIdx)}
+				>
+					<FileIcon className='size-3.5' /> Из файла
+				</button>
 			</div>
 		</div>
 	)

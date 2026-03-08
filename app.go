@@ -250,6 +250,31 @@ func (a *App) SelectLogoFile() (string, error) {
 	})
 }
 
+// --- Project content (editor, git-tracked files) ---
+
+func (a *App) AddProjectContentFromFile(slug, contentType string) (instance.Content, error) {
+	var filters []runtime.FileFilter
+	switch contentType {
+	case "resourcepacks":
+		filters = []runtime.FileFilter{{DisplayName: "Resource Packs", Pattern: "*.zip"}}
+	default:
+		filters = []runtime.FileFilter{{DisplayName: "Minecraft Mods", Pattern: "*.jar"}}
+	}
+
+	path, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
+		Title:   "Выберите файл",
+		Filters: filters,
+	})
+	if err != nil {
+		return instance.Content{}, err
+	}
+	if path == "" {
+		return instance.Content{}, fmt.Errorf("no file selected")
+	}
+
+	return a.controller.IM.AddProjectContentFromFile(slug, contentType, path)
+}
+
 // --- Extra content (user-added) ---
 
 func (a *App) AddExtraContent(slug, contentType string, content instance.Content) error {
