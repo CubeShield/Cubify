@@ -10,11 +10,17 @@ import (
 	"Cubify/internal/platform"
 	"Cubify/internal/utils"
 	"context"
+	"encoding/json"
 	"fmt"
+	"net/http"
+	"strings"
 	"sync"
+	"time"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
+
+var Version = "dev"
 
 type App struct {
 	l               *logger.Logger
@@ -297,4 +303,69 @@ func (a *App) GetContentVersionURL(source string, modID string, fileID string) (
 
 func (a *App) GetContentVersionsURL(source string, modID string) (string, error) {
 	return a.platformManager.GetContentVersionsURL(instance.Source(source), modID)
+}
+
+// --- Update check ---
+
+type UpdateInfo struct {
+	Available  bool   `json:"available"`
+	Version    string `json:"version"`
+	CurrentVersion string `json:"current_version"`
+	URL        string `json:"url"`
+}
+
+type githubRelease struct {
+	TagName string `json:"tag_name"`
+	HTMLURL string `json:"html_url"`
+}
+
+func (a *App) CheckForUpdates() UpdateInfo {
+	if Version == "dev" {
+		return UpdateInfo{Available: false, CurrentVersion: Version}
+	}
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	req, err := http.NewRequest("GET", "https://api.github.com/repos/CubeShield/Cubify/releases/latest", nil)
+	if err != nil {
+		a.l.Error("Update check: failed to create request: %v", err)
+		return UpdateInfo{Available: false, CurrentVersion: Version}
+	}
+	req.Header.Set("User-Agent", "Cubify-Launcher")
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		a.l.Error("Update check: request failed: %v", err)
+		return UpdateInfo{Available: false, CurrentVersion: Version}
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		a.l.Error("Update check: unexpected status %d", resp.StatusCode)
+		return UpdateInfo{Available: false, CurrentVersion: Version}
+	}
+
+	var release githubRelease
+	if err := json.NewDecoder(resp.Body).Decode(&release); err != nil {
+		a.l.Error("Update check: decode error: %v", err)
+		return UpdateInfo{Available: false, CurrentVersion: Version}
+	}
+
+	latestTag := strings.TrimPrefix(release.TagName, "v")
+	currentTag := strings.TrimPrefix(Version, "v")
+
+	if latestTag != currentTag {
+		return UpdateInfo{
+			Available:      true,
+			Version:        release.TagName,
+			CurrentVersion: Version,
+			URL:            release.HTMLURL,
+		}
+	}
+
+	return UpdateInfo{Available: false, CurrentVersion: Version}
+}
+
+func (a *App) GetVersion() string {
+	return Version
 }

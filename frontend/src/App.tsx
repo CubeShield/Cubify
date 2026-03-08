@@ -8,6 +8,7 @@ import { LogProvider } from './context/log-context'
 import { LogViewer } from './components/log-viewer'
 import { AppProvider, useApp } from './context/app-context'
 import { RunProvider } from './context/run-context'
+import { UpdateBanner } from './components/update-banner'
 
 function MainContent() {
 	const {
@@ -58,6 +59,7 @@ function App() {
 							<LogViewer />
 							<StatusBar />
 						</SidebarProvider>
+						<UpdateBanner />
 					</AppRunProvider>
 				</AppProvider>
 			</LogProvider>

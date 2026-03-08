@@ -18,6 +18,10 @@ export function CancelRun() {
   return window['go']['main']['App']['CancelRun']();
 }
 
+export function CheckForUpdates() {
+  return window['go']['main']['App']['CheckForUpdates']();
+}
+
 export function CheckProjectStatus(arg1) {
   return window['go']['main']['App']['CheckProjectStatus'](arg1);
 }
@@ -72,6 +76,10 @@ export function GetLocalInstances() {
 
 export function GetProjectHistory(arg1) {
   return window['go']['main']['App']['GetProjectHistory'](arg1);
+}
+
+export function GetVersion() {
+  return window['go']['main']['App']['GetVersion']();
 }
 
 export function HasEditor(arg1) {

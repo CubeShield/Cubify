@@ -57,15 +57,15 @@ jobs:
       # Build
       - name: Build (Linux)
         if: runner.os == 'Linux'
-        run: wails build -platform ${{ matrix.platform }} -tags webkit2_41 -o Cubify
+        run: wails build -platform ${{ matrix.platform }} -tags webkit2_41 -ldflags "-X main.Version=${{ github.ref_name }}" -o Cubify
 
       - name: Build (Windows)
         if: runner.os == 'Windows'
-        run: wails build -platform ${{ matrix.platform }} -o Cubify.exe
+        run: wails build -platform ${{ matrix.platform }} -ldflags "-X main.Version=${{ github.ref_name }}" -o Cubify.exe
 
       - name: Build (macOS)
         if: runner.os == 'macOS'
-        run: wails build -platform ${{ matrix.platform }}
+        run: wails build -platform ${{ matrix.platform }} -ldflags "-X main.Version=${{ github.ref_name }}"
 
       # Prepare artifacts
       - name: Prepare Linux artifact
