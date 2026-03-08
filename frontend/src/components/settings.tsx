@@ -115,26 +115,10 @@ export function Settings() {
 
 			<FieldGroup className='gap-2'>
 				<ConfigInput
-					fieldKey='cache_directory'
-					label='Директория Cache'
-					value={cfgData.cache_directory}
-					description='Путь до директории с кэшированными данными'
-					onChange={handleUpdate}
-				/>
-
-				<ConfigInput
-					fieldKey='instances_directory'
-					label='Директория Instances'
-					value={cfgData.instances_directory}
-					description='Путь до директории со сборками'
-					onChange={handleUpdate}
-				/>
-
-				<ConfigInput
-					fieldKey='bin_directory'
-					label='Директория Bin'
-					value={cfgData.bin_directory}
-					description='Путь до директории с исполняемыми утилитами'
+					fieldKey='cubify_directory'
+					label='Директория Cubify'
+					value={cfgData.cubify_directory}
+					description='Путь до директории с данными, сборками, кэшем Cubify'
 					onChange={handleUpdate}
 				/>
 			</FieldGroup>

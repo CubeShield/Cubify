@@ -3,10 +3,12 @@ package main
 import (
 	"Cubify/internal/config"
 	"Cubify/internal/controller"
+	"Cubify/internal/file"
 	"Cubify/internal/git"
 	"Cubify/internal/instance"
 	logger "Cubify/internal/logging"
 	"Cubify/internal/platform"
+	"Cubify/internal/utils"
 	"context"
 	"fmt"
 	"sync"
@@ -16,6 +18,7 @@ import (
 
 type App struct {
 	l               *logger.Logger
+	fm file.Manager
 	ctx             context.Context
 	cfg             *config.Config
 	controller      *controller.Controller
@@ -35,13 +38,14 @@ func NewApp() *App {
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 	a.l = logger.New(ctx)
-	a.cfg, _ = config.Load("config.json")
-	a.controller = controller.New(a.cfg, a.l)
+	a.fm = file.NewManager(file.NewLocalBackend(utils.GetBaseDir()))
+	a.cfg, _ = config.Load(a.fm)
+	a.controller = controller.New(a.cfg, a.l, a.fm)
 	a.platformManager = platform.NewManager(a.cfg.CurseForgeAPIKey)
 }
 
 func (a *App) shutdown(ctx context.Context) {
-	a.cfg.Save("config.json")
+	a.cfg.Save(a.fm)
 }
 
 // --- Instance operations ---
@@ -218,7 +222,7 @@ func (a *App) GetConfig() config.Config {
 
 func (a *App) SaveConfig(cfg config.Config) {
 	*a.cfg = cfg
-	a.cfg.Save("config.json")
+	a.cfg.Save(a.fm)
 }
 
 // --- Auth ---

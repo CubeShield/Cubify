@@ -1,61 +1,36 @@
 package cache
 
 import (
-	"Cubify/internal/utils"
-	"encoding/json"
+	"Cubify/internal/file"
 	"fmt"
-	"os"
 )
 
 
 type CacheManager struct {
-	dir string
+	fm file.Manager
 }
 
-func New(cacheDir string) *CacheManager {
+func New(fm file.Manager) *CacheManager {
 	cache := &CacheManager{
-		dir: cacheDir,
+		fm: fm,
 	}
-	os.MkdirAll(cache.dir, os.ModePerm)
 	return cache
 }
 
-func (c *CacheManager) getPath(key string) string {
-	return fmt.Sprintf("%s/%s.json", c.dir, key)
+func (c *CacheManager) getFile(key string) string {
+	return fmt.Sprintf("%s.json", key)
 }
 
 func (c *CacheManager) Get(key string, ptr interface{}) error {
-	path := c.getPath(key)
-	if utils.Exists(path) {
-		file, err := os.Open(path)
-		if err != nil {
-			return err
-		}
-
-		if err := json.NewDecoder(file).Decode(ptr); err != nil {
-			return fmt.Errorf("failed to decode: %w", err)
-		}
-
-		return nil
+	file := c.getFile(c.getFile(key))
+	if c.fm.Exists(file) {
+		return c.fm.ReadJson(file, ptr)
 	}
-	return fmt.Errorf("file %s not found", path)
+
+	return fmt.Errorf("file %s not found", file)
 }
 
 func (c *CacheManager) Put(key string, ptr interface{}) error {
-	path := c.getPath(key)
-	if utils.Exists(path) {
-		if err := os.Remove(path); err != nil {
-			return err
-		}
-	}
-	file, err := os.Create(path)
-	if err != nil {
-		return err
-	}
-
-	if err := json.NewEncoder(file).Encode(ptr); err != nil {
-		return err
-	}
-
-	return nil
+	file := c.getFile(c.getFile(key))
+	return c.fm.SaveJson(file, ptr)
 }

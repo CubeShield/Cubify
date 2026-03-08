@@ -6,7 +6,6 @@ import (
 	logger "Cubify/internal/logging"
 	"Cubify/internal/utils"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -17,20 +16,22 @@ type Manager struct {
 	l                  *logger.Logger
 	fm                 file.Manager
 	gm                 *git.Manager
-	instancesDirectory string
 }
 
-func NewManager(l *logger.Logger, fm file.Manager, instancesDirectory string) *Manager {
+func NewManager(l *logger.Logger, fm file.Manager) *Manager {
 	return &Manager{
 		l:                  l,
 		fm:                 fm,
 		gm:                 git.New(),
-		instancesDirectory: instancesDirectory,
 	}
 }
 
 func (m *Manager) editorPath(slug string) string {
-	return filepath.Join(m.instancesDirectory, slug, "editor")
+	return filepath.Join( slug, "editor")
+}
+
+func (m *Manager) absPath(rel string) string {
+	return filepath.Join(m.fm.BasePath(), rel)
 }
 
 func (m *Manager) HasEditor(slug string) bool {
@@ -38,7 +39,7 @@ func (m *Manager) HasEditor(slug string) bool {
 }
 
 func (m *Manager) List() ([]LocalInstance, error) {
-	installedInstances, err := m.fm.Tree(m.instancesDirectory, 2)
+	installedInstances, err := m.fm.Tree("", 2)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +53,7 @@ func (m *Manager) List() ([]LocalInstance, error) {
 		dirName := ch.Name
 
 		var localInstance LocalInstance
-		if err := m.fm.ReadJson(filepath.Join(m.instancesDirectory, dirName, "instance.json"), &localInstance); err != nil {
+		if err := m.fm.ReadJson(filepath.Join( dirName, "instance.json"), &localInstance); err != nil {
 			m.l.Error("Failed to get instance %s: %v", dirName, err)
 			continue
 		}
@@ -65,19 +66,18 @@ func (m *Manager) List() ([]LocalInstance, error) {
 
 func (m *Manager) GetBySlug(slug string) (LocalInstance, error) {
 	var localInstance LocalInstance
-	if err := m.fm.ReadJson(filepath.Join(m.instancesDirectory, slug, "instance.json"), &localInstance); err != nil {
+	if err := m.fm.ReadJson(filepath.Join(slug, "instance.json"), &localInstance); err != nil {
 		return LocalInstance{}, err
 	}
 	return localInstance, nil
 }
 
 func (m *Manager) Put(localInstance LocalInstance) error {
-	return m.fm.SaveJson(filepath.Join(m.instancesDirectory, localInstance.Slug, "instance.json"), localInstance)
+	return m.fm.SaveJson(filepath.Join( localInstance.Slug, "instance.json"), localInstance)
 }
 
 func (m *Manager) Delete(slug string) error {
-	instancePath := filepath.Join(m.instancesDirectory, slug)
-	return os.RemoveAll(instancePath)
+	return os.RemoveAll(m.absPath(slug))
 }
 
 func (m *Manager) SaveProject(slug string, meta Meta) error {
@@ -93,39 +93,39 @@ func (m *Manager) LoadProject(slug string) (Meta, error) {
 }
 
 func (m *Manager) SyncProject(slug, message string) error {
-	return m.gm.GitPush(m.editorPath(slug), message)
+	return m.gm.GitPush(m.absPath(m.editorPath(slug)), message)
 }
 
 func (m *Manager) ReleaseProject(slug, tagName, message string) error {
 	editorDir := m.editorPath(slug)
+	absDir := m.absPath(editorDir)
 
 	// Write release message file
-	msgPath := filepath.Join(editorDir, "release_message.txt")
+	msgRelPath := filepath.Join(editorDir, "release_message.txt")
 	if message != "" {
-		if err := os.WriteFile(msgPath, []byte(message), 0644); err != nil {
+		if err := m.fm.Save(msgRelPath, strings.NewReader(message)); err != nil {
 			return fmt.Errorf("failed to write release message: %w", err)
 		}
 	} else {
-		// Write empty file so workflow doesn't fail
-		if err := os.WriteFile(msgPath, []byte(""), 0644); err != nil {
+		if err := m.fm.Save(msgRelPath, strings.NewReader("")); err != nil {
 			return fmt.Errorf("failed to write release message: %w", err)
 		}
 	}
 
 	// Stage the message file, commit, push, then tag
-	_ = git.Run(editorDir, "add", "release_message.txt")
-	_ = git.Run(editorDir, "commit", "-m", fmt.Sprintf("release: %s", tagName))
-	_ = git.Run(editorDir, "push", "origin", "main")
+	_ = git.Run(absDir, "add", "release_message.txt")
+	_ = git.Run(absDir, "commit", "-m", fmt.Sprintf("release: %s", tagName))
+	_ = git.Run(absDir, "push", "origin", "main")
 
-	return m.gm.GitRelease(editorDir, tagName)
+	return m.gm.GitRelease(absDir, tagName)
 }
 
 func (m *Manager) GetGitHistory(slug string) (*git.GitHistory, error) {
-	return m.gm.GetGitHistory(m.editorPath(slug))
+	return m.gm.GetGitHistory(m.absPath(m.editorPath(slug)))
 }
 
 func (m *Manager) GetGitStatus(slug string) (bool, error) {
-	return m.gm.GetGitStatus(m.editorPath(slug))
+	return m.gm.GetGitStatus(m.absPath(m.editorPath(slug)))
 }
 
 // CloneProject clones the GitHub repo into the editor folder for an existing instance.
@@ -142,9 +142,9 @@ func (m *Manager) CloneProject(slug string) error {
 	}
 
 	remoteURL := fmt.Sprintf("https://github.com/%s.git", inst.Repo)
-	editorDir := m.editorPath(slug)
+	absDir := m.absPath(m.editorPath(slug))
 
-	if err := git.Run(".", "clone", remoteURL, editorDir); err != nil {
+	if err := git.Run(".", "clone", remoteURL, absDir); err != nil {
 		return fmt.Errorf("git clone failed: %w", err)
 	}
 	return nil
@@ -214,24 +214,25 @@ func (m *Manager) CreateProject(project ProjectSettings) (LocalInstance, error) 
 	}
 
 	remoteURL := fmt.Sprintf("git@github.com:%s/%s.git", owner, repo)
-	if err := git.Run(editorDir, "init"); err != nil {
+	absDir := m.absPath(editorDir)
+	if err := git.Run(absDir, "init"); err != nil {
 		return LocalInstance{}, err
 	}
-	_ = git.Run(editorDir, "branch", "-M", "main")
-	if err := git.Run(editorDir, "remote", "add", "origin", remoteURL); err != nil {
+	_ = git.Run(absDir, "branch", "-M", "main")
+	if err := git.Run(absDir, "remote", "add", "origin", remoteURL); err != nil {
 		return LocalInstance{}, err
 	}
-	if err := git.Run(editorDir, "add", "."); err != nil {
+	if err := git.Run(absDir, "add", "."); err != nil {
 		return LocalInstance{}, err
 	}
-	if err := git.Run(editorDir, "commit", "-m", "Initial commit by Cubify"); err != nil {
+	if err := git.Run(absDir, "commit", "-m", "Initial commit by Cubify"); err != nil {
 		return LocalInstance{}, err
 	}
-	if err := git.Run(editorDir, "push", "-u", "origin", "main"); err != nil {
+	if err := git.Run(absDir, "push", "-u", "origin", "main"); err != nil {
 		return LocalInstance{}, err
 	}
 
-	if err := m.gm.GitRelease(editorDir, "v1.0.0"); err != nil {
+	if err := m.gm.GitRelease(absDir, "v1.0.0"); err != nil {
 		return LocalInstance{}, err
 	}
 
@@ -268,27 +269,15 @@ func (m *Manager) AddExtraContentFromFile(slug, contentType, filePath string) (C
 	filename := filepath.Base(filePath)
 	nameNoExt := strings.TrimSuffix(filename, filepath.Ext(filename))
 
-	destDir := filepath.Join(m.instancesDirectory, slug, contentType)
-	if err := os.MkdirAll(destDir, 0755); err != nil {
-		return Content{}, fmt.Errorf("failed to create dir: %w", err)
-	}
-
-	destPath := filepath.Join(destDir, fmt.Sprintf("[Cubify] %s", filename))
-
 	src, err := os.Open(filePath)
 	if err != nil {
 		return Content{}, fmt.Errorf("failed to open source file: %w", err)
 	}
 	defer src.Close()
 
-	dst, err := os.Create(destPath)
-	if err != nil {
-		return Content{}, fmt.Errorf("failed to create dest file: %w", err)
-	}
-	defer dst.Close()
-
-	if _, err := io.Copy(dst, src); err != nil {
-		return Content{}, fmt.Errorf("failed to copy file: %w", err)
+	destRelPath := filepath.Join(slug, contentType, fmt.Sprintf("[Cubify] %s", filename))
+	if err := m.fm.Save(destRelPath, src); err != nil {
+		return Content{}, fmt.Errorf("failed to save file: %w", err)
 	}
 
 	content := Content{
@@ -329,8 +318,8 @@ func (m *Manager) RemoveExtraContent(slug, contentType, fileName string) error {
 	}
 
 	// Delete physical file
-	physicalPath := filepath.Join(m.instancesDirectory, slug, contentType, fmt.Sprintf("[Cubify] %s", fileName))
-	os.Remove(physicalPath)
+	physicalPath := filepath.Join(slug, contentType, fmt.Sprintf("[Cubify] %s", fileName))
+	m.fm.Delete(physicalPath)
 
 	return m.Put(inst)
 }

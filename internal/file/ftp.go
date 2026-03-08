@@ -3,6 +3,7 @@ package file
 import (
 	"io"
 	pathpkg "path"
+	"path/filepath"
 	"strings"
 
 	"github.com/jlaffaye/ftp"
@@ -95,4 +96,12 @@ func (f *FtpBackend) Delete(path string) error {
 
 func (f *FtpBackend) Exists(path string) bool {
 	return false //TODO:
+}
+
+func (f *FtpBackend) Sub(path string) StorageBackend {
+	return NewFtpBackend(filepath.Join(f.RootPath, path), f.Conn)
+}
+
+func (f *FtpBackend) BasePath() string {
+	return f.RootPath
 }

@@ -1,6 +1,7 @@
 package installer
 
 import (
+	"Cubify/internal/file"
 	"archive/tar"
 	"archive/zip"
 	"compress/gzip"
@@ -19,15 +20,12 @@ const (
 )
 
 type Installer struct {
-	dir string
+	fm file.Manager
 }
 
-func New(binDir string) *Installer {
-	if err := os.MkdirAll(binDir, 0755); err != nil {
-		fmt.Printf("Error creating dir: %v\n", err)
-	}
+func New(fm file.Manager) *Installer {
 	return &Installer{
-		dir: binDir,
+		fm: fm,
 	}
 }
 
@@ -36,7 +34,7 @@ func (i *Installer) GetExecutablePath() string {
 	if runtime.GOOS == "windows" {
 		exeName += ".exe"
 	}
-	return filepath.Join(i.dir, exeName)
+	return filepath.Join(i.fm.BasePath(), exeName)
 }
 
 
@@ -78,6 +76,10 @@ func (i *Installer) RetrievePortableMC() error {
 	}
 
 	tmpFile.Seek(0, 0)
+
+	if err := os.MkdirAll(filepath.Dir(destPath), 0755); err != nil {
+		return fmt.Errorf("failed to create directory: %w", err)
+	}
 
 	if strings.HasSuffix(filename, ".zip") {
 		err = i.extractZip(tmpFile, destPath)

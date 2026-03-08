@@ -71,9 +71,17 @@ func (l *LocalBackend) Delete(path string) error {
 }
 
 func (l *LocalBackend) Exists(path string) bool {
-	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
+	if _, err := os.Stat(l.fullPath(path)); errors.Is(err, os.ErrNotExist) {
 		return false
 
 	}
 	return true
+}
+
+func (l *LocalBackend) Sub(path string) StorageBackend {
+	return NewLocalBackend(filepath.Join(l.RootPath, path))
+}
+
+func (l *LocalBackend) BasePath() string {
+	return l.RootPath
 }

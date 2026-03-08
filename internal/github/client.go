@@ -20,7 +20,7 @@ type Client struct {
 	cm *cache.CacheManager
 }
 
-func New(baseUrl, authorizationToken, cacheDir string, l *logger.Logger) *Client {
+func New(baseUrl, authorizationToken string, l *logger.Logger, cm *cache.CacheManager) *Client {
 	return &Client{
 		l: l,
 		baseUrl: baseUrl,
@@ -29,7 +29,7 @@ func New(baseUrl, authorizationToken, cacheDir string, l *logger.Logger) *Client
 		httpClient: &http.Client{
 			Timeout: 10 * time.Second,
 		},
-		cm: cache.New(cacheDir),
+		cm: cm,
 	}
 }
 

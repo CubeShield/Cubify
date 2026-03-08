@@ -83,7 +83,7 @@ func (m *Mc) Prepare(ctx context.Context, instanceName, loader, loaderVersion, m
 		"--main-dir", path,
 		"start",
 		"--dry", 
-		"--jvm-policy", "mojang",
+		"--jvm-policy", "system-then-mojang",
 		version)
 	
 	return m.executeWithLogging(cmd)
@@ -101,7 +101,7 @@ func (m *Mc) Run(ctx context.Context, instanceName, loader, loaderVersion, minec
 		"--username", username,
 		"--uuid", uuid,
 		"--auth",
-		"--jvm-policy", "mojang",
+		"--jvm-policy", "system-then-mojang",
 		version, 
 	}
 

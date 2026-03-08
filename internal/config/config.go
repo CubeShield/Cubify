@@ -1,8 +1,8 @@
 package config
 
 import (
-	"encoding/json"
-	"os"
+	"Cubify/internal/file"
+	"Cubify/internal/utils"
 )
 
 type User struct {
@@ -29,10 +29,7 @@ type Config struct {
 	JVMMinRAM int `json:"jvm_min_ram"`
 	JVMMaxRAM int `json:"jvm_max_ram"`
 
-	CacheDirectory string `json:"cache_directory"`
-	InstancesDirectory string `json:"instances_directory"`
-	BinDirectory string `json:"bin_directory"`
-	EditorDirectory string `json:"editor_directory"`
+	CubifyDirectory string `json:"cubify_directory"`
 
 	BuildType string `json:"build_type"`
 
@@ -44,18 +41,14 @@ type Config struct {
 }
 
 
-func Load(filename string) (*Config, error) {
-	if _, err := os.Stat(filename); os.IsNotExist(err) {
-		defaultConfig := &Config{
+func defaultConfig() *Config {
+	return &Config{
 			Nickname: "Lyroq1s",
 			IndexURLs: []string{"https://raw.githubusercontent.com/CubeShield/CubeInstances/refs/heads/main/index.json"},
 			BaseURL: "https://api.github.com",
 			AuthToken: "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",
 			CurseForgeAPIKey: "$2a$10$mwWdWOppKD0R9/BlrO5XbeYXXaW.VpIzv3ZT/JQmzt2uXDaDbTM7S",
-			CacheDirectory: ".cache",
-			InstancesDirectory: ".instances",
-			BinDirectory: "bin",
-			EditorDirectory: "editor",
+			CubifyDirectory: utils.GetBaseDir(),
 			BuildType: "client",
 			JVMMinRAM: 512,
 			JVMMaxRAM: 2048,
@@ -63,32 +56,32 @@ func Load(filename string) (*Config, error) {
 				Port: 21,
 			},
 		}
-		
-		if err := defaultConfig.Save(filename); err != nil {
+}
+
+const configPath = "config.json"
+
+func Load(fm file.Manager) (*Config, error) {
+	if !fm.Exists(configPath) {
+		defaultConfig := defaultConfig()
+		if err := fm.SaveJson(configPath, defaultConfig); err != nil {
 			return nil, err
 		}
-		
+
 		return defaultConfig, nil
 	}
 
-	data, err := os.ReadFile(filename)
-	if err != nil {
-		return nil, err
-	}
-
 	var cfg Config
-	if err := json.Unmarshal(data, &cfg); err != nil {
+	if err := fm.ReadJson(configPath, &cfg); err != nil {
 		return nil, err
 	}
 
 	return &cfg, nil
 }
 
-func (c *Config) Save(filename string) error {
-	data, err := json.MarshalIndent(c, "", "  ")
-	if err != nil {
+func (c *Config) Save(fm file.Manager) error {
+	if err := fm.SaveJson(configPath, c); err != nil {
 		return err
 	}
 
-	return os.WriteFile(filename, data, 0644)
+	return nil
 }

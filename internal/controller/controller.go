@@ -13,7 +13,6 @@ import (
 	"Cubify/internal/utils"
 	"context"
 	"fmt"
-	"path/filepath"
 	"time"
 
 	"github.com/jlaffaye/ftp"
@@ -29,17 +28,19 @@ type Controller struct {
 	cm *cache.CacheManager
 	installer *installer.Installer
 	mc *mc.Mc
+	fm file.Manager
 	IM *instance.Manager
 }
 
-func New(cfg *config.Config, l *logger.Logger) *Controller {
+func New(cfg *config.Config, l *logger.Logger, fm file.Manager) *Controller {
+	cm := cache.New(fm.Sub(".cache"))
 	return &Controller{
 		l: l,
 		cfg: cfg,
-		ghClient: github.New(cfg.BaseURL, cfg.AuthToken, cfg.CacheDirectory, l),
-		cm: cache.New(cfg.CacheDirectory),
-		installer: installer.New(cfg.BinDirectory),
-		IM: instance.NewManager(l, file.NewManager(file.NewLocalBackend("")), cfg.InstancesDirectory),
+		ghClient: github.New(cfg.BaseURL, cfg.AuthToken, l, cm),
+		installer: installer.New(fm.Sub("bin")),
+		fm: fm,
+		IM: instance.NewManager(l, fm.Sub("instances")),
 	}
 }
 
@@ -83,7 +84,6 @@ func (c *Controller) Fetch() ([]instance.Instance, error) {
 func (c *Controller) Run(ctx context.Context, release instance.Release, onProgress func(step, total int, label string)) error {
 	const totalSteps = 4
 
-	// Step 1: RetrievePortableMC
 	onProgress(1, totalSteps, "Загрузка PortableMC...")
 	if err := c.installer.RetrievePortableMC(); err != nil {
 		return err
@@ -94,9 +94,8 @@ func (c *Controller) Run(ctx context.Context, release instance.Release, onProgre
 	}
 
 	bin := c.installer.GetExecutablePath()
-	c.mc = mc.New(bin, c.cfg.InstancesDirectory, c.cfg.JVMPath, c.cfg.JVMMinRAM, c.cfg.JVMMaxRAM, c.l)
+	c.mc = mc.New(bin, c.fm.Sub("instances").BasePath(), c.cfg.JVMPath, c.cfg.JVMMinRAM, c.cfg.JVMMaxRAM, c.l)
 
-	// Step 2: Prepare
 	onProgress(2, totalSteps, "Подготовка Minecraft...")
 	c.l.Info("Preparing Minecraft...")
 	if err := c.mc.Prepare(ctx, release.Meta.Name, release.Meta.Loader, release.Meta.LoaderVersion, release.Meta.MinecraftVersion); err != nil {
@@ -107,24 +106,21 @@ func (c *Controller) Run(ctx context.Context, release instance.Release, onProgre
 		return ctx.Err()
 	}
 
-	// Step 3: Update content
 	onProgress(3, totalSteps, "Обновление контента...")
 	c.l.Info("Checking for updates...")
 	instanceDirectory := utils.InstanceSlug(release.Meta.Name)
-	fullInstancePath := filepath.Join(c.cfg.InstancesDirectory, instanceDirectory)
 	buildType := c.cfg.BuildType
 	if buildType == "" {
 		buildType = "client"
 	}
 
-	// Merge extra containers (user-added content) with release containers
 	containers := release.Meta.Containers
 	localInstance, liErr := c.IM.GetBySlug(instanceDirectory)
 	if liErr == nil && len(localInstance.ExtraContainers) > 0 {
 		containers = instance.MergeContainers(containers, localInstance.ExtraContainers)
 	}
 
-	if err := c.updateInstanceContent(ctx, fullInstancePath, containers, buildType); err != nil {
+	if err := c.updateInstanceContent(ctx, c.fm.Sub("instances").Sub(instanceDirectory), containers, buildType); err != nil {
 		c.l.Error("Update warning: %v", err)
 		return fmt.Errorf("failed to update instance: %w", err)
 	}
@@ -154,12 +150,10 @@ func (c *Controller) Run(ctx context.Context, release instance.Release, onProgre
 }
 
 
-func (c *Controller) updateInstanceContent(ctx context.Context, instancePath string, releaseContainers []instance.Container, buildType string) error {
-	m := file.NewManager(file.NewLocalBackend(instancePath))
-
+func (c *Controller) updateInstanceContent(ctx context.Context, instanceFm file.Manager, releaseContainers []instance.Container, buildType string) error {
 	var installedContainers []instance.Container
 
-	m.ReadJson("installed.json", &installedContainers)
+	instanceFm.ReadJson("installed.json", &installedContainers)
 
 	findInstalled := func(contentType string) instance.Container {
 		for _, cont := range installedContainers {
@@ -176,13 +170,13 @@ func (c *Controller) updateInstanceContent(ctx context.Context, instancePath str
 		}
 		oldContainer := findInstalled(newContainer.ContentType)
 		
-		processor := updater.NewContentProcessor(newContainer, oldContainer, m, buildType, c.l)
+		processor := updater.NewContentProcessor(newContainer, oldContainer, instanceFm, buildType, c.l)
 		if err := processor.Process(ctx); err != nil {
 			return err
 		}
 	}
 
-	if err := m.SaveJson("installed.json", releaseContainers); err != nil {
+	if err := instanceFm.SaveJson("installed.json", releaseContainers); err != nil {
 		return err
 	}
 
@@ -256,7 +250,7 @@ func (c *Controller) StartMicrosoftLogin(ctx context.Context) error {
 
 	bin := c.installer.GetExecutablePath()
 
-	mcInstance := mc.New(bin, c.cfg.InstancesDirectory, c.cfg.JVMPath, c.cfg.JVMMinRAM, c.cfg.JVMMaxRAM, c.l)
+	mcInstance := mc.New(bin, c.fm.Sub("instances").BasePath(), c.cfg.JVMPath, c.cfg.JVMMinRAM, c.cfg.JVMMaxRAM, c.l)
 
 	go func() {
 		err := mcInstance.AuthenticateMicrosoft(
@@ -270,7 +264,7 @@ func (c *Controller) StartMicrosoftLogin(ctx context.Context) error {
 				c.cfg.User.Username = username
 				c.cfg.User.UUID = uuid
 				c.cfg.User.AuthType = "microsoft"
-				c.cfg.Save("config.json")
+				c.cfg.Save(c.fm)
 
 				runtime.EventsEmit(ctx, "auth:success", map[string]string{
 					"username": username,

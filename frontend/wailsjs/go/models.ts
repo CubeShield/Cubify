@@ -45,10 +45,7 @@ export namespace config {
 	    jvm_path: string;
 	    jvm_min_ram: number;
 	    jvm_max_ram: number;
-	    cache_directory: string;
-	    instances_directory: string;
-	    bin_directory: string;
-	    editor_directory: string;
+	    cubify_directory: string;
 	    build_type: string;
 	    ftp: FTPSettings;
 	    dev_mode: boolean;
@@ -68,10 +65,7 @@ export namespace config {
 	        this.jvm_path = source["jvm_path"];
 	        this.jvm_min_ram = source["jvm_min_ram"];
 	        this.jvm_max_ram = source["jvm_max_ram"];
-	        this.cache_directory = source["cache_directory"];
-	        this.instances_directory = source["instances_directory"];
-	        this.bin_directory = source["bin_directory"];
-	        this.editor_directory = source["editor_directory"];
+	        this.cubify_directory = source["cubify_directory"];
 	        this.build_type = source["build_type"];
 	        this.ftp = this.convertValues(source["ftp"], FTPSettings);
 	        this.dev_mode = source["dev_mode"];

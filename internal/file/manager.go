@@ -28,6 +28,8 @@ type StorageBackend interface {
 	Save(path string, data io.Reader) error
 	Delete(path string) error
 	Exists(path string) bool
+	Sub(path string) StorageBackend
+	BasePath() string
 }
 
 type Manager interface {
@@ -40,6 +42,8 @@ type Manager interface {
 	SaveJson(path string, data any) error
 	ReadJson(path string, ptr any) error
 	Exists(path string) bool
+	Sub(path string) Manager
+	BasePath() string
 }
 type fileManager struct {
 	backend StorageBackend
@@ -148,4 +152,14 @@ func (m *fileManager) ReadJson(path string, ptr any) error {
 
 func (m *fileManager) Exists(path string) bool {
 	return m.backend.Exists(path)
+}
+
+
+func (m *fileManager) Sub(path string) Manager {
+	newBackend := m.backend.Sub(path)
+	return NewManager(newBackend)
+}
+
+func (m *fileManager) BasePath() string {
+	return m.backend.BasePath()
 }
