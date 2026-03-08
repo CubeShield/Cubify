@@ -45,6 +45,7 @@ export function User() {
 		const cleanupSuccess = EventsOn('auth:success', (data: any) => {
 			setUsername(data.username)
 			setMsAuthState('success')
+			setAuthType('microsoft')
 
 			setConfigData(prev => {
 				if (!prev) return null
@@ -54,6 +55,8 @@ export function User() {
 				newCfg.user.auth_type = 'microsoft'
 				return newCfg
 			})
+
+			reloadConfig()
 		})
 
 		const cleanupError = EventsOn('auth:error', (err: string) => {

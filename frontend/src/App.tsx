@@ -34,7 +34,7 @@ function MainContent() {
 					/>
 				) : (
 					<div className='text-muted-foreground flex items-center justify-center h-full'>
-						Выберите инстанс в меню слева
+						Выберите сборку в меню слева
 					</div>
 				))}
 		</main>

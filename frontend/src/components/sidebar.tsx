@@ -121,7 +121,7 @@ function InstanceCard({
 function UserSection() {
 	const { currentUser, setCurrentPage } = useApp()
 
-	if (!currentUser) {
+	if (!currentUser || currentUser?.username == '') {
 		return (
 			<div className='flex items-center gap-2'>
 				<Button
@@ -132,7 +132,7 @@ function UserSection() {
 				>
 					<PlusIcon className='stroke-zinc-500' />
 				</Button>
-				<h4 className='text-sm font-medium text-zinc-500'>
+				<h4 className='text-sm font-medium text-zinc-400'>
 					Настройте аккаунт, чтобы играть...
 				</h4>
 			</div>
@@ -239,14 +239,21 @@ export function AppSidebar() {
 				</div>
 
 				<div className='flex gap-2'>
-					<Button
-						className='cursor-pointer flex-1'
-						onClick={run}
-						disabled={isRunning || !selectedInstance || !currentUser}
-					>
-						<ButtonIcon className={isRunning ? 'animate-spin' : ''} />{' '}
-						{buttonLabel}
-					</Button>
+					{selectedInstance && (
+						<Button
+							className='cursor-pointer flex-1'
+							onClick={run}
+							disabled={
+								isRunning ||
+								!selectedInstance ||
+								!currentUser ||
+								currentUser?.username == ''
+							}
+						>
+							<ButtonIcon className={isRunning ? 'animate-spin' : ''} />{' '}
+							{buttonLabel}
+						</Button>
+					)}
 					{isRunning && (
 						<Button
 							className='cursor-pointer'

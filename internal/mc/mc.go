@@ -94,7 +94,7 @@ func (m *Mc) Prepare(ctx context.Context, instanceName, loader, loaderVersion, m
 }
 
 
-func (m *Mc) Run(ctx context.Context, instanceName, loader, loaderVersion, minecraftVersion, uuid, username string) error {
+func (m *Mc) Run(ctx context.Context, instanceName, loader, loaderVersion, minecraftVersion, uuid, username string, isMicrosoft bool) error {
 	path := fmt.Sprintf("%s/%s", m.instancesDir, utils.InstanceSlug(instanceName))
 	version := fmt.Sprintf("%s:%s", loader, minecraftVersion)
 
@@ -104,9 +104,12 @@ func (m *Mc) Run(ctx context.Context, instanceName, loader, loaderVersion, minec
 		"start",
 		"--username", username,
 		"--uuid", uuid,
-		"--auth",
 		"--jvm-policy", "system-then-mojang",
 		version, 
+	}
+
+	if isMicrosoft {
+		args = append(args, "--auth")
 	}
 
 	if m.jvmPath != "" {
