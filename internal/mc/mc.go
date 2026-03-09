@@ -9,6 +9,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"sync"
 )
@@ -38,7 +39,7 @@ func New(bin, instancesDir string, jvmPath string, jvmMinRAM, jvmMaxRAM int, l *
 
 func (m *Mc) AuthenticateMicrosoft(callbackCode func(string, string), callbackSuccess func(string, string)) error {
 	cmd := exec.Command(m.bin, 
-		"--msa-db-file", "./msa-db.json",
+		"--msa-db-file", filepath.Join(m.instancesDir, "msa-db.json"),
 		"--output", "machine", 
 		"auth", 
 		"login")
@@ -95,21 +96,22 @@ func (m *Mc) Prepare(ctx context.Context, instanceName, loader, loaderVersion, m
 
 
 func (m *Mc) Run(ctx context.Context, instanceName, loader, loaderVersion, minecraftVersion, uuid, username string, isMicrosoft bool) error {
-	path := fmt.Sprintf("%s/%s", m.instancesDir, utils.InstanceSlug(instanceName))
+	path := filepath.Join(m.instancesDir, utils.InstanceSlug(instanceName))
 	version := fmt.Sprintf("%s:%s", loader, minecraftVersion)
 
 	args := []string{
 		"--main-dir", path,
-		"--msa-db-file", "./msa-db.json",
+		"--msa-db-file", filepath.Join(m.instancesDir, "msa-db.json"),
 		"start",
 		"--username", username,
-		"--uuid", uuid,
 		"--jvm-policy", "system-then-mojang",
 		version, 
 	}
 
 	if isMicrosoft {
 		args = append(args, "--auth")
+		args = append(args, "--uuid")
+		args = append(args, uuid)
 	}
 
 	if m.jvmPath != "" {
