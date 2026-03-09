@@ -143,7 +143,7 @@ func (c *Controller) Run(ctx context.Context, release instance.Release, onProgre
 	// Step 4: Launch
 	onProgress(4, totalSteps, "Запуск Minecraft...")
 	c.l.Info("Launching Minecraft!")
-	if err := c.mc.Run(ctx, release.Meta.Name, release.Meta.Loader, release.Meta.LoaderVersion, release.Meta.MinecraftVersion, c.cfg.User.UUID, c.cfg.Nickname, c.cfg.User.AuthType == "microsoft"); err != nil {
+	if err := c.mc.Run(ctx, release.Meta.Name, release.Meta.Loader, release.Meta.LoaderVersion, release.Meta.MinecraftVersion, c.cfg.User.UUID, c.cfg.User.Username, c.cfg.User.AuthType == "microsoft"); err != nil {
 		return fmt.Errorf("run failed: %w", err)
 	}
 	return nil
