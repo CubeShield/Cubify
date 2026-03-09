@@ -147,6 +147,7 @@ export function InstanceDetail({
 					</TabsContent>
 				)}
 			</Tabs>
+			<div className='py-5' />
 		</div>
 	)
 }
