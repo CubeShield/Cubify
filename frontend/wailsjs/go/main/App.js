@@ -70,6 +70,10 @@ export function GetContentVersionsURL(arg1, arg2) {
   return window['go']['main']['App']['GetContentVersionsURL'](arg1, arg2);
 }
 
+export function GetInstanceLogoDataURL(arg1) {
+  return window['go']['main']['App']['GetInstanceLogoDataURL'](arg1);
+}
+
 export function GetInstances() {
   return window['go']['main']['App']['GetInstances']();
 }

@@ -10,10 +10,13 @@ import (
 	"Cubify/internal/platform"
 	"Cubify/internal/utils"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"sync"
@@ -395,6 +398,23 @@ func (a *App) CheckForUpdates() UpdateInfo {
 
 func (a *App) GetVersion() string {
 	return Version
+}
+
+func (a *App) GetInstanceLogoDataURL(slug string) string {
+	editorLogoPath := filepath.Join(slug, "editor", "logo.png")
+	if !a.controller.IM.FM().Exists(editorLogoPath) {
+		return ""
+	}
+	r, err := a.controller.IM.FM().Read(editorLogoPath)
+	if err != nil {
+		return ""
+	}
+	defer r.Close()
+	data, err := io.ReadAll(r)
+	if err != nil {
+		return ""
+	}
+	return "data:image/png;base64," + base64.StdEncoding.EncodeToString(data)
 }
 
 func (a *App) OpenInstanceFolder(slug string) error {

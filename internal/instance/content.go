@@ -34,6 +34,10 @@ func (m *Manager) absPath(rel string) string {
 	return filepath.Join(m.fm.BasePath(), rel)
 }
 
+func (m *Manager) FM() file.Manager {
+	return m.fm
+}
+
 func (m *Manager) HasEditor(slug string) bool {
 	return m.fm.Exists(m.editorPath(slug))
 }

@@ -7,6 +7,7 @@ import { useEditorData } from '../../hooks/use-editor-data'
 import { DeleteInstanceButton } from './delete-instance-button'
 import { EnableEditorButton } from './enable-editor-button'
 import { OverviewContent } from './overview-content'
+import { InstanceLogo } from '../instance-logo'
 import fabric from '../../assets/images/fabric.png'
 import forge from '../../assets/images/forge.png'
 
@@ -51,8 +52,9 @@ export function InstanceDetail({
 					/>
 				)}
 				<div className='relative flex items-start gap-6 p-6'>
-					<img
+					<InstanceLogo
 						src={meta?.image_url}
+						slug={inst.slug}
 						className='size-28 rounded-2xl shadow-lg ring-1 ring-white/10 shrink-0 object-cover'
 						alt={meta?.name ?? inst.slug}
 					/>

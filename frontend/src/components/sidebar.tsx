@@ -34,6 +34,7 @@ import { MarketplaceModal } from './marketplace'
 import { useApp } from '../context/app-context'
 import { useEditorData } from '../hooks/use-editor-data'
 import { useRun } from '../context/run-context'
+import { InstanceLogo } from './instance-logo'
 
 const LOADERS: Record<string, string> = { fabric, forge }
 
@@ -106,8 +107,9 @@ function InstanceCard({
 				)}
 
 				<div className='relative flex items-center gap-3'>
-					<img
+					<InstanceLogo
 						src={meta?.image_url}
+						slug={inst.slug}
 						className='size-12 rounded-xl shadow-md ring-1 ring-white/10 shrink-0 object-cover'
 						alt={meta?.name ?? inst.slug}
 					/>
