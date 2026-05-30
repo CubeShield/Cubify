@@ -53,6 +53,8 @@ export function ImportInstance(arg1:string):Promise<instance.LocalInstance>;
 
 export function LoadProjectMeta(arg1:string):Promise<instance.Meta>;
 
+export function OpenInstanceFolder(arg1:string):Promise<void>;
+
 export function RefreshLocalReleases():Promise<void>;
 
 export function ReleaseProject(arg1:string,arg2:string,arg3:string):Promise<void>;

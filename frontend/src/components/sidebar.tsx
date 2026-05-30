@@ -10,6 +10,7 @@ import {
 	CodeIcon,
 	DownloadCloudIcon,
 	DownloadIcon,
+	FolderOpenIcon,
 	HammerIcon,
 	LucideIcon,
 	PackageIcon,
@@ -25,7 +26,7 @@ import {
 import { instance } from 'wailsjs/go/models'
 import { useEffect, useState } from 'react'
 import { Button } from './ui/button'
-import { HasEditor, LoadProjectMeta } from 'wailsjs/go/main/App'
+import { HasEditor, LoadProjectMeta, OpenInstanceFolder } from 'wailsjs/go/main/App'
 import fabric from '../assets/images/fabric.png'
 import forge from '../assets/images/forge.png'
 import { CreateProjectModal } from './create-modal-project'
@@ -328,15 +329,26 @@ export function AppSidebar() {
 						)}
 					</div>
 
-					{currentPage === 'detail' && (
-						<Button
-							className='cursor-pointer rounded-lg'
-							variant='outline'
-							onClick={() => setCurrentPage('settings')}
-							disabled={isRunning}
-						>
-							<Settings2Icon /> Настройки
-						</Button>
+					{currentPage === 'detail' && selectedInstance && (
+						<div className='flex gap-2'>
+							<Button
+								className='cursor-pointer rounded-lg flex-1'
+								variant='outline'
+								onClick={() => setCurrentPage('settings')}
+								disabled={isRunning}
+							>
+								<Settings2Icon /> Настройки
+							</Button>
+							<Button
+								className='cursor-pointer rounded-lg'
+								variant='outline'
+								size='icon'
+								onClick={() => OpenInstanceFolder(selectedInstance.slug)}
+								title='Папка сборки'
+							>
+								<FolderOpenIcon />
+							</Button>
+						</div>
 					)}
 
 					<Button

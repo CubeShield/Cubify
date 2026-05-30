@@ -13,11 +13,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os/exec"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/wailsapp/wails/v2/pkg/runtime"
+	wailsruntime "github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 var Version = "dev"
@@ -96,7 +98,7 @@ func (a *App) Run(release instance.Release) {
 	}()
 
 	onProgress := func(step, total int, label string) {
-		runtime.EventsEmit(a.ctx, "run:progress", map[string]interface{}{
+		wailsruntime.EventsEmit(a.ctx, "run:progress", map[string]interface{}{
 			"step":  step,
 			"total": total,
 			"label": label,
@@ -106,14 +108,14 @@ func (a *App) Run(release instance.Release) {
 	if err := a.controller.Run(runCtx, release, onProgress); err != nil {
 		if runCtx.Err() != nil {
 			a.l.Info("Run cancelled")
-			runtime.EventsEmit(a.ctx, "run:cancelled", nil)
+			wailsruntime.EventsEmit(a.ctx, "run:cancelled", nil)
 			return
 		}
 		a.l.Error("Error while running: %v", err)
-		runtime.EventsEmit(a.ctx, "run:error", err.Error())
+		wailsruntime.EventsEmit(a.ctx, "run:error", err.Error())
 		return
 	}
-	runtime.EventsEmit(a.ctx, "run:done", nil)
+	wailsruntime.EventsEmit(a.ctx, "run:done", nil)
 }
 
 func (a *App) CancelRun() {
@@ -141,7 +143,7 @@ func (a *App) DeployToServer(release instance.Release) {
 		}()
 
 		onProgress := func(step, total int, label string) {
-			runtime.EventsEmit(a.ctx, "deploy:progress", map[string]interface{}{
+			wailsruntime.EventsEmit(a.ctx, "deploy:progress", map[string]interface{}{
 				"step":  step,
 				"total": total,
 				"label": label,
@@ -151,14 +153,14 @@ func (a *App) DeployToServer(release instance.Release) {
 		if err := a.controller.DeployToServer(deployCtx, release, onProgress); err != nil {
 			if deployCtx.Err() != nil {
 				a.l.Info("Deploy cancelled")
-				runtime.EventsEmit(a.ctx, "deploy:cancelled", nil)
+				wailsruntime.EventsEmit(a.ctx, "deploy:cancelled", nil)
 				return
 			}
 			a.l.Error("Error while deploying: %v", err)
-			runtime.EventsEmit(a.ctx, "deploy:error", err.Error())
+			wailsruntime.EventsEmit(a.ctx, "deploy:error", err.Error())
 			return
 		}
-		runtime.EventsEmit(a.ctx, "deploy:done", nil)
+		wailsruntime.EventsEmit(a.ctx, "deploy:done", nil)
 	}()
 }
 
@@ -242,9 +244,9 @@ func (a *App) StartMicrosoftLogin() {
 // --- UI helpers ---
 
 func (a *App) SelectLogoFile() (string, error) {
-	return runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
+	return wailsruntime.OpenFileDialog(a.ctx, wailsruntime.OpenDialogOptions{
 		Title: "Выберите логотип",
-		Filters: []runtime.FileFilter{
+		Filters: []wailsruntime.FileFilter{
 			{DisplayName: "Images", Pattern: "*.png;*.jpg;*.jpeg"},
 		},
 	})
@@ -253,15 +255,15 @@ func (a *App) SelectLogoFile() (string, error) {
 // --- Project content (editor, git-tracked files) ---
 
 func (a *App) AddProjectContentFromFile(slug, contentType string) (instance.Content, error) {
-	var filters []runtime.FileFilter
+	var filters []wailsruntime.FileFilter
 	switch contentType {
 	case "resourcepacks":
-		filters = []runtime.FileFilter{{DisplayName: "Resource Packs", Pattern: "*.zip"}}
+		filters = []wailsruntime.FileFilter{{DisplayName: "Resource Packs", Pattern: "*.zip"}}
 	default:
-		filters = []runtime.FileFilter{{DisplayName: "Minecraft Mods", Pattern: "*.jar"}}
+		filters = []wailsruntime.FileFilter{{DisplayName: "Minecraft Mods", Pattern: "*.jar"}}
 	}
 
-	path, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
+	path, err := wailsruntime.OpenFileDialog(a.ctx, wailsruntime.OpenDialogOptions{
 		Title:   "Выберите файл",
 		Filters: filters,
 	})
@@ -282,15 +284,15 @@ func (a *App) AddExtraContent(slug, contentType string, content instance.Content
 }
 
 func (a *App) AddExtraContentFromFile(slug, contentType string) (instance.Content, error) {
-	var filters []runtime.FileFilter
+	var filters []wailsruntime.FileFilter
 	switch contentType {
 	case "resourcepacks":
-		filters = []runtime.FileFilter{{DisplayName: "Resource Packs", Pattern: "*.zip"}}
+		filters = []wailsruntime.FileFilter{{DisplayName: "Resource Packs", Pattern: "*.zip"}}
 	default:
-		filters = []runtime.FileFilter{{DisplayName: "Minecraft Mods", Pattern: "*.jar"}}
+		filters = []wailsruntime.FileFilter{{DisplayName: "Minecraft Mods", Pattern: "*.jar"}}
 	}
 
-	path, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
+	path, err := wailsruntime.OpenFileDialog(a.ctx, wailsruntime.OpenDialogOptions{
 		Title:   "Выберите файл",
 		Filters: filters,
 	})
@@ -393,4 +395,18 @@ func (a *App) CheckForUpdates() UpdateInfo {
 
 func (a *App) GetVersion() string {
 	return Version
+}
+
+func (a *App) OpenInstanceFolder(slug string) error {
+	path := a.fm.Sub("instances").Sub(slug).BasePath()
+	var cmd *exec.Cmd
+	switch runtime.GOOS {
+	case "windows":
+		cmd = exec.Command("explorer", path)
+	case "darwin":
+		cmd = exec.Command("open", path)
+	default:
+		cmd = exec.Command("xdg-open", path)
+	}
+	return cmd.Start()
 }
