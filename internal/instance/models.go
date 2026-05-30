@@ -90,6 +90,7 @@ type Content struct {
 	From From `json:"from"`
 	File string `json:"file"`
 	Url string `json:"url"`
+	Comment string `json:"comment,omitempty"`
 }
 
 // Changelog models

@@ -98,9 +98,9 @@ func (c *Controller) Run(ctx context.Context, release instance.Release, onProgre
 
 	onProgress(2, totalSteps, "Подготовка Minecraft...")
 	c.l.Info("Preparing Minecraft...")
-	if err := c.mc.Prepare(ctx, release.Meta.Name, release.Meta.Loader, release.Meta.LoaderVersion, release.Meta.MinecraftVersion); err != nil {
-		return fmt.Errorf("prepare failed: %w", err)
-	}
+	//if err := c.mc.Prepare(ctx, release.Meta.Name, release.Meta.Loader, release.Meta.LoaderVersion, release.Meta.MinecraftVersion); err != nil {
+	//	return fmt.Errorf("prepare failed: %w", err)
+	//}
 
 	if ctx.Err() != nil {
 		return ctx.Err()

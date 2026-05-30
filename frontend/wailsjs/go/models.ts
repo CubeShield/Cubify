@@ -37,7 +37,6 @@ export namespace config {
 	    }
 	}
 	export class Config {
-	    nickname: string;
 	    index_urls: string[];
 	    base_url: string;
 	    auth_token: string;
@@ -57,7 +56,6 @@ export namespace config {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.nickname = source["nickname"];
 	        this.index_urls = source["index_urls"];
 	        this.base_url = source["base_url"];
 	        this.auth_token = source["auth_token"];
@@ -280,6 +278,7 @@ export namespace instance {
 	    from: string;
 	    file: string;
 	    url: string;
+	    comment?: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new Content(source);
@@ -296,6 +295,7 @@ export namespace instance {
 	        this.from = source["from"];
 	        this.file = source["file"];
 	        this.url = source["url"];
+	        this.comment = source["comment"];
 	    }
 	}
 	export class Container {

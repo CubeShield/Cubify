@@ -12,6 +12,7 @@ import {
 	ListIcon,
 	Loader2,
 	LucideIcon,
+	MessageSquareIcon,
 	ServerIcon,
 	Trash2,
 } from 'lucide-react'
@@ -411,6 +412,21 @@ export const Content = memo(function Content({
 						</>
 					)}
 				</div>
+			</div>
+
+			{/* Dev comment */}
+			<div className='px-3 pb-2.5'>
+				<div className='flex items-center gap-1.5 mb-1'>
+					<MessageSquareIcon className='size-3 text-muted-foreground/50' />
+					<span className='text-[10px] text-muted-foreground/60 font-medium'>Заметка разработчика</span>
+				</div>
+				<textarea
+					value={item.comment ?? ''}
+					onChange={e => onFieldChange('comment')(e.target.value)}
+					placeholder='Зачем нужен этот мод, особенности, зависимости...'
+					rows={2}
+					className='w-full resize-none rounded-lg border border-dashed border-border bg-muted/20 px-2.5 py-1.5 text-[11px] text-muted-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/30 focus:bg-muted/40 transition-colors'
+				/>
 			</div>
 
 			{/* Delete action */}
