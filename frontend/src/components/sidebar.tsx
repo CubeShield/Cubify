@@ -212,6 +212,7 @@ export function AppSidebar() {
 		instances,
 		selectedInstance,
 		selectInstance,
+		selectedProfile,
 		currentPage,
 		setCurrentPage,
 		currentUser,
@@ -231,7 +232,7 @@ export function AppSidebar() {
 
 	const run = async () => {
 		if (!selectedInstance || selectedInstance.releases.length < 1) return
-		await startRun(selectedInstance.releases[0])
+		await startRun(selectedInstance.releases[0], selectedProfile)
 	}
 
 	const runDev = async () => {
@@ -244,7 +245,7 @@ export function AppSidebar() {
 			body: '',
 			Meta: freshMeta,
 		})
-		await startRun(devRelease)
+		await startRun(devRelease, selectedProfile)
 	}
 
 	const buttonLabel =

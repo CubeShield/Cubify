@@ -63,7 +63,7 @@ export function ReleaseProject(arg1:string,arg2:string,arg3:string):Promise<void
 
 export function RemoveExtraContent(arg1:string,arg2:string,arg3:string):Promise<void>;
 
-export function Run(arg1:instance.Release):Promise<void>;
+export function Run(arg1:instance.Release,arg2:string):Promise<void>;
 
 export function SaveConfig(arg1:config.Config):Promise<void>;
 

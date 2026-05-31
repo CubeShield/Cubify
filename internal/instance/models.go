@@ -41,6 +41,12 @@ type LocalInstance struct {
 }
 
 
+type Profile struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Extends     string `json:"extends,omitempty"`
+}
+
 type Meta struct {
 	Name string `json:"name"`
 	Description string `json:"description"`
@@ -49,6 +55,7 @@ type Meta struct {
 	MinecraftVersion string `json:"minecraft_version"`
 	ImageURL string `json:"image_url"`
 	Containers []Container `json:"containers"`
+	Profiles   []Profile   `json:"profiles,omitempty"`
 }
 
 type Container struct {
@@ -81,16 +88,17 @@ const (
 )
 
 type Content struct {
-	Name string `json:"name"`
-	ImageURL string `json:"image_url"`
-	Type Type `json:"type"`
-	ModID string `json:"mod_id"`
-	FileID string `json:"file_id"`
-	Source Source `json:"source"`
-	From From `json:"from"`
-	File string `json:"file"`
-	Url string `json:"url"`
-	Comment string `json:"comment,omitempty"`
+	Name     string   `json:"name"`
+	ImageURL string   `json:"image_url"`
+	Type     Type     `json:"type"`
+	ModID    string   `json:"mod_id"`
+	FileID   string   `json:"file_id"`
+	Source   Source   `json:"source"`
+	From     From     `json:"from"`
+	File     string   `json:"file"`
+	Url      string   `json:"url"`
+	Comment  string   `json:"comment,omitempty"`
+	Profiles []string `json:"profiles,omitempty"`
 }
 
 // Changelog models

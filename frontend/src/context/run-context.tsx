@@ -19,7 +19,7 @@ export interface RunProgress {
 interface RunContextType {
 	isRunning: boolean
 	progress: RunProgress | null
-	startRun: (release: instance.Release) => Promise<void>
+	startRun: (release: instance.Release, profileName?: string) => Promise<void>
 	cancelRun: () => void
 }
 
@@ -72,10 +72,10 @@ export function RunProvider({
 		}
 	}, [])
 
-	const startRun = useCallback(async (release: instance.Release) => {
+	const startRun = useCallback(async (release: instance.Release, profileName: string = '') => {
 		setIsRunning(true)
 		setProgress({ step: 0, total: 4, label: 'Запуск...' })
-		await Run(release)
+		await Run(release, profileName)
 	}, [])
 
 	const cancelRun = useCallback(() => {

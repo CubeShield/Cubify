@@ -21,6 +21,9 @@ interface AppContextType {
 	selectedInstance: instance.LocalInstance | null
 	selectInstance: (inst: instance.LocalInstance | null) => void
 
+	selectedProfile: string
+	setSelectedProfile: (profile: string) => void
+
 	currentPage: Page
 	setCurrentPage: (page: Page) => void
 
@@ -49,6 +52,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 	const [instances, setInstances] = useState<instance.LocalInstance[]>([])
 	const [selectedInstance, setSelectedInstance] =
 		useState<instance.LocalInstance | null>(null)
+	const [selectedProfile, setSelectedProfile] = useState<string>('')
 	const [currentPage, setCurrentPage] = useState<Page>('detail')
 	const [devMode, setDevMode] = useState(false)
 	const [isRefreshing, setIsRefreshing] = useState(false)
@@ -81,6 +85,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
 	const selectInstance = useCallback((inst: instance.LocalInstance | null) => {
 		setSelectedInstance(inst)
+		setSelectedProfile('')
 		if (inst) setCurrentPage('detail')
 	}, [])
 
@@ -97,6 +102,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
 				instances,
 				selectedInstance,
 				selectInstance,
+				selectedProfile,
+				setSelectedProfile,
 				currentPage,
 				setCurrentPage,
 				devMode,

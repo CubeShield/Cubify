@@ -279,6 +279,7 @@ export namespace instance {
 	    file: string;
 	    url: string;
 	    comment?: string;
+	    profiles?: string[];
 	
 	    static createFrom(source: any = {}) {
 	        return new Content(source);
@@ -296,6 +297,7 @@ export namespace instance {
 	        this.file = source["file"];
 	        this.url = source["url"];
 	        this.comment = source["comment"];
+	        this.profiles = source["profiles"];
 	    }
 	}
 	export class Container {
@@ -332,6 +334,22 @@ export namespace instance {
 	}
 	
 	
+	export class Profile {
+	    name: string;
+	    description: string;
+	    extends?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Profile(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.name = source["name"];
+	        this.description = source["description"];
+	        this.extends = source["extends"];
+	    }
+	}
 	export class Meta {
 	    name: string;
 	    description: string;
@@ -340,6 +358,7 @@ export namespace instance {
 	    minecraft_version: string;
 	    image_url: string;
 	    containers: Container[];
+	    profiles?: Profile[];
 	
 	    static createFrom(source: any = {}) {
 	        return new Meta(source);
@@ -354,6 +373,7 @@ export namespace instance {
 	        this.minecraft_version = source["minecraft_version"];
 	        this.image_url = source["image_url"];
 	        this.containers = this.convertValues(source["containers"], Container);
+	        this.profiles = this.convertValues(source["profiles"], Profile);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -493,6 +513,7 @@ export namespace instance {
 		    return a;
 		}
 	}
+	
 	
 	
 	export class ProjectSettings {

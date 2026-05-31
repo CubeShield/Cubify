@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { instance } from 'wailsjs/go/models'
 import dayjs from 'dayjs'
-import { Loader2, RocketIcon, ServerIcon, Trash2Icon } from 'lucide-react'
+import { LayersIcon, Loader2, RocketIcon, ServerIcon, Trash2Icon } from 'lucide-react'
 import { Button } from '../ui/button'
 import {
 	Select,
@@ -14,11 +14,29 @@ import { Separator } from '../ui/separator'
 import { DeployToServer, CancelDeploy } from '../../../wailsjs/go/main/App'
 import { EventsOn, EventsOff } from '../../../wailsjs/runtime/runtime'
 
+function findHeaviestProfile(profiles: instance.Profile[] | undefined): string {
+	if (!profiles || profiles.length === 0) return ''
+	const extended = new Set(profiles.map(p => p.extends).filter(Boolean))
+	for (let i = profiles.length - 1; i >= 0; i--) {
+		if (!extended.has(profiles[i].name)) return profiles[i].name
+	}
+	return profiles[profiles.length - 1].name
+}
+
 export function DeploySection({ inst }: { inst: instance.LocalInstance }) {
 	const [selectedDeployVersion, setSelectedDeployVersion] = useState<string>('')
 	const [isDeploying, setDeploying] = useState(false)
 	const [deployError, setDeployError] = useState<string | null>(null)
 	const [deploySuccess, setDeploySuccess] = useState(false)
+
+	const selectedRelease = useMemo(
+		() => inst.releases.find(r => r.tag_name === selectedDeployVersion),
+		[inst.releases, selectedDeployVersion],
+	)
+	const heaviestProfile = useMemo(
+		() => findHeaviestProfile(selectedRelease?.Meta?.profiles),
+		[selectedRelease],
+	)
 
 	useEffect(() => {
 		const onDone = () => {
@@ -46,15 +64,11 @@ export function DeploySection({ inst }: { inst: instance.LocalInstance }) {
 	}, [])
 
 	const handleDeploy = () => {
-		const release = inst.releases.find(
-			r => r.tag_name === selectedDeployVersion,
-		)
-		if (!release) return
-
+		if (!selectedRelease) return
 		setDeploying(true)
 		setDeployError(null)
 		setDeploySuccess(false)
-		DeployToServer(release)
+		DeployToServer(selectedRelease)
 	}
 
 	const handleCancelDeploy = () => {
@@ -116,6 +130,17 @@ export function DeploySection({ inst }: { inst: instance.LocalInstance }) {
 						</Button>
 					)}
 				</div>
+				{heaviestProfile && (
+					<div className='flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/30 rounded-lg px-3 py-1.5'>
+						<LayersIcon className='size-3 shrink-0' />
+						<span>
+							Профиль деплоя:{' '}
+							<span className='font-semibold text-foreground'>
+								{heaviestProfile}
+							</span>
+						</span>
+					</div>
+				)}
 				{deployError && (
 					<span className='text-sm text-destructive'>{deployError}</span>
 				)}

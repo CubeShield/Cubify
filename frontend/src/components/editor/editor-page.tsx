@@ -9,6 +9,7 @@ import {
 	AddProjectContentFromFile,
 } from '../../../wailsjs/go/main/App'
 import { git, instance } from '../../../wailsjs/go/models'
+import { useApp } from '../../context/app-context'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs'
@@ -26,6 +27,8 @@ import {
 	SearchIcon,
 	BoxIcon,
 	FileIcon,
+	LayersIcon,
+	ArrowRightIcon,
 } from 'lucide-react'
 import Fuse from 'fuse.js'
 import {
@@ -54,6 +57,7 @@ interface EditorPageProps {
 }
 
 export function EditorPage({ slug, initialMeta, onRefresh }: EditorPageProps) {
+	const { selectedProfile, setSelectedProfile } = useApp()
 	const [meta, setMeta] = useState<instance.Meta>(initialMeta)
 
 	const [isGitDirty, setGitDirty] = useState(false)
@@ -303,6 +307,41 @@ export function EditorPage({ slug, initialMeta, onRefresh }: EditorPageProps) {
 						</Dialog>
 					</div>
 				</div>
+
+				{/* Profile selector strip — only shown when profiles are defined */}
+				{meta.profiles && meta.profiles.length > 0 && (
+					<div className='flex items-center gap-2 px-5 py-2.5 border-t border-border bg-muted/20'>
+						<LayersIcon className='size-3.5 text-muted-foreground/60 shrink-0' />
+						<span className='text-[10px] text-muted-foreground/60 font-medium shrink-0'>
+							Профиль запуска:
+						</span>
+						<div className='flex flex-wrap gap-1.5'>
+							{meta.profiles.map(p => (
+								<button
+									key={p.name}
+									onClick={() =>
+										setSelectedProfile(selectedProfile === p.name ? '' : p.name)
+									}
+									className={`inline-flex items-center rounded-md border px-2 py-0.5 text-[10px] font-medium transition-colors cursor-pointer ${
+										selectedProfile === p.name
+											? 'border-primary/50 bg-primary/15 text-primary'
+											: 'border-border text-muted-foreground hover:border-primary/30 hover:text-foreground'
+									}`}
+								>
+									{p.name}
+								</button>
+							))}
+							{selectedProfile !== '' && (
+								<button
+									onClick={() => setSelectedProfile('')}
+									className='inline-flex items-center rounded-md border border-dashed border-border px-2 py-0.5 text-[10px] text-muted-foreground/50 hover:text-muted-foreground transition-colors cursor-pointer'
+								>
+									× сбросить
+								</button>
+							)}
+						</div>
+					</div>
+				)}
 			</div>
 
 			<Tabs
@@ -312,6 +351,7 @@ export function EditorPage({ slug, initialMeta, onRefresh }: EditorPageProps) {
 			>
 				<TabsList>
 					<TabsTrigger value='general'>Основное</TabsTrigger>
+					<TabsTrigger value='profiles'>Профили</TabsTrigger>
 					<TabsTrigger value='containers'>Контейнеры</TabsTrigger>
 				</TabsList>
 
@@ -376,10 +416,269 @@ export function EditorPage({ slug, initialMeta, onRefresh }: EditorPageProps) {
 					</div>
 				</TabsContent>
 
+				<TabsContent value='profiles' className='pt-4'>
+					<ProfileEditor
+						profiles={meta.profiles ?? []}
+						onChange={profiles => updateMeta('profiles', profiles)}
+					/>
+				</TabsContent>
+
 				<TabsContent value='containers' className='flex-1'>
 					<ContainerEditor meta={meta} setMeta={setMeta} slug={slug} />
 				</TabsContent>
 			</Tabs>
+		</div>
+	)
+}
+
+function ProfileEditor({
+	profiles,
+	onChange,
+}: {
+	profiles: instance.Profile[]
+	onChange: (profiles: instance.Profile[]) => void
+}) {
+	const [editingIdx, setEditingIdx] = useState<number | null>(null)
+	const [newName, setNewName] = useState('')
+	const [newDesc, setNewDesc] = useState('')
+	const [newExtends, setNewExtends] = useState('')
+
+	const profileNames = profiles.map(p => p.name)
+
+	const addProfile = () => {
+		if (!newName.trim()) return
+		onChange([
+			...profiles,
+			new instance.Profile({
+				name: newName.trim(),
+				description: newDesc.trim(),
+				extends: newExtends || undefined,
+			}),
+		])
+		setNewName('')
+		setNewDesc('')
+		setNewExtends('')
+	}
+
+	const removeProfile = (idx: number) => {
+		onChange(profiles.filter((_, i) => i !== idx))
+		if (editingIdx === idx) setEditingIdx(null)
+	}
+
+	const updateProfile = (
+		idx: number,
+		field: keyof instance.Profile,
+		val: string,
+	) => {
+		onChange(
+			profiles.map((p, i) =>
+				i === idx ? new instance.Profile({ ...p, [field]: val || undefined }) : p,
+			),
+		)
+	}
+
+	return (
+		<div className='flex flex-col gap-4'>
+			{/* Inheritance diagram */}
+			{profiles.length > 0 && (
+				<div className='border rounded-xl overflow-hidden bg-card'>
+					<div className='px-4 py-3 bg-muted/40 flex items-center gap-2'>
+						<LayersIcon className='size-4 text-primary' />
+						<span className='font-semibold text-sm'>Дерево наследования</span>
+					</div>
+					<Separator />
+					<div className='p-4 flex flex-wrap items-center gap-2'>
+						{profiles.map((p, idx) => (
+							<div key={idx} className='flex items-center gap-2'>
+								{idx > 0 && (
+									<ArrowRightIcon className='size-3.5 text-muted-foreground/40' />
+								)}
+								<div
+									className={`flex flex-col rounded-lg border px-3 py-2 text-xs ${
+										p.extends
+											? 'border-primary/30 bg-primary/5'
+											: 'border-border bg-muted/20'
+									}`}
+								>
+									<span className='font-semibold'>{p.name}</span>
+									{p.extends && (
+										<span className='text-[10px] text-muted-foreground'>
+											↑ {p.extends}
+										</span>
+									)}
+								</div>
+							</div>
+						))}
+					</div>
+				</div>
+			)}
+
+			{/* Profile list */}
+			<div className='border rounded-xl overflow-hidden bg-card'>
+				<div className='px-4 py-3 bg-muted/40'>
+					<span className='font-semibold text-sm'>Профили</span>
+				</div>
+				<Separator />
+				<div className='divide-y divide-border'>
+					{profiles.length === 0 && (
+						<div className='flex flex-col items-center justify-center py-10 text-muted-foreground'>
+							<LayersIcon className='size-8 mb-2 opacity-40' />
+							<p className='text-sm'>Нет профилей</p>
+							<p className='text-xs opacity-60 mt-0.5'>Добавьте профиль ниже</p>
+						</div>
+					)}
+					{profiles.map((p, idx) => (
+						<div key={idx} className='p-4'>
+							{editingIdx === idx ? (
+								<div className='flex flex-col gap-2'>
+									<div className='grid grid-cols-2 gap-2'>
+										<div className='space-y-1'>
+											<Label className='text-[10px] text-muted-foreground'>
+												Название
+											</Label>
+											<Input
+												value={p.name}
+												onChange={e => updateProfile(idx, 'name', e.target.value)}
+												className='h-7 text-xs'
+											/>
+										</div>
+										<div className='space-y-1'>
+											<Label className='text-[10px] text-muted-foreground'>
+												Наследует от
+											</Label>
+											<select
+												value={p.extends ?? ''}
+												onChange={e =>
+													updateProfile(idx, 'extends', e.target.value)
+												}
+												className='h-7 w-full text-xs rounded-lg border border-border bg-background px-2 focus:outline-none'
+											>
+												<option value=''>— нет —</option>
+												{profileNames
+													.filter(n => n !== p.name)
+													.map(n => (
+														<option key={n} value={n}>
+															{n}
+														</option>
+													))}
+											</select>
+										</div>
+									</div>
+									<div className='space-y-1'>
+										<Label className='text-[10px] text-muted-foreground'>
+											Описание
+										</Label>
+										<Textarea
+											value={p.description}
+											onChange={e =>
+												updateProfile(idx, 'description', e.target.value)
+											}
+											className='text-xs min-h-0'
+											rows={2}
+											placeholder='Что входит в этот профиль...'
+										/>
+									</div>
+									<div className='flex justify-end'>
+										<Button
+											size='sm'
+											variant='outline'
+											className='text-xs h-7'
+											onClick={() => setEditingIdx(null)}
+										>
+											Готово
+										</Button>
+									</div>
+								</div>
+							) : (
+								<div className='flex items-start justify-between gap-2'>
+									<div className='flex-1 min-w-0'>
+										<div className='flex items-center gap-2 flex-wrap'>
+											<span className='text-sm font-semibold'>{p.name}</span>
+											{p.extends && (
+												<span className='inline-flex items-center gap-1 text-[10px] text-muted-foreground border border-border rounded px-1.5 py-0.5'>
+													<ArrowRightIcon className='size-2.5' /> {p.extends}
+												</span>
+											)}
+										</div>
+										{p.description && (
+											<p className='text-xs text-muted-foreground mt-0.5 line-clamp-2'>
+												{p.description}
+											</p>
+										)}
+									</div>
+									<div className='flex gap-1 shrink-0'>
+										<button
+											onClick={() => setEditingIdx(idx)}
+											className='flex items-center justify-center size-7 rounded-lg border border-border hover:bg-primary/15 hover:border-primary/30 text-muted-foreground hover:text-primary transition-colors cursor-pointer text-[11px]'
+										>
+											✏
+										</button>
+										<button
+											onClick={() => removeProfile(idx)}
+											className='flex items-center justify-center size-7 rounded-lg border border-border hover:bg-destructive/15 hover:border-destructive/30 text-muted-foreground hover:text-destructive transition-colors cursor-pointer'
+										>
+											<Trash2 className='size-3.5' />
+										</button>
+									</div>
+								</div>
+							)}
+						</div>
+					))}
+				</div>
+
+				{/* Add new profile */}
+				<div className='p-4 border-t border-border bg-muted/10'>
+					<p className='text-xs font-semibold text-muted-foreground mb-3'>
+						Добавить профиль
+					</p>
+					<div className='grid grid-cols-2 gap-2 mb-2'>
+						<div className='space-y-1'>
+							<Label className='text-[10px] text-muted-foreground'>Название</Label>
+							<Input
+								value={newName}
+								onChange={e => setNewName(e.target.value)}
+								placeholder='Minimum'
+								className='h-7 text-xs'
+							/>
+						</div>
+						<div className='space-y-1'>
+							<Label className='text-[10px] text-muted-foreground'>
+								Наследует от
+							</Label>
+							<select
+								value={newExtends}
+								onChange={e => setNewExtends(e.target.value)}
+								className='h-7 w-full text-xs rounded-lg border border-border bg-background px-2 focus:outline-none'
+							>
+								<option value=''>— нет —</option>
+								{profileNames.map(n => (
+									<option key={n} value={n}>
+										{n}
+									</option>
+								))}
+							</select>
+						</div>
+					</div>
+					<div className='space-y-1 mb-3'>
+						<Label className='text-[10px] text-muted-foreground'>Описание</Label>
+						<Textarea
+							value={newDesc}
+							onChange={e => setNewDesc(e.target.value)}
+							placeholder='Минимальный набор модов...'
+							className='text-xs min-h-0'
+							rows={2}
+						/>
+					</div>
+					<Button
+						size='sm'
+						className='w-full text-xs h-8'
+						onClick={addProfile}
+						disabled={!newName.trim()}
+					>
+						<PlusIcon className='size-3.5' /> Добавить профиль
+					</Button>
+				</div>
+			</div>
 		</div>
 	)
 }
@@ -604,6 +903,7 @@ function ContainerEditor({
 							isUrlLoading={isUrlLoading}
 							onAddFromUrl={handleAddFromUrl}
 							onAddFromFile={handleAddFromFile}
+							availableProfiles={meta.profiles ?? []}
 						/>
 					))}
 					{meta.containers.length === 0 && (
@@ -640,6 +940,7 @@ function ContainerCard({
 	isUrlLoading,
 	onAddFromUrl,
 	onAddFromFile,
+	availableProfiles,
 }: {
 	container: instance.Container
 	cIdx: number
@@ -667,6 +968,7 @@ function ContainerCard({
 	isUrlLoading: boolean
 	onAddFromUrl: (cIdx: number) => void
 	onAddFromFile: (cIdx: number) => void
+	availableProfiles: instance.Profile[]
 }) {
 	const cfg = CONTAINER_CFG[container.content_type] ?? {
 		label: container.content_type,
@@ -742,6 +1044,7 @@ function ContainerCard({
 							cIdx={cIdx}
 							iIdx={originalIdx}
 							item={item}
+							availableProfiles={availableProfiles}
 						/>
 					)
 				})}

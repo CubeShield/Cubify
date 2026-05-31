@@ -256,6 +256,22 @@ function EditContentDialog({
 	)
 }
 
+function resolveProfileChain(
+	profiles: instance.Profile[],
+	name: string,
+): Set<string> {
+	const map = new Map(profiles.map(p => [p.name, p]))
+	const chain = new Set<string>()
+	const visited = new Set<string>()
+	let cur = name
+	while (cur && !visited.has(cur)) {
+		visited.add(cur)
+		chain.add(cur)
+		cur = map.get(cur)?.extends ?? ''
+	}
+	return chain
+}
+
 // --- Main Content component (memoized) ---
 
 interface ContentProps {
@@ -274,6 +290,7 @@ interface ContentProps {
 	cIdx: number
 	iIdx: number
 	item: instance.Content
+	availableProfiles?: instance.Profile[]
 }
 
 export const Content = memo(function Content({
@@ -283,6 +300,7 @@ export const Content = memo(function Content({
 	cIdx,
 	iIdx,
 	item,
+	availableProfiles = [],
 }: ContentProps) {
 	const { isRaw, handleOpenSite, handleOpenVersion, handleOpenVersions } =
 		useContentActions(item, cIdx, iIdx, replaceContent)
@@ -428,6 +446,66 @@ export const Content = memo(function Content({
 					className='w-full resize-none rounded-lg border border-dashed border-border bg-muted/20 px-2.5 py-1.5 text-[11px] text-muted-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/30 focus:bg-muted/40 transition-colors'
 				/>
 			</div>
+
+			{/* Profile tags */}
+			{availableProfiles.length > 0 && (
+				<div className='px-3 pb-2.5'>
+					<div className='flex items-center gap-1.5 mb-1.5'>
+						<span className='text-[10px] text-muted-foreground/60 font-medium'>
+							Профили
+						</span>
+						{(item.profiles ?? []).length === 0 && (
+							<span className='text-[9px] text-muted-foreground/40 italic'>
+								все профили
+							</span>
+						)}
+					</div>
+					<div className='flex flex-wrap gap-1'>
+						{availableProfiles.map(p => {
+							const explicit = (item.profiles ?? []).includes(p.name)
+							// inherited: this profile's chain contains one of the content's explicit profiles
+							const chain = resolveProfileChain(availableProfiles, p.name)
+							const inherited =
+								!explicit &&
+								(item.profiles ?? []).some(ep => chain.has(ep))
+							return (
+								<button
+									key={p.name}
+									onClick={() => {
+										const current = item.profiles ?? []
+										const next = explicit
+											? current.filter(x => x !== p.name)
+											: [...current, p.name]
+										updateContent(
+											cIdx,
+											iIdx,
+											'profiles',
+											next.length > 0 ? next : undefined,
+										)
+									}}
+									title={
+										inherited
+											? `Включён через наследование от ${(item.profiles ?? []).find(ep => chain.has(ep))}`
+											: undefined
+									}
+									className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] font-medium transition-colors cursor-pointer ${
+										explicit
+											? 'border-primary/60 bg-primary/15 text-primary'
+											: inherited
+												? 'border-dashed border-primary/30 bg-primary/5 text-primary/60'
+												: 'border-border text-muted-foreground hover:border-primary/30 hover:text-foreground'
+									}`}
+								>
+									{inherited && (
+										<span className='opacity-60'>↓</span>
+									)}
+									{p.name}
+								</button>
+							)
+						})}
+					</div>
+				</div>
+			)}
 
 			{/* Delete action */}
 			<div className='flex items-center justify-end px-3 py-2 border-t border-border bg-muted/20'>

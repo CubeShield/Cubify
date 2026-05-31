@@ -81,7 +81,7 @@ func (c *Controller) Fetch() ([]instance.Instance, error) {
 	return instances, nil
 }
 
-func (c *Controller) Run(ctx context.Context, release instance.Release, onProgress func(step, total int, label string)) error {
+func (c *Controller) Run(ctx context.Context, release instance.Release, profileName string, onProgress func(step, total int, label string)) error {
 	const totalSteps = 4
 
 	onProgress(1, totalSteps, "Загрузка PortableMC...")
@@ -114,7 +114,7 @@ func (c *Controller) Run(ctx context.Context, release instance.Release, onProgre
 		buildType = "client"
 	}
 
-	containers := release.Meta.Containers
+	containers := instance.FilterContainersByProfile(release.Meta.Containers, release.Meta.Profiles, profileName)
 	localInstance, liErr := c.IM.GetBySlug(instanceDirectory)
 	if liErr == nil && len(localInstance.ExtraContainers) > 0 {
 		containers = instance.MergeContainers(containers, localInstance.ExtraContainers)
@@ -341,7 +341,10 @@ func (c *Controller) DeployToServer(ctx context.Context, release instance.Releas
 		return instance.Container{ContentType: contentType, Content: []instance.Content{}}
 	}
 
-	for _, newContainer := range release.Meta.Containers {
+	heavyProfile := instance.FindHeaviestProfile(release.Meta.Profiles)
+	deployContainers := instance.FilterContainersByProfile(release.Meta.Containers, release.Meta.Profiles, heavyProfile)
+
+	for _, newContainer := range deployContainers {
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
@@ -353,7 +356,7 @@ func (c *Controller) DeployToServer(ctx context.Context, release instance.Releas
 	}
 
 	onProgress(3, totalSteps, "Сохранение информации...")
-	if err := fm.SaveJson("installed.json", release.Meta.Containers); err != nil {
+	if err := fm.SaveJson("installed.json", deployContainers); err != nil {
 		return fmt.Errorf("failed to save installed.json on server: %w", err)
 	}
 

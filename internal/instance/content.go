@@ -355,6 +355,73 @@ func (m *Manager) RemoveExtraContent(slug, contentType, fileName string) error {
 	return m.Put(inst)
 }
 
+// ResolveProfileChain returns the set of profile names reachable from name via Extends (inclusive).
+func ResolveProfileChain(profiles []Profile, name string) map[string]bool {
+	chain := map[string]bool{}
+	byName := map[string]Profile{}
+	for _, p := range profiles {
+		byName[p.Name] = p
+	}
+	visited := map[string]bool{}
+	cur := name
+	for cur != "" && !visited[cur] {
+		visited[cur] = true
+		chain[cur] = true
+		p, ok := byName[cur]
+		if !ok {
+			break
+		}
+		cur = p.Extends
+	}
+	return chain
+}
+
+// FindHeaviestProfile returns the profile that no other profile extends from (the leaf).
+func FindHeaviestProfile(profiles []Profile) string {
+	if len(profiles) == 0 {
+		return ""
+	}
+	extended := map[string]bool{}
+	for _, p := range profiles {
+		if p.Extends != "" {
+			extended[p.Extends] = true
+		}
+	}
+	for i := len(profiles) - 1; i >= 0; i-- {
+		if !extended[profiles[i].Name] {
+			return profiles[i].Name
+		}
+	}
+	return profiles[len(profiles)-1].Name
+}
+
+// FilterContainersByProfile returns containers with content filtered to the selected profile.
+// Content with empty Profiles is always included. Empty profileName returns all content unchanged.
+func FilterContainersByProfile(containers []Container, profiles []Profile, profileName string) []Container {
+	if profileName == "" || len(profiles) == 0 {
+		return containers
+	}
+	chain := ResolveProfileChain(profiles, profileName)
+	result := make([]Container, 0, len(containers))
+	for _, c := range containers {
+		filtered := Container{ContentType: c.ContentType, Content: []Content{}}
+		for _, item := range c.Content {
+			if len(item.Profiles) == 0 {
+				filtered.Content = append(filtered.Content, item)
+				continue
+			}
+			for _, p := range item.Profiles {
+				if chain[p] {
+					filtered.Content = append(filtered.Content, item)
+					break
+				}
+			}
+		}
+		result = append(result, filtered)
+	}
+	return result
+}
+
 // MergeContainers merges extra containers into release containers for Run.
 func MergeContainers(release, extra []Container) []Container {
 	merged := make([]Container, len(release))

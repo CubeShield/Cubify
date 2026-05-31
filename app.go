@@ -85,7 +85,7 @@ func (a *App) GetLocalInstances() ([]instance.LocalInstance, error) {
 	return a.controller.IM.List()
 }
 
-func (a *App) Run(release instance.Release) {
+func (a *App) Run(release instance.Release, profileName string) {
 	a.runMu.Lock()
 	if a.runCancel != nil {
 		a.runCancel()
@@ -108,7 +108,7 @@ func (a *App) Run(release instance.Release) {
 		})
 	}
 
-	if err := a.controller.Run(runCtx, release, onProgress); err != nil {
+	if err := a.controller.Run(runCtx, release, profileName, onProgress); err != nil {
 		if runCtx.Err() != nil {
 			a.l.Info("Run cancelled")
 			wailsruntime.EventsEmit(a.ctx, "run:cancelled", nil)
