@@ -44,6 +44,13 @@ import { Textarea } from '../ui/textarea'
 import { Content } from './editor-content'
 import { TooltipProvider } from '../ui/tooltip'
 import { Separator } from '../ui/separator'
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '../ui/select'
 
 const CONTAINER_CFG: Record<string, { label: string; icon: typeof BoxIcon }> = {
 	mods: { label: 'Моды', icon: PackageIcon },
@@ -546,22 +553,28 @@ function ProfileEditor({
 											<Label className='text-[10px] text-muted-foreground'>
 												Наследует от
 											</Label>
-											<select
+											<Select
 												value={p.extends ?? ''}
-												onChange={e =>
-													updateProfile(idx, 'extends', e.target.value)
+												onValueChange={val =>
+													updateProfile(idx, 'extends', val === '__none__' ? '' : val)
 												}
-												className='h-7 w-full text-xs rounded-lg border border-border bg-background px-2 focus:outline-none'
 											>
-												<option value=''>— нет —</option>
-												{profileNames
-													.filter(n => n !== p.name)
-													.map(n => (
-														<option key={n} value={n}>
-															{n}
-														</option>
-													))}
-											</select>
+												<SelectTrigger size='sm' className='h-7 text-xs w-full'>
+													<SelectValue placeholder='— нет —' />
+												</SelectTrigger>
+												<SelectContent>
+													<SelectItem value='__none__'>
+														<span className='text-muted-foreground'>— нет —</span>
+													</SelectItem>
+													{profileNames
+														.filter(n => n !== p.name)
+														.map(n => (
+															<SelectItem key={n} value={n}>
+																{n}
+															</SelectItem>
+														))}
+												</SelectContent>
+											</Select>
 										</div>
 									</div>
 									<div className='space-y-1'>
@@ -645,18 +658,24 @@ function ProfileEditor({
 							<Label className='text-[10px] text-muted-foreground'>
 								Наследует от
 							</Label>
-							<select
+							<Select
 								value={newExtends}
-								onChange={e => setNewExtends(e.target.value)}
-								className='h-7 w-full text-xs rounded-lg border border-border bg-background px-2 focus:outline-none'
+								onValueChange={val => setNewExtends(val === '__none__' ? '' : val)}
 							>
-								<option value=''>— нет —</option>
-								{profileNames.map(n => (
-									<option key={n} value={n}>
-										{n}
-									</option>
-								))}
-							</select>
+								<SelectTrigger size='sm' className='h-7 text-xs w-full'>
+									<SelectValue placeholder='— нет —' />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value='__none__'>
+										<span className='text-muted-foreground'>— нет —</span>
+									</SelectItem>
+									{profileNames.map(n => (
+										<SelectItem key={n} value={n}>
+											{n}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
 						</div>
 					</div>
 					<div className='space-y-1 mb-3'>
