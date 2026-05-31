@@ -7,6 +7,7 @@ import {
 	ComputerIcon,
 	EarthIcon,
 	EditIcon,
+	GripVerticalIcon,
 	InfoIcon,
 	LinkIcon,
 	ListIcon,
@@ -16,6 +17,8 @@ import {
 	ServerIcon,
 	Trash2,
 } from 'lucide-react'
+import { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities'
+import { DraggableAttributes } from '@dnd-kit/core'
 import {
 	Select,
 	SelectContent,
@@ -291,6 +294,8 @@ interface ContentProps {
 	iIdx: number
 	item: instance.Content
 	availableProfiles?: instance.Profile[]
+	dragHandleListeners?: SyntheticListenerMap
+	dragHandleAttributes?: DraggableAttributes
 }
 
 export const Content = memo(function Content({
@@ -301,6 +306,8 @@ export const Content = memo(function Content({
 	iIdx,
 	item,
 	availableProfiles = [],
+	dragHandleListeners,
+	dragHandleAttributes,
 }: ContentProps) {
 	const { isRaw, handleOpenSite, handleOpenVersion, handleOpenVersions } =
 		useContentActions(item, cIdx, iIdx, replaceContent)
@@ -316,6 +323,16 @@ export const Content = memo(function Content({
 		<div className='rounded-xl border bg-card overflow-hidden transition-colors hover:border-primary/20'>
 			{/* Header: image + name/source badge */}
 			<div className='flex items-center gap-3 px-3 py-2.5 bg-muted/30'>
+				{dragHandleListeners && (
+					<button
+						{...dragHandleListeners}
+						{...dragHandleAttributes}
+						className='flex items-center justify-center size-5 text-muted-foreground/40 hover:text-muted-foreground transition-colors cursor-grab active:cursor-grabbing shrink-0 touch-none'
+						tabIndex={-1}
+					>
+						<GripVerticalIcon className='size-4' />
+					</button>
+				)}
 				{item.image_url !== '' && (
 					<img
 						src={item.image_url}

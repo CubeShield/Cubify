@@ -1,4 +1,19 @@
-import { useEffect, useState, useMemo, useCallback, useRef } from 'react'
+import { useEffect, useState, useMemo, useCallback, useRef, CSSProperties } from 'react'
+import {
+	DndContext,
+	closestCenter,
+	PointerSensor,
+	useSensor,
+	useSensors,
+	DragEndEvent,
+} from '@dnd-kit/core'
+import {
+	SortableContext,
+	useSortable,
+	verticalListSortingStrategy,
+	arrayMove,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import {
 	SaveProjectMeta,
 	SyncProject,
@@ -901,6 +916,21 @@ function ContainerEditor({
 		[setMeta],
 	)
 
+	const moveContent = useCallback(
+		(cIdx: number, fromIdx: number, toIdx: number) => {
+			setMeta(prev => {
+				const newMeta = new instance.Meta(prev)
+				newMeta.containers[cIdx].content = arrayMove(
+					newMeta.containers[cIdx].content,
+					fromIdx,
+					toIdx,
+				)
+				return newMeta
+			})
+		},
+		[setMeta],
+	)
+
 	return (
 		<TooltipProvider>
 			<div className='flex flex-col gap-4 h-full'>
@@ -943,6 +973,7 @@ function ContainerEditor({
 							onAddFromUrl={handleAddFromUrl}
 							onAddFromFile={handleAddFromFile}
 							availableProfiles={meta.profiles ?? []}
+							onMoveContent={moveContent}
 						/>
 					))}
 					{meta.containers.length === 0 && (
@@ -957,6 +988,142 @@ function ContainerEditor({
 				</div>
 			</div>
 		</TooltipProvider>
+	)
+}
+
+function SortableItem({
+	id,
+	cIdx,
+	iIdx,
+	item,
+	updateContent,
+	replaceContent,
+	removeContent,
+	availableProfiles,
+}: {
+	id: string
+	cIdx: number
+	iIdx: number
+	item: instance.Content
+	updateContent: (cIdx: number, iIdx: number, field: keyof instance.Content, val: any) => void
+	replaceContent: (cIdx: number, iIdx: number, c: Partial<instance.Content>) => void
+	removeContent: (cIdx: number, iIdx: number) => void
+	availableProfiles: instance.Profile[]
+}) {
+	const {
+		attributes,
+		listeners,
+		setNodeRef,
+		transform,
+		transition,
+		isDragging,
+	} = useSortable({ id })
+
+	const style: CSSProperties = {
+		transform: CSS.Transform.toString(transform),
+		transition,
+		opacity: isDragging ? 0.4 : 1,
+		zIndex: isDragging ? 10 : undefined,
+		position: 'relative',
+	}
+
+	return (
+		<div ref={setNodeRef} style={style}>
+			<Content
+				updateContent={updateContent}
+				replaceContent={replaceContent}
+				removeContent={removeContent}
+				cIdx={cIdx}
+				iIdx={iIdx}
+				item={item}
+				availableProfiles={availableProfiles}
+				dragHandleListeners={listeners}
+				dragHandleAttributes={attributes}
+			/>
+		</div>
+	)
+}
+
+function SortableContentList({
+	container,
+	cIdx,
+	filteredContent,
+	searchActive,
+	updateContent,
+	replaceContent,
+	removeContent,
+	availableProfiles,
+	onMoveContent,
+}: {
+	container: instance.Container
+	cIdx: number
+	filteredContent: instance.Content[]
+	searchActive: boolean
+	updateContent: (cIdx: number, iIdx: number, field: keyof instance.Content, val: any) => void
+	replaceContent: (cIdx: number, iIdx: number, c: Partial<instance.Content>) => void
+	removeContent: (cIdx: number, iIdx: number) => void
+	availableProfiles: instance.Profile[]
+	onMoveContent: (cIdx: number, fromIdx: number, toIdx: number) => void
+}) {
+	const sensors = useSensors(
+		useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+	)
+
+	const ids = container.content.map((_, i) => String(i))
+
+	const handleDragEnd = (event: DragEndEvent) => {
+		const { active, over } = event
+		if (over && active.id !== over.id) {
+			onMoveContent(cIdx, Number(active.id), Number(over.id))
+		}
+	}
+
+	if (searchActive) {
+		return (
+			<div className='p-3 space-y-2'>
+				{filteredContent.map(item => {
+					const originalIdx = container.content.indexOf(item)
+					return (
+						<Content
+							key={originalIdx}
+							updateContent={updateContent}
+							replaceContent={replaceContent}
+							removeContent={removeContent}
+							cIdx={cIdx}
+							iIdx={originalIdx}
+							item={item}
+							availableProfiles={availableProfiles}
+						/>
+					)
+				})}
+			</div>
+		)
+	}
+
+	return (
+		<DndContext
+			sensors={sensors}
+			collisionDetection={closestCenter}
+			onDragEnd={handleDragEnd}
+		>
+			<SortableContext items={ids} strategy={verticalListSortingStrategy}>
+				<div className='p-3 space-y-2'>
+					{container.content.map((item, i) => (
+						<SortableItem
+							key={i}
+							id={String(i)}
+							cIdx={cIdx}
+							iIdx={i}
+							item={item}
+							updateContent={updateContent}
+							replaceContent={replaceContent}
+							removeContent={removeContent}
+							availableProfiles={availableProfiles}
+						/>
+					))}
+				</div>
+			</SortableContext>
+		</DndContext>
 	)
 }
 
@@ -980,6 +1147,7 @@ function ContainerCard({
 	onAddFromUrl,
 	onAddFromFile,
 	availableProfiles,
+	onMoveContent,
 }: {
 	container: instance.Container
 	cIdx: number
@@ -1008,6 +1176,7 @@ function ContainerCard({
 	onAddFromUrl: (cIdx: number) => void
 	onAddFromFile: (cIdx: number) => void
 	availableProfiles: instance.Profile[]
+	onMoveContent: (cIdx: number, fromIdx: number, toIdx: number) => void
 }) {
 	const cfg = CONTAINER_CFG[container.content_type] ?? {
 		label: container.content_type,
@@ -1071,23 +1240,17 @@ function ContainerCard({
 			)}
 
 			{/* items */}
-			<div className='p-3 space-y-2'>
-				{filteredContent.map(item => {
-					const originalIdx = container.content.indexOf(item)
-					return (
-						<Content
-							key={originalIdx}
-							updateContent={updateContent}
-							replaceContent={replaceContent}
-							removeContent={removeContent}
-							cIdx={cIdx}
-							iIdx={originalIdx}
-							item={item}
-							availableProfiles={availableProfiles}
-						/>
-					)
-				})}
-			</div>
+			<SortableContentList
+				container={container}
+				cIdx={cIdx}
+				filteredContent={filteredContent}
+				searchActive={!!searchQuery}
+				updateContent={updateContent}
+				replaceContent={replaceContent}
+				removeContent={removeContent}
+				availableProfiles={availableProfiles}
+				onMoveContent={onMoveContent}
+			/>
 
 			{/* add actions */}
 			<div className='flex gap-2 px-4 pb-3'>
