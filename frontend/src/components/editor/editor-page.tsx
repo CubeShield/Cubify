@@ -29,6 +29,7 @@ import {
 	FileIcon,
 	LayersIcon,
 	ArrowRightIcon,
+	RotateCcwIcon,
 } from 'lucide-react'
 import Fuse from 'fuse.js'
 import {
@@ -141,6 +142,10 @@ export function EditorPage({ slug, initialMeta, onRefresh }: EditorPageProps) {
 		}
 	}
 
+	const handleReset = () => {
+		setMeta(initialMeta)
+	}
+
 	const updateMeta = (field: keyof instance.Meta, value: any) => {
 		setMeta(prev => {
 			const newMeta = new instance.Meta(prev)
@@ -160,11 +165,6 @@ export function EditorPage({ slug, initialMeta, onRefresh }: EditorPageProps) {
 							<h2 className='text-xl font-bold tracking-tight truncate'>
 								{meta.name}
 							</h2>
-							{isFileDirty && (
-								<span className='inline-flex items-center rounded-md border border-destructive/30 bg-destructive/10 text-destructive px-2 py-0.5 text-[10px] font-medium animate-pulse'>
-									Не сохранено
-								</span>
-							)}
 							{!isFileDirty && isGitDirty && (
 								<span className='inline-flex items-center rounded-md border border-yellow-500/30 bg-yellow-500/10 text-yellow-500 px-2 py-0.5 text-[10px] font-medium'>
 									Изменено (Git)
@@ -177,17 +177,6 @@ export function EditorPage({ slug, initialMeta, onRefresh }: EditorPageProps) {
 					</div>
 
 					<div className='flex items-center gap-2 shrink-0'>
-						<Button
-							onClick={handleSaveFile}
-							disabled={!isFileDirty || isLoading}
-							className='rounded-lg cursor-pointer'
-							variant={isFileDirty ? 'default' : 'outline'}
-							size='sm'
-						>
-							<SaveIcon className='size-3.5' />
-							Сохранить
-						</Button>
-
 						<Dialog>
 							<DialogTrigger asChild>
 								<Button
@@ -434,6 +423,37 @@ export function EditorPage({ slug, initialMeta, onRefresh }: EditorPageProps) {
 					<ContainerEditor meta={meta} setMeta={setMeta} slug={slug} />
 				</TabsContent>
 			</Tabs>
+
+			{/* ── Unsaved changes bar ── */}
+			{isFileDirty && (
+				<div className='fixed bottom-10 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-bottom-4 duration-300'>
+					<div className='flex items-center gap-3 rounded-xl border bg-card px-5 py-3 shadow-lg'>
+						<span className='text-sm text-muted-foreground'>
+							Есть несохранённые изменения
+						</span>
+						<button
+							onClick={handleReset}
+							disabled={isLoading}
+							className='flex h-8 items-center gap-1.5 rounded-lg border px-3 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50'
+						>
+							<RotateCcwIcon className='size-3' />
+							Сбросить
+						</button>
+						<button
+							onClick={handleSaveFile}
+							disabled={isLoading}
+							className='flex h-8 items-center gap-1.5 rounded-lg bg-primary px-4 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50'
+						>
+							{isLoading ? (
+								<Loader2 className='size-3 animate-spin' />
+							) : (
+								<SaveIcon className='size-3' />
+							)}
+							Сохранить
+						</button>
+					</div>
+				</div>
+			)}
 		</div>
 	)
 }
