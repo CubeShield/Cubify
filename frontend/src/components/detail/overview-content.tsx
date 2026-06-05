@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
 import { instance } from 'wailsjs/go/models'
-import { BoxIcon, LayersIcon } from 'lucide-react'
+import { BoxIcon, CheckIcon, InfinityIcon, LayersIcon } from 'lucide-react'
 import { ContainerCard } from './container-card'
 import { DeploySection } from './deploy-section'
 import { ReleaseTimeline } from './release-timeline'
@@ -76,46 +76,39 @@ export function OverviewContent({
 			{/* Profile selector */}
 			{profiles.length > 0 && (
 				<div className='border rounded-xl overflow-hidden bg-card mb-4'>
-					<div className='flex items-center gap-2 px-4 py-3 bg-muted/40'>
-						<div className='flex items-center justify-center size-8 rounded-lg bg-primary/15'>
+					<div className='flex items-center gap-2.5 px-4 py-3 bg-linear-to-r from-primary/10 via-primary/5 to-transparent'>
+						<div className='flex items-center justify-center size-8 rounded-lg bg-primary/20'>
 							<LayersIcon className='size-4 text-primary' />
 						</div>
-						<span className='font-semibold text-sm'>Профиль сборки</span>
+						<div>
+							<p className='font-semibold text-sm leading-none'>Профиль сборки</p>
+							<p className='text-[11px] text-muted-foreground mt-0.5'>
+								{selectedProfile ? `Активен: ${selectedProfile}` : 'Весь контент'}
+							</p>
+						</div>
 					</div>
 					<Separator />
-					<div className='p-4 flex flex-col gap-3'>
-						<div className='flex flex-wrap gap-2'>
-							{profiles.map(p => (
-								<button
-									key={p.name}
-									onClick={() =>
-										setSelectedProfile(selectedProfile === p.name ? '' : p.name)
-									}
-									className={`inline-flex flex-col items-start rounded-lg border px-3 py-2 text-left transition-colors cursor-pointer ${
-										selectedProfile === p.name
-											? 'border-primary/50 bg-primary/10 text-primary'
-											: 'border-border hover:border-primary/30 hover:bg-primary/5 text-foreground'
-									}`}
-								>
-									<span className='text-xs font-semibold'>{p.name}</span>
-									{p.extends && (
-										<span className='text-[10px] text-muted-foreground'>
-											extends {p.extends}
-										</span>
-									)}
-								</button>
-							))}
-						</div>
-						{activeProfile?.description && (
-							<p className='text-xs text-muted-foreground bg-muted/30 rounded-lg px-3 py-2'>
-								{activeProfile.description}
-							</p>
-						)}
-						{selectedProfile === '' && (
-							<p className='text-xs text-muted-foreground opacity-60'>
-								Профиль не выбран — будет загружен весь контент
-							</p>
-						)}
+					<div className='p-3 flex flex-col gap-1.5'>
+						{/* Default — all content */}
+						<ProfileCard
+							icon={InfinityIcon}
+							name='Весь контент'
+							description='Загрузить всё без фильтрации по профилю'
+							selected={selectedProfile === ''}
+							onClick={() => setSelectedProfile('')}
+						/>
+						{profiles.map(p => (
+							<ProfileCard
+								key={p.name}
+								icon={BoxIcon}
+								name={p.name}
+								description={p.description || (p.extends ? `extends ${p.extends}` : undefined)}
+								selected={selectedProfile === p.name}
+								onClick={() =>
+									setSelectedProfile(selectedProfile === p.name ? '' : p.name)
+								}
+							/>
+						))}
 					</div>
 				</div>
 			)}
@@ -154,5 +147,53 @@ export function OverviewContent({
 			{/* Release timeline */}
 			<ReleaseTimeline releases={inst.releases} />
 		</>
+	)
+}
+
+function ProfileCard({
+	icon: Icon,
+	name,
+	description,
+	selected,
+	onClick,
+}: {
+	icon: React.ElementType
+	name: string
+	description?: string
+	selected: boolean
+	onClick: () => void
+}) {
+	return (
+		<button
+			onClick={onClick}
+			className={`w-full flex items-center gap-3 rounded-lg border px-3 py-2.5 text-left transition-all cursor-pointer group ${
+				selected
+					? 'border-primary/40 bg-primary/8 ring-1 ring-primary/15'
+					: 'border-border hover:border-primary/20 hover:bg-muted/30'
+			}`}
+		>
+			<div
+				className={`flex items-center justify-center size-8 rounded-md shrink-0 transition-colors ${
+					selected ? 'bg-primary/20' : 'bg-muted group-hover:bg-muted/60'
+				}`}
+			>
+				<Icon
+					className={`size-4 transition-colors ${selected ? 'text-primary' : 'text-muted-foreground'}`}
+				/>
+			</div>
+			<div className='flex-1 min-w-0'>
+				<p
+					className={`text-sm font-semibold leading-none truncate ${selected ? 'text-primary' : ''}`}
+				>
+					{name}
+				</p>
+				{description && (
+					<p className='text-xs text-muted-foreground mt-0.5 truncate'>
+						{description}
+					</p>
+				)}
+			</div>
+			{selected && <CheckIcon className='size-4 text-primary shrink-0' />}
+		</button>
 	)
 }
