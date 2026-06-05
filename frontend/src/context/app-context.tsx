@@ -52,7 +52,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
 	const [instances, setInstances] = useState<instance.LocalInstance[]>([])
 	const [selectedInstance, setSelectedInstance] =
 		useState<instance.LocalInstance | null>(null)
-	const [selectedProfile, setSelectedProfile] = useState<string>('')
+	const [profilesBySlug, setProfilesBySlug] = useState<Record<string, string>>(() => {
+		try {
+			const saved = localStorage.getItem('profilesBySlug')
+			return saved ? JSON.parse(saved) : {}
+		} catch {
+			return {}
+		}
+	})
 	const [currentPage, setCurrentPage] = useState<Page>('detail')
 	const [devMode, setDevMode] = useState(false)
 	const [isRefreshing, setIsRefreshing] = useState(false)
@@ -83,9 +90,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
 		setInstances(await GetLocalInstances())
 	}, [])
 
+	const selectedProfile = selectedInstance ? (profilesBySlug[selectedInstance.slug] ?? '') : ''
+
+	const setSelectedProfile = useCallback((profile: string) => {
+		if (!selectedInstance) return
+		setProfilesBySlug(prev => {
+			const next = { ...prev, [selectedInstance.slug]: profile }
+			localStorage.setItem('profilesBySlug', JSON.stringify(next))
+			return next
+		})
+	}, [selectedInstance])
+
 	const selectInstance = useCallback((inst: instance.LocalInstance | null) => {
 		setSelectedInstance(inst)
-		setSelectedProfile('')
 		if (inst) setCurrentPage('detail')
 	}, [])
 
