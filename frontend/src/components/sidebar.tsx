@@ -213,6 +213,7 @@ export function AppSidebar() {
 		selectedInstance,
 		selectInstance,
 		selectedProfile,
+		disabledContent,
 		currentPage,
 		setCurrentPage,
 		currentUser,
@@ -233,9 +234,22 @@ export function AppSidebar() {
 
 	const buildType = config?.build_type || 'client'
 
+	const applyDisabled = (release: instance.Release): instance.Release => {
+		const disabled = new Set(disabledContent[selectedInstance?.slug ?? ''] ?? [])
+		if (disabled.size === 0) return release
+		const filteredContainers = release.Meta.containers.map(c => ({
+			...c,
+			content: (c.content ?? []).filter(item => !disabled.has(item.file)),
+		}))
+		return new instance.Release({
+			...release,
+			Meta: { ...release.Meta, containers: filteredContainers },
+		})
+	}
+
 	const run = async () => {
 		if (!selectedInstance || selectedInstance.releases.length < 1) return
-		await startRun(selectedInstance.releases[0], selectedProfile, buildType)
+		await startRun(applyDisabled(selectedInstance.releases[0]), selectedProfile, buildType)
 	}
 
 	const runDev = async () => {
@@ -248,7 +262,7 @@ export function AppSidebar() {
 			body: '',
 			Meta: freshMeta,
 		})
-		await startRun(devRelease, selectedProfile, buildType)
+		await startRun(applyDisabled(devRelease), selectedProfile, buildType)
 	}
 
 	const buttonLabel =

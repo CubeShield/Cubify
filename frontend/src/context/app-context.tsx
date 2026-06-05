@@ -24,6 +24,9 @@ interface AppContextType {
 	selectedProfile: string
 	setSelectedProfile: (profile: string) => void
 
+	disabledContent: Record<string, string[]>
+	toggleDisabled: (slug: string, filename: string) => void
+
 	currentPage: Page
 	setCurrentPage: (page: Page) => void
 
@@ -60,6 +63,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
 			return {}
 		}
 	})
+	const [disabledContent, setDisabledContent] = useState<Record<string, string[]>>(() => {
+		try {
+			const saved = localStorage.getItem('disabledContent')
+			return saved ? JSON.parse(saved) : {}
+		} catch {
+			return {}
+		}
+	})
+
+	const toggleDisabled = useCallback((slug: string, filename: string) => {
+		setDisabledContent(prev => {
+			const current = prev[slug] ?? []
+			const next = current.includes(filename)
+				? current.filter(f => f !== filename)
+				: [...current, filename]
+			const result = { ...prev, [slug]: next }
+			localStorage.setItem('disabledContent', JSON.stringify(result))
+			return result
+		})
+	}, [])
+
 	const [currentPage, setCurrentPage] = useState<Page>('detail')
 	const [devMode, setDevMode] = useState(false)
 	const [isRefreshing, setIsRefreshing] = useState(false)
@@ -121,6 +145,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
 				selectInstance,
 				selectedProfile,
 				setSelectedProfile,
+				disabledContent,
+				toggleDisabled,
 				currentPage,
 				setCurrentPage,
 				devMode,

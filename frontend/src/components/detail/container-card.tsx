@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback } from 'react'
 import { instance } from 'wailsjs/go/models'
 import {
 	BoxIcon,
+	CheckIcon,
 	ChevronDownIcon,
 	ChevronUpIcon,
 	EarthIcon,
@@ -24,6 +25,7 @@ import {
 } from '../../../wailsjs/go/main/App'
 import { BrowserOpenURL } from '../../../wailsjs/runtime/runtime'
 import { AddContentDialog } from './add-content-dialog'
+import { useApp } from '../../context/app-context'
 
 const FUSE_OPTIONS = {
 	keys: ['name', 'file', 'source'],
@@ -207,6 +209,8 @@ function ContentRow({
 	onRemoved?: () => void
 }) {
 	const [removing, setRemoving] = useState(false)
+	const { disabledContent, toggleDisabled } = useApp()
+	const isDisabled = (disabledContent[slug] ?? []).includes(item.file)
 
 	const canOpenSite =
 		['modrinth', 'curseforge'].includes(item.source) && item.mod_id
@@ -240,9 +244,9 @@ function ContentRow({
 	return (
 		<div
 			className={`flex items-center gap-3 px-4 py-2.5 transition-colors group ${
-				canOpenSite ? 'hover:bg-muted/30 cursor-pointer' : 'hover:bg-muted/20'
-			} ${isExtra ? 'bg-violet-500/3' : ''}`}
-			onClick={canOpenSite ? handleOpenSite : undefined}
+				canOpenSite && !isDisabled ? 'hover:bg-muted/30 cursor-pointer' : 'hover:bg-muted/20'
+			} ${isExtra ? 'bg-violet-500/3' : ''} ${isDisabled ? 'opacity-40' : ''}`}
+			onClick={canOpenSite && !isDisabled ? handleOpenSite : undefined}
 		>
 			{item.image_url ? (
 				<img
@@ -261,7 +265,9 @@ function ContentRow({
 			)}
 			<div className='flex-1 min-w-0'>
 				<div className='flex items-center gap-1.5'>
-					<p className='text-sm font-medium truncate'>{item.name}</p>
+					<p className={`text-sm font-medium truncate ${isDisabled ? 'line-through' : ''}`}>
+						{item.name}
+					</p>
 					{isExtra && (
 						<Badge
 							variant='outline'
@@ -279,7 +285,7 @@ function ContentRow({
 				)}
 			</div>
 			<div className='flex items-center gap-1'>
-				{canOpenSite && (
+				{canOpenSite && !isDisabled && (
 					<EarthIcon className='size-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0' />
 				)}
 				{isExtra && (
@@ -296,6 +302,21 @@ function ContentRow({
 						<TooltipContent>Удалить</TooltipContent>
 					</Tooltip>
 				)}
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<button
+							onClick={e => { e.stopPropagation(); toggleDisabled(slug, item.file) }}
+							className={`flex items-center justify-center size-5 rounded border transition-all cursor-pointer shrink-0 opacity-0 group-hover:opacity-100 ${
+								isDisabled
+									? '!opacity-100 border-border bg-transparent'
+									: 'border-primary/50 bg-primary/10 hover:bg-primary/20'
+							}`}
+						>
+							{!isDisabled && <CheckIcon className='size-3 text-primary' />}
+						</button>
+					</TooltipTrigger>
+					<TooltipContent>{isDisabled ? 'Включить' : 'Выключить'}</TooltipContent>
+				</Tooltip>
 			</div>
 		</div>
 	)
