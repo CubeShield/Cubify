@@ -83,7 +83,7 @@ export function OverviewContent({
 						<div>
 							<p className='font-semibold text-sm leading-none'>Профиль сборки</p>
 							<p className='text-[11px] text-muted-foreground mt-0.5'>
-								{selectedProfile ? `Активен: ${selectedProfile}` : 'Весь контент'}
+								Выберите набор контента для загрузки
 							</p>
 						</div>
 					</div>
