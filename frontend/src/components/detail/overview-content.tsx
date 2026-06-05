@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
 import { instance } from 'wailsjs/go/models'
-import { BoxIcon, CheckIcon, InfinityIcon, LayersIcon } from 'lucide-react'
+import { AlertTriangleIcon, BoxIcon, CheckIcon, InfinityIcon, LayersIcon } from 'lucide-react'
 import { ContainerCard } from './container-card'
 import { DeploySection } from './deploy-section'
 import { ReleaseTimeline } from './release-timeline'
@@ -19,7 +19,7 @@ export function OverviewContent({
 	devMode,
 	onInstanceUpdated,
 }: OverviewContentProps) {
-	const { selectedProfile, setSelectedProfile, config } = useApp()
+	const { selectedProfile, setSelectedProfile, config, disabledContent } = useApp()
 	const [localExtra, setLocalExtra] = useState<instance.Container[]>(
 		inst.extra_containers ?? [],
 	)
@@ -155,6 +155,16 @@ export function OverviewContent({
 							onChanged={handleExtraChanged}
 						/>
 					))}
+				</div>
+			)}
+
+			{/* Disabled content warning */}
+			{(disabledContent[inst.slug]?.length ?? 0) > 0 && (
+				<div className='flex items-start gap-3 rounded-xl border border-amber-500/30 bg-amber-500/8 px-4 py-3 mt-2'>
+					<AlertTriangleIcon className='size-4 text-amber-400 shrink-0 mt-0.5' />
+					<p className='text-xs text-amber-300/90 leading-relaxed'>
+						<span className='font-semibold text-amber-300'>Внимание!</span> Вы выключили некоторый контент — это может вызвать проблемы. Убедитесь, что вы знаете, что делаете.
+					</p>
 				</div>
 			)}
 
