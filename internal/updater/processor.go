@@ -5,22 +5,36 @@ import (
 	"Cubify/internal/instance"
 	logger "Cubify/internal/logging"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"net/http"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
+// ConfigFileRecord tracks whether a config file was written by Cubify and its last known content hash.
+type ConfigFileRecord struct {
+	Hash    string `json:"hash"`
+	Written bool   `json:"written"`
+}
+
+// ConfigState is persisted as cubify_config_state.json in the instance directory.
+type ConfigState struct {
+	Files map[string]*ConfigFileRecord `json:"files"`
+}
 
 type ContentProcessor struct {
-	l *logger.Logger
-	contentType      string
-	apiContent       []instance.Content
+	l           *logger.Logger
+	contentType string
+	pathPrefix  string // full relative path prefix, e.g. "config/somemod"
+	apiContent  []instance.Content
 	installedContent []instance.Content
-	buildType        string
-	
+	buildType   string
+
 	httpClient *http.Client
-	fm        file.Manager
+	fm         file.Manager
 }
 
 func NewContentProcessor(
@@ -31,15 +45,38 @@ func NewContentProcessor(
 	l *logger.Logger,
 ) *ContentProcessor {
 	return &ContentProcessor{
-		l: l,
+		l:                l,
 		contentType:      container.ContentType,
+		pathPrefix:       container.ContentType,
 		apiContent:       container.Content,
 		installedContent: installedContainer.Content,
 		buildType:        buildType,
 		httpClient: &http.Client{
 			Timeout: 15 * time.Second,
 		},
-		fm:               fm,
+		fm: fm,
+	}
+}
+
+func NewContentProcessorWithPrefix(
+	container instance.Container,
+	installedContainer instance.Container,
+	fm file.Manager,
+	buildType string,
+	pathPrefix string,
+	l *logger.Logger,
+) *ContentProcessor {
+	return &ContentProcessor{
+		l:                l,
+		contentType:      container.ContentType,
+		pathPrefix:       pathPrefix,
+		apiContent:       container.Content,
+		installedContent: installedContainer.Content,
+		buildType:        buildType,
+		httpClient: &http.Client{
+			Timeout: 15 * time.Second,
+		},
+		fm: fm,
 	}
 }
 
@@ -76,13 +113,70 @@ func (p *ContentProcessor) filterByBuildType(contentList []instance.Content) []i
 	return result
 }
 
+func (p *ContentProcessor) isConfigKind(c instance.Content) bool {
+	return c.Kind == instance.ContentKindContent
+}
+
+func contentHash(s string) string {
+	h := sha256.Sum256([]byte(s))
+	return hex.EncodeToString(h[:])
+}
+
+func (p *ContentProcessor) loadConfigState() ConfigState {
+	var state ConfigState
+	_ = p.fm.ReadJson("cubify_config_state.json", &state)
+	if state.Files == nil {
+		state.Files = make(map[string]*ConfigFileRecord)
+	}
+	return state
+}
+
+func (p *ContentProcessor) saveConfigState(state ConfigState) {
+	_ = p.fm.SaveJson("cubify_config_state.json", state)
+}
+
 func (p *ContentProcessor) Process(ctx context.Context) error {
-	p.l.Info("Handling container %s (build_type=%s)", p.contentType, p.buildType)
+	p.l.Info("Handling container %s (build_type=%s)", p.pathPrefix, p.buildType)
 
-	filteredAPI := p.filterByBuildType(p.apiContent)
+	filtered := p.filterByBuildType(p.apiContent)
 
-	apiSet := p.toSet(filteredAPI)
-	installedSet := p.toSet(p.installedContent)
+	// Separate external and config items
+	var externalItems, configItems []instance.Content
+	for _, item := range filtered {
+		if p.isConfigKind(item) {
+			configItems = append(configItems, item)
+		} else {
+			externalItems = append(externalItems, item)
+		}
+	}
+
+	// Process external items (existing download/delete logic)
+	if err := p.processExternal(ctx, externalItems); err != nil {
+		return err
+	}
+
+	// Process config items (inline file_content with policy)
+	if len(configItems) > 0 {
+		if err := p.processConfigItems(ctx, configItems); err != nil {
+			return err
+		}
+	}
+
+	p.l.Info("Done processing %s", p.pathPrefix)
+	return nil
+}
+
+func (p *ContentProcessor) processExternal(ctx context.Context, apiItems []instance.Content) error {
+	// Filter installed to only external kind
+	var installedExternal []instance.Content
+	for _, item := range p.installedContent {
+		if !p.isConfigKind(item) {
+			installedExternal = append(installedExternal, item)
+		}
+	}
+
+	apiSet := p.toSet(apiItems)
+	installedSet := p.toSet(installedExternal)
 
 	for fileName := range installedSet {
 		if ctx.Err() != nil {
@@ -95,7 +189,6 @@ func (p *ContentProcessor) Process(ctx context.Context) error {
 		}
 	}
 
-
 	for fileName := range apiSet {
 		if ctx.Err() != nil {
 			return ctx.Err()
@@ -106,14 +199,73 @@ func (p *ContentProcessor) Process(ctx context.Context) error {
 			}
 		}
 	}
-	p.l.Info("💅 Dоne")
 	return nil
+}
+
+func (p *ContentProcessor) processConfigItems(ctx context.Context, items []instance.Content) error {
+	state := p.loadConfigState()
+	dirty := false
+
+	for _, item := range items {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+		if item.File == "" || item.FileContent == "" {
+			continue
+		}
+
+		relPath := filepath.Join(p.pathPrefix, item.File)
+		// Normalize to forward slashes for state key
+		stateKey := strings.ReplaceAll(relPath, "\\", "/")
+
+		hash := contentHash(item.FileContent)
+		record := state.Files[stateKey]
+		if record == nil {
+			record = &ConfigFileRecord{}
+			state.Files[stateKey] = record
+		}
+
+		policy := item.Policy
+		if policy == "" {
+			policy = instance.PolicySoft
+		}
+
+		shouldWrite := false
+		switch policy {
+		case instance.PolicySoft:
+			shouldWrite = !record.Written
+		case instance.PolicyOnUpdate:
+			shouldWrite = record.Hash != hash
+		case instance.PolicyHard:
+			shouldWrite = true
+		}
+
+		if shouldWrite {
+			p.l.Info("Writing config file %s (policy=%s)", relPath, policy)
+			if err := p.writeContent(relPath, item.FileContent); err != nil {
+				p.l.Error("Failed to write config file %s: %v", relPath, err)
+				continue
+			}
+			record.Written = true
+			record.Hash = hash
+			dirty = true
+		}
+	}
+
+	if dirty {
+		p.saveConfigState(state)
+	}
+	return nil
+}
+
+func (p *ContentProcessor) writeContent(relPath, content string) error {
+	return p.fm.Save(relPath, strings.NewReader(content))
 }
 
 func (p *ContentProcessor) delete(content instance.Content) error {
 	p.l.Info("Deleting %s", content.File)
 	fileNameWithPrefix := fmt.Sprintf("[Cubify] %s", content.File)
-	relativePath := filepath.Join(p.contentType, fileNameWithPrefix)
+	relativePath := filepath.Join(p.pathPrefix, fileNameWithPrefix)
 	return p.fm.Delete(relativePath)
 }
 
@@ -141,7 +293,7 @@ func (p *ContentProcessor) install(ctx context.Context, content instance.Content
 	defer resp.Body.Close()
 
 	fileNameWithPrefix := fmt.Sprintf("[Cubify] %s", content.File)
-	relativePath := filepath.Join(p.contentType, fileNameWithPrefix)
+	relativePath := filepath.Join(p.pathPrefix, fileNameWithPrefix)
 
 	return p.fm.Save(relativePath, resp.Body)
 }

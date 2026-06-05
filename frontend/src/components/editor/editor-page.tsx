@@ -42,9 +42,12 @@ import {
 	SearchIcon,
 	BoxIcon,
 	FileIcon,
+	FileTextIcon,
+	FolderIcon,
 	LayersIcon,
 	ArrowRightIcon,
 	RotateCcwIcon,
+	SettingsIcon,
 } from 'lucide-react'
 import Fuse from 'fuse.js'
 import {
@@ -71,6 +74,7 @@ import {
 const CONTAINER_CFG: Record<string, { label: string; icon: typeof BoxIcon }> = {
 	mods: { label: 'Моды', icon: PackageIcon },
 	resourcepacks: { label: 'Ресурспаки', icon: PaletteIcon },
+	config: { label: 'Конфиги', icon: SettingsIcon },
 }
 
 interface EditorPageProps {
@@ -931,6 +935,104 @@ function ContainerEditor({
 		[setMeta],
 	)
 
+	const addConfigContent = useCallback(
+		(containerIdx: number) => {
+			const newMeta = cloneMeta()
+			newMeta.containers[containerIdx].content.push(
+				new instance.Content({
+					name: 'Config',
+					file: 'config.json',
+					kind: 'content',
+					file_content: '{}',
+					policy: 'soft',
+					type: 'both',
+				}),
+			)
+			setMeta(newMeta)
+		},
+		[cloneMeta, setMeta],
+	)
+
+	const addSubContainer = useCallback(
+		(parentIdx: number) => {
+			const newMeta = cloneMeta()
+			const existing = newMeta.containers[parentIdx].subcontainers ?? []
+			newMeta.containers[parentIdx].subcontainers = [
+				...existing,
+				new instance.Container({ content_type: 'subdir', content: [] }),
+			]
+			setMeta(newMeta)
+		},
+		[cloneMeta, setMeta],
+	)
+
+	const deleteSubContainer = useCallback(
+		(parentIdx: number, subIdx: number) => {
+			const newMeta = cloneMeta()
+			const subs = newMeta.containers[parentIdx].subcontainers ?? []
+			newMeta.containers[parentIdx].subcontainers = subs.filter((_, i) => i !== subIdx)
+			setMeta(newMeta)
+		},
+		[cloneMeta, setMeta],
+	)
+
+	const updateSubContainerType = useCallback(
+		(parentIdx: number, subIdx: number, newType: string) => {
+			const newMeta = cloneMeta()
+			const subs = newMeta.containers[parentIdx].subcontainers ?? []
+			subs[subIdx] = new instance.Container({ ...subs[subIdx], content_type: newType })
+			newMeta.containers[parentIdx].subcontainers = subs
+			setMeta(newMeta)
+		},
+		[cloneMeta, setMeta],
+	)
+
+	const addSubContent = useCallback(
+		(parentIdx: number, subIdx: number) => {
+			const newMeta = cloneMeta()
+			const subs = newMeta.containers[parentIdx].subcontainers ?? []
+			subs[subIdx].content = [
+				...(subs[subIdx].content ?? []),
+				new instance.Content({
+					name: 'Config',
+					file: 'config.json',
+					kind: 'content',
+					file_content: '{}',
+					policy: 'soft',
+					type: 'both',
+				}),
+			]
+			newMeta.containers[parentIdx].subcontainers = subs
+			setMeta(newMeta)
+		},
+		[cloneMeta, setMeta],
+	)
+
+	const updateSubContent = useCallback(
+		(parentIdx: number, subIdx: number, itemIdx: number, field: keyof instance.Content, val: any) => {
+			setMeta(prev => {
+				const newMeta = new instance.Meta(prev)
+				const subs = newMeta.containers[parentIdx].subcontainers ?? []
+				// @ts-ignore
+				subs[subIdx].content[itemIdx][field] = val
+				return newMeta
+			})
+		},
+		[setMeta],
+	)
+
+	const removeSubContent = useCallback(
+		(parentIdx: number, subIdx: number, itemIdx: number) => {
+			setMeta(prev => {
+				const newMeta = new instance.Meta(prev)
+				const subs = newMeta.containers[parentIdx].subcontainers ?? []
+				subs[subIdx].content = subs[subIdx].content.filter((_, i) => i !== itemIdx)
+				return newMeta
+			})
+		},
+		[setMeta],
+	)
+
 	return (
 		<TooltipProvider>
 			<div className='flex flex-col gap-4 h-full'>
@@ -939,15 +1041,22 @@ function ContainerEditor({
 						className='inline-flex items-center gap-1.5 rounded-lg border border-dashed border-border hover:border-primary/40 hover:bg-primary/5 px-3 py-1.5 text-xs text-muted-foreground hover:text-primary transition-colors cursor-pointer'
 						onClick={() => addContainer('mods')}
 					>
-						<PlusIcon className='size-3' />
+						<PackageIcon className='size-3' />
 						Моды
 					</button>
 					<button
 						className='inline-flex items-center gap-1.5 rounded-lg border border-dashed border-border hover:border-primary/40 hover:bg-primary/5 px-3 py-1.5 text-xs text-muted-foreground hover:text-primary transition-colors cursor-pointer'
 						onClick={() => addContainer('resourcepacks')}
 					>
-						<PlusIcon className='size-3' />
+						<PaletteIcon className='size-3' />
 						Ресурспаки
+					</button>
+					<button
+						className='inline-flex items-center gap-1.5 rounded-lg border border-dashed border-border hover:border-primary/40 hover:bg-primary/5 px-3 py-1.5 text-xs text-muted-foreground hover:text-primary transition-colors cursor-pointer'
+						onClick={() => addContainer('config')}
+					>
+						<SettingsIcon className='size-3' />
+						Конфиги
 					</button>
 				</div>
 
@@ -962,6 +1071,13 @@ function ContainerEditor({
 							onSearchChange={handleSearchChange}
 							onDeleteContainer={deleteContainer}
 							onAddContent={addContent}
+							onAddConfigContent={addConfigContent}
+							onAddSubContainer={addSubContainer}
+							onDeleteSubContainer={deleteSubContainer}
+							onUpdateSubContainerType={updateSubContainerType}
+							onAddSubContent={addSubContent}
+							onUpdateSubContent={updateSubContent}
+							onRemoveSubContent={removeSubContent}
 							updateContent={updateContent}
 							replaceContent={replaceContent}
 							removeContent={removeContent}
@@ -981,7 +1097,7 @@ function ContainerEditor({
 							<BoxIcon className='size-10 mb-3 opacity-40' />
 							<p className='text-sm'>Нет контейнеров</p>
 							<p className='text-xs opacity-60 mt-1'>
-								Добавьте контейнер для модов или ресурспаков
+								Добавьте контейнер для модов, ресурспаков или конфигов
 							</p>
 						</div>
 					)}
@@ -1136,6 +1252,13 @@ function ContainerCard({
 	onSearchChange,
 	onDeleteContainer,
 	onAddContent,
+	onAddConfigContent,
+	onAddSubContainer,
+	onDeleteSubContainer,
+	onUpdateSubContainerType,
+	onAddSubContent,
+	onUpdateSubContent,
+	onRemoveSubContent,
 	updateContent,
 	replaceContent,
 	removeContent,
@@ -1156,6 +1279,13 @@ function ContainerCard({
 	onSearchChange: (idx: number, q: string) => void
 	onDeleteContainer: (idx: number) => void
 	onAddContent: (idx: number) => void
+	onAddConfigContent: (idx: number) => void
+	onAddSubContainer: (parentIdx: number) => void
+	onDeleteSubContainer: (parentIdx: number, subIdx: number) => void
+	onUpdateSubContainerType: (parentIdx: number, subIdx: number, val: string) => void
+	onAddSubContent: (parentIdx: number, subIdx: number) => void
+	onUpdateSubContent: (parentIdx: number, subIdx: number, itemIdx: number, field: keyof instance.Content, val: any) => void
+	onRemoveSubContent: (parentIdx: number, subIdx: number, itemIdx: number) => void
 	updateContent: (
 		cIdx: number,
 		itemIdx: number,
@@ -1183,6 +1313,8 @@ function ContainerCard({
 		icon: BoxIcon,
 	}
 	const Icon = cfg.icon
+	const isConfigContainer = container.content_type === 'config' ||
+		(container.subcontainers && container.subcontainers.length > 0)
 
 	return (
 		<div className='border rounded-xl overflow-hidden bg-card'>
@@ -1202,7 +1334,7 @@ function ContainerCard({
 							</span>
 						)}
 					<Badge variant='secondary' className='text-xs tabular-nums'>
-						{container.content.length}
+						{container.content.length + (container.subcontainers?.length ?? 0)}
 					</Badge>
 					<button
 						onClick={() => onDeleteContainer(cIdx)}
@@ -1214,8 +1346,8 @@ function ContainerCard({
 			</div>
 			<Separator />
 
-			{/* search */}
-			{container.content.length > 3 && (
+			{/* search (only for non-config containers) */}
+			{!isConfigContainer && container.content.length > 3 && (
 				<div className='px-4 pt-3'>
 					<div className='relative'>
 						<SearchIcon className='absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground' />
@@ -1252,61 +1384,139 @@ function ContainerCard({
 				onMoveContent={onMoveContent}
 			/>
 
-			{/* add actions */}
-			<div className='flex gap-2 px-4 pb-3'>
-				<button
-					className='flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-border hover:border-primary/40 hover:bg-primary/5 px-3 py-2 text-xs text-muted-foreground hover:text-primary transition-colors cursor-pointer'
-					onClick={() => onAddContent(cIdx)}
-				>
-					<PlusIcon className='size-3.5' /> Добавить вручную
-				</button>
-
-				<Dialog
-					open={openUrlDialog === cIdx}
-					onOpenChange={open => {
-						setOpenUrlDialog(open ? cIdx : null)
-						if (!open) setUrlToAdd('')
-					}}
-				>
-					<DialogTrigger asChild>
-						<button className='flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-primary/30 hover:border-primary/50 hover:bg-primary/5 px-3 py-2 text-xs text-primary/70 hover:text-primary transition-colors cursor-pointer'>
-							<LinkIcon className='size-3.5' /> Из URL
-						</button>
-					</DialogTrigger>
-					<DialogContent>
-						<DialogHeader>
-							<DialogTitle>Добавить мод по ссылке</DialogTitle>
-						</DialogHeader>
-						<div className='space-y-4 py-2'>
-							<Label>Ссылка на CurseForge / Modrinth / instance</Label>
-							<Input
-								placeholder='https://...'
-								value={urlToAdd}
-								onChange={e => setUrlToAdd(e.target.value)}
-							/>
-							<Button
-								className='w-full rounded-lg cursor-pointer'
-								onClick={() => onAddFromUrl(cIdx)}
-								disabled={isUrlLoading || !urlToAdd}
-							>
-								{isUrlLoading ? (
-									<Loader2 className='size-3.5 animate-spin' />
-								) : (
-									<PlusIcon className='size-3.5' />
+			{/* subcontainers */}
+			{(container.subcontainers ?? []).length > 0 && (
+				<div className='px-4 pb-2 space-y-3'>
+					{(container.subcontainers ?? []).map((sub, sIdx) => (
+						<div key={sIdx} className='border border-dashed border-border rounded-xl overflow-hidden'>
+							<div className='flex items-center justify-between px-3 py-2 bg-muted/20'>
+								<div className='flex items-center gap-2'>
+									<FolderIcon className='size-3.5 text-muted-foreground' />
+									<Input
+										value={sub.content_type}
+										onChange={e => onUpdateSubContainerType(cIdx, sIdx, e.target.value)}
+										className='h-6 text-xs w-28 font-mono'
+									/>
+									<span className='text-[10px] text-muted-foreground'>
+										/{sub.content_type}/
+									</span>
+								</div>
+								<div className='flex items-center gap-1'>
+									<Badge variant='secondary' className='text-[10px] tabular-nums'>
+										{sub.content.length}
+									</Badge>
+									<button
+										onClick={() => onDeleteSubContainer(cIdx, sIdx)}
+										className='flex items-center justify-center size-6 rounded-lg hover:bg-destructive/15 text-muted-foreground hover:text-destructive transition-colors cursor-pointer'
+									>
+										<Trash2 className='size-3' />
+									</button>
+								</div>
+							</div>
+							<div className='p-2 space-y-2'>
+								{sub.content.map((item, iIdx) => (
+									<Content
+										key={iIdx}
+										cIdx={0}
+										iIdx={iIdx}
+										item={item}
+										updateContent={(_, ii, field, val) => onUpdateSubContent(cIdx, sIdx, ii, field, val)}
+										replaceContent={() => {}}
+										removeContent={(_, ii) => onRemoveSubContent(cIdx, sIdx, ii)}
+										availableProfiles={availableProfiles}
+									/>
+								))}
+								{sub.content.length === 0 && (
+									<p className='text-xs text-center text-muted-foreground/50 py-2'>
+										Нет файлов
+									</p>
 								)}
-								Добавить
-							</Button>
+							</div>
+							<div className='px-3 pb-2'>
+								<button
+									onClick={() => onAddSubContent(cIdx, sIdx)}
+									className='w-full inline-flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-border hover:border-primary/40 hover:bg-primary/5 px-3 py-1.5 text-xs text-muted-foreground hover:text-primary transition-colors cursor-pointer'
+								>
+									<FileTextIcon className='size-3' /> Добавить конфиг
+								</button>
+							</div>
 						</div>
-					</DialogContent>
-				</Dialog>
+					))}
+				</div>
+			)}
 
-				<button
-					className='flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-border hover:border-primary/40 hover:bg-primary/5 px-3 py-2 text-xs text-muted-foreground hover:text-primary transition-colors cursor-pointer'
-					onClick={() => onAddFromFile(cIdx)}
-				>
-					<FileIcon className='size-3.5' /> Из файла
-				</button>
-			</div>
+			{/* add actions */}
+			{isConfigContainer ? (
+				<div className='flex gap-2 px-4 pb-3'>
+					<button
+						className='flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-border hover:border-primary/40 hover:bg-primary/5 px-3 py-2 text-xs text-muted-foreground hover:text-primary transition-colors cursor-pointer'
+						onClick={() => onAddConfigContent(cIdx)}
+					>
+						<FileTextIcon className='size-3.5' /> Добавить конфиг
+					</button>
+					<button
+						className='flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-border hover:border-primary/40 hover:bg-primary/5 px-3 py-2 text-xs text-muted-foreground hover:text-primary transition-colors cursor-pointer'
+						onClick={() => onAddSubContainer(cIdx)}
+					>
+						<FolderIcon className='size-3.5' /> Добавить поддиректорию
+					</button>
+				</div>
+			) : (
+				<div className='flex gap-2 px-4 pb-3'>
+					<button
+						className='flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-border hover:border-primary/40 hover:bg-primary/5 px-3 py-2 text-xs text-muted-foreground hover:text-primary transition-colors cursor-pointer'
+						onClick={() => onAddContent(cIdx)}
+					>
+						<PlusIcon className='size-3.5' /> Добавить вручную
+					</button>
+
+					<Dialog
+						open={openUrlDialog === cIdx}
+						onOpenChange={open => {
+							setOpenUrlDialog(open ? cIdx : null)
+							if (!open) setUrlToAdd('')
+						}}
+					>
+						<DialogTrigger asChild>
+							<button className='flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-primary/30 hover:border-primary/50 hover:bg-primary/5 px-3 py-2 text-xs text-primary/70 hover:text-primary transition-colors cursor-pointer'>
+								<LinkIcon className='size-3.5' /> Из URL
+							</button>
+						</DialogTrigger>
+						<DialogContent>
+							<DialogHeader>
+								<DialogTitle>Добавить мод по ссылке</DialogTitle>
+							</DialogHeader>
+							<div className='space-y-4 py-2'>
+								<Label>Ссылка на CurseForge / Modrinth / instance</Label>
+								<Input
+									placeholder='https://...'
+									value={urlToAdd}
+									onChange={e => setUrlToAdd(e.target.value)}
+								/>
+								<Button
+									className='w-full rounded-lg cursor-pointer'
+									onClick={() => onAddFromUrl(cIdx)}
+									disabled={isUrlLoading || !urlToAdd}
+								>
+									{isUrlLoading ? (
+										<Loader2 className='size-3.5 animate-spin' />
+									) : (
+										<PlusIcon className='size-3.5' />
+									)}
+									Добавить
+								</Button>
+							</div>
+						</DialogContent>
+					</Dialog>
+
+					<button
+						className='flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-border hover:border-primary/40 hover:bg-primary/5 px-3 py-2 text-xs text-muted-foreground hover:text-primary transition-colors cursor-pointer'
+						onClick={() => onAddFromFile(cIdx)}
+					>
+						<FileIcon className='size-3.5' /> Из файла
+					</button>
+				</div>
+			)}
 		</div>
 	)
 }

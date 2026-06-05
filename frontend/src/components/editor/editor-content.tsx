@@ -7,6 +7,7 @@ import {
 	ComputerIcon,
 	EarthIcon,
 	EditIcon,
+	FileTextIcon,
 	GripVerticalIcon,
 	InfoIcon,
 	LinkIcon,
@@ -17,6 +18,7 @@ import {
 	ServerIcon,
 	Trash2,
 } from 'lucide-react'
+import { CodeEditor } from './code-editor'
 import { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities'
 import { DraggableAttributes } from '@dnd-kit/core'
 import {
@@ -275,6 +277,121 @@ function resolveProfileChain(
 	return chain
 }
 
+// --- Config content (inline file_content + policy) ---
+
+const POLICY_LABELS: Record<string, string> = {
+	soft: 'Soft — записать один раз',
+	on_update: 'On Update — при изменении',
+	hard: 'Hard — каждый запуск',
+}
+
+function ConfigContent({
+	updateContent,
+	removeContent,
+	cIdx,
+	iIdx,
+	item,
+	dragHandleListeners,
+	dragHandleAttributes,
+}: ContentProps) {
+	const onFieldChange = useCallback(
+		(field: keyof instance.Content) => (val: string) =>
+			updateContent(cIdx, iIdx, field, val),
+		[updateContent, cIdx, iIdx],
+	)
+
+	return (
+		<div className='rounded-xl border bg-card overflow-hidden transition-colors hover:border-primary/20'>
+			{/* Header */}
+			<div className='flex items-center gap-3 px-3 py-2.5 bg-muted/30'>
+				{dragHandleListeners && (
+					<button
+						{...dragHandleListeners}
+						{...dragHandleAttributes}
+						className='flex items-center justify-center size-5 text-muted-foreground/40 hover:text-muted-foreground transition-colors cursor-grab active:cursor-grabbing shrink-0 touch-none'
+						tabIndex={-1}
+					>
+						<GripVerticalIcon className='size-4' />
+					</button>
+				)}
+				<div className='flex items-center justify-center size-7 rounded-lg bg-primary/10 shrink-0'>
+					<FileTextIcon className='size-3.5 text-primary' />
+				</div>
+				<div className='flex-1 min-w-0'>
+					<div className='flex items-center gap-2'>
+						<span className='text-sm font-semibold truncate'>
+							{item.name || item.file || 'Конфиг'}
+						</span>
+						<span className='inline-flex items-center rounded-md border border-primary/30 bg-primary/10 px-1.5 py-0.5 text-[10px] text-primary font-medium shrink-0'>
+							config
+						</span>
+					</div>
+					<p className='text-[10px] text-muted-foreground font-mono truncate mt-0.5'>
+						{item.file}
+					</p>
+				</div>
+			</div>
+
+			{/* Fields */}
+			<div className='px-3 py-2.5 space-y-2'>
+				<div className='flex gap-2'>
+					<InfoInput
+						onChange={onFieldChange('name')}
+						placeholder='Название'
+						value={item.name ?? ''}
+						tooltip='Название, отображается у клиентов в лаунчере'
+					/>
+					<InfoInput
+						onChange={onFieldChange('file')}
+						placeholder='config.json'
+						value={item.file ?? ''}
+						mono
+						tooltip='Имя файла на диске'
+					/>
+				</div>
+
+				{/* Policy selector */}
+				<div className='flex items-center gap-2'>
+					<span className='text-[10px] text-muted-foreground/70 shrink-0'>Политика:</span>
+					<Select
+						value={item.policy || 'soft'}
+						onValueChange={val => updateContent(cIdx, iIdx, 'policy', val)}
+					>
+						<SelectTrigger className='h-7 text-[11px] rounded-lg flex-1'>
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent>
+							{Object.entries(POLICY_LABELS).map(([val, label]) => (
+								<SelectItem key={val} value={val}>
+									{label}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+				</div>
+
+				{/* Code editor */}
+				<CodeEditor
+					value={item.file_content ?? ''}
+					onChange={val => updateContent(cIdx, iIdx, 'file_content', val)}
+					filename={item.file ?? ''}
+					collapsible
+				/>
+			</div>
+
+			{/* Delete */}
+			<div className='flex items-center justify-end px-3 py-2 border-t border-border bg-muted/20'>
+				<button
+					onClick={() => removeContent(cIdx, iIdx)}
+					className='inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs text-destructive hover:bg-destructive/10 transition-colors cursor-pointer'
+				>
+					<Trash2 className='size-3' /> Удалить
+				</button>
+			</div>
+		</div>
+	)
+}
+
 // --- Main Content component (memoized) ---
 
 interface ContentProps {
@@ -298,7 +415,14 @@ interface ContentProps {
 	dragHandleAttributes?: DraggableAttributes
 }
 
-export const Content = memo(function Content({
+export const Content = memo(function Content(props: ContentProps) {
+	if (props.item.kind === 'content') {
+		return <ConfigContent {...props} />
+	}
+	return <ExternalContent {...props} />
+})
+
+function ExternalContent({
 	updateContent,
 	replaceContent,
 	removeContent,
@@ -535,4 +659,4 @@ export const Content = memo(function Content({
 			</div>
 		</div>
 	)
-})
+}

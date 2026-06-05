@@ -417,12 +417,16 @@ func FilterContainersByProfile(containers []Container, profiles []Profile, profi
 				}
 			}
 		}
+		if len(c.SubContainers) > 0 {
+			filtered.SubContainers = FilterContainersByProfile(c.SubContainers, profiles, profileName)
+		}
 		result = append(result, filtered)
 	}
 	return result
 }
 
 // MergeContainers merges extra containers into release containers for Run.
+// SubContainers are preserved from the release build; extra containers only affect top-level content.
 func MergeContainers(release, extra []Container) []Container {
 	merged := make([]Container, len(release))
 	copy(merged, release)

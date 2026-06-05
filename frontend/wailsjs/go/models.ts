@@ -280,6 +280,9 @@ export namespace instance {
 	    url: string;
 	    comment?: string;
 	    profiles?: string[];
+	    kind?: string;
+	    file_content?: string;
+	    policy?: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new Content(source);
@@ -298,11 +301,15 @@ export namespace instance {
 	        this.url = source["url"];
 	        this.comment = source["comment"];
 	        this.profiles = source["profiles"];
+	        this.kind = source["kind"];
+	        this.file_content = source["file_content"];
+	        this.policy = source["policy"];
 	    }
 	}
 	export class Container {
 	    content_type: string;
 	    content: Content[];
+	    subcontainers?: Container[];
 	
 	    static createFrom(source: any = {}) {
 	        return new Container(source);
@@ -312,6 +319,7 @@ export namespace instance {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.content_type = source["content_type"];
 	        this.content = this.convertValues(source["content"], Content);
+	        this.subcontainers = this.convertValues(source["subcontainers"], Container);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

@@ -59,8 +59,9 @@ type Meta struct {
 }
 
 type Container struct {
-	ContentType string `json:"content_type"`
-	Content []Content `json:"content"`
+	ContentType   string      `json:"content_type"`
+	Content       []Content   `json:"content"`
+	SubContainers []Container `json:"subcontainers,omitempty"`
 }
 
 type Type string
@@ -68,37 +69,55 @@ type Type string
 const (
 	TypeServer Type = "server"
 	TypeClient Type = "client"
-	TypeBoth Type = "both"
+	TypeBoth   Type = "both"
 )
 
 type Source string
 
 const (
 	SourceCurseForge Source = "curseforge"
-	SourceModrinth Source = "modrinth"
-	SourceURL Source = "url"
-	SourceLocal Source = "local"
+	SourceModrinth   Source = "modrinth"
+	SourceURL        Source = "url"
+	SourceLocal      Source = "local"
 )
 
 type From string
 
 const (
-	FromMain From = "main"
+	FromMain       From = "main"
 	FromAdditional From = "additional"
 )
 
+type ContentKind string
+
+const (
+	ContentKindExternal ContentKind = "external"
+	ContentKindContent  ContentKind = "content"
+)
+
+type Policy string
+
+const (
+	PolicySoft     Policy = "soft"
+	PolicyOnUpdate Policy = "on_update"
+	PolicyHard     Policy = "hard"
+)
+
 type Content struct {
-	Name     string   `json:"name"`
-	ImageURL string   `json:"image_url"`
-	Type     Type     `json:"type"`
-	ModID    string   `json:"mod_id"`
-	FileID   string   `json:"file_id"`
-	Source   Source   `json:"source"`
-	From     From     `json:"from"`
-	File     string   `json:"file"`
-	Url      string   `json:"url"`
-	Comment  string   `json:"comment,omitempty"`
-	Profiles []string `json:"profiles,omitempty"`
+	Name        string      `json:"name"`
+	ImageURL    string      `json:"image_url"`
+	Type        Type        `json:"type"`
+	ModID       string      `json:"mod_id"`
+	FileID      string      `json:"file_id"`
+	Source      Source      `json:"source"`
+	From        From        `json:"from"`
+	File        string      `json:"file"`
+	Url         string      `json:"url"`
+	Comment     string      `json:"comment,omitempty"`
+	Profiles    []string    `json:"profiles,omitempty"`
+	Kind        ContentKind `json:"kind,omitempty"`
+	FileContent string      `json:"file_content,omitempty"`
+	Policy      Policy      `json:"policy,omitempty"`
 }
 
 // Changelog models

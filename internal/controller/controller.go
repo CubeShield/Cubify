@@ -157,6 +157,25 @@ func (c *Controller) updateInstanceContent(ctx context.Context, instanceFm file.
 
 	instanceFm.ReadJson("installed.json", &installedContainers)
 
+	if err := c.processContainers(ctx, instanceFm, releaseContainers, installedContainers, buildType, ""); err != nil {
+		return err
+	}
+
+	if err := instanceFm.SaveJson("installed.json", releaseContainers); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *Controller) processContainers(
+	ctx context.Context,
+	instanceFm file.Manager,
+	containers []instance.Container,
+	installedContainers []instance.Container,
+	buildType string,
+	pathPrefix string,
+) error {
 	findInstalled := func(contentType string) instance.Container {
 		for _, cont := range installedContainers {
 			if cont.ContentType == contentType {
@@ -166,20 +185,34 @@ func (c *Controller) updateInstanceContent(ctx context.Context, instanceFm file.
 		return instance.Container{ContentType: contentType, Content: []instance.Content{}}
 	}
 
-	for _, newContainer := range releaseContainers {
+	for _, newContainer := range containers {
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
+
+		var containerPath string
+		if pathPrefix == "" {
+			containerPath = newContainer.ContentType
+		} else {
+			containerPath = pathPrefix + "/" + newContainer.ContentType
+		}
+
 		oldContainer := findInstalled(newContainer.ContentType)
-		
-		processor := updater.NewContentProcessor(newContainer, oldContainer, instanceFm, buildType, c.l)
+
+		processor := updater.NewContentProcessorWithPrefix(newContainer, oldContainer, instanceFm, buildType, containerPath, c.l)
 		if err := processor.Process(ctx); err != nil {
 			return err
 		}
-	}
 
-	if err := instanceFm.SaveJson("installed.json", releaseContainers); err != nil {
-		return err
+		if len(newContainer.SubContainers) > 0 {
+			var installedSubs []instance.Container
+			if len(oldContainer.SubContainers) > 0 {
+				installedSubs = oldContainer.SubContainers
+			}
+			if err := c.processContainers(ctx, instanceFm, newContainer.SubContainers, installedSubs, buildType, containerPath); err != nil {
+				return err
+			}
+		}
 	}
 
 	return nil
