@@ -92,8 +92,8 @@ export function OverviewContent({
 						{/* Default — all content */}
 						<ProfileCard
 							icon={InfinityIcon}
-							name='Весь контент'
-							description='Загрузить всё без фильтрации по профилю'
+							name='Полный'
+							description='Полностью готовая сборка, можно просто нажать Играть'
 							selected={selectedProfile === ''}
 							onClick={() => setSelectedProfile('')}
 						/>
