@@ -19,7 +19,7 @@ export function OverviewContent({
 	devMode,
 	onInstanceUpdated,
 }: OverviewContentProps) {
-	const { selectedProfile, setSelectedProfile } = useApp()
+	const { selectedProfile, setSelectedProfile, config } = useApp()
 	const [localExtra, setLocalExtra] = useState<instance.Container[]>(
 		inst.extra_containers ?? [],
 	)
@@ -69,6 +69,22 @@ export function OverviewContent({
 	const profiles = latestRelease.Meta?.profiles ?? []
 	const activeProfile = profiles.find(p => p.name === selectedProfile)
 
+	const buildType = config?.build_type || 'client'
+
+	const visibleContainers = useMemo(() => {
+		const containers = latestRelease.Meta?.containers ?? []
+		const chain = selectedProfile && profiles.length > 0
+			? resolveProfileChain(profiles, selectedProfile)
+			: null
+		return containers.map(c => ({
+			...c,
+			content: (c.content ?? []).filter(item => {
+				if (chain && item.profiles?.length && !item.profiles.some(p => chain[p])) return false
+				return matchesBuildType(item.type, buildType)
+			}),
+		} as instance.Container))
+	}, [latestRelease.Meta?.containers, profiles, selectedProfile, buildType])
+
 	return (
 		<>
 			{devMode && <DeploySection inst={inst} />}
@@ -114,11 +130,9 @@ export function OverviewContent({
 			)}
 
 			{/* Container cards grid */}
-			{((latestRelease.Meta.containers &&
-				latestRelease.Meta.containers.length > 0) ||
-				extraOnlyContainers.length > 0) && (
+			{((visibleContainers.length > 0) || extraOnlyContainers.length > 0) && (
 				<div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-					{latestRelease.Meta.containers?.filter(c => c.content_type !== 'config').map((container, idx) => (
+					{visibleContainers.filter(c => c.content_type !== 'config').map((container, idx) => (
 						<ContainerCard
 							key={idx}
 							container={container}
@@ -196,4 +210,27 @@ function ProfileCard({
 			{selected && <CheckIcon className='size-4 text-primary shrink-0' />}
 		</button>
 	)
+}
+
+function matchesBuildType(type: string | undefined, buildType: string): boolean {
+	if (!type || type === 'both') return true
+	if (buildType === 'client') return type === 'client' || type === 'both'
+	if (buildType === 'server') return type === 'server' || type === 'both'
+	return true
+}
+
+function resolveProfileChain(
+	profiles: instance.Profile[],
+	name: string,
+): Record<string, boolean> {
+	const byName = Object.fromEntries(profiles.map(p => [p.name, p]))
+	const chain: Record<string, boolean> = {}
+	const visited = new Set<string>()
+	let cur: string | undefined = name
+	while (cur && !visited.has(cur)) {
+		visited.add(cur)
+		chain[cur] = true
+		cur = byName[cur]?.extends
+	}
+	return chain
 }
