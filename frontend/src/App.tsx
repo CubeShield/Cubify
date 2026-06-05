@@ -20,7 +20,7 @@ function MainContent() {
 	} = useApp()
 
 	return (
-		<main className='flex-1 p-6'>
+		<main className='flex-1 min-w-0 overflow-x-hidden overflow-y-auto p-6'>
 			{currentPage === 'settings' && <Settings />}
 			{currentPage === 'account' && <User />}
 			{currentPage === 'detail' &&

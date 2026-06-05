@@ -62,7 +62,7 @@ export function ReleaseTimeline({
 
 								{/* content */}
 								<div
-									className={`flex-1 rounded-xl border p-4 transition-colors ${
+									className={`flex-1 min-w-0 rounded-xl border p-4 transition-colors ${
 										isLatest
 											? 'bg-primary/5 border-primary/20'
 											: 'bg-card hover:bg-muted/30'
