@@ -118,7 +118,7 @@ export function OverviewContent({
 				latestRelease.Meta.containers.length > 0) ||
 				extraOnlyContainers.length > 0) && (
 				<div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-					{latestRelease.Meta.containers?.map((container, idx) => (
+					{latestRelease.Meta.containers?.filter(c => c.content_type !== 'config').map((container, idx) => (
 						<ContainerCard
 							key={idx}
 							container={container}
