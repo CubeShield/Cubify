@@ -219,6 +219,7 @@ export function AppSidebar() {
 		devMode,
 		isRefreshing,
 		refreshInstances,
+		config,
 	} = useApp()
 
 	const { hasEditor, editorMeta } = useEditorData(selectedInstance?.slug)
@@ -230,9 +231,11 @@ export function AppSidebar() {
 		: 'ready'
 	const StatusIcon = STATUS_ICONS[instanceStatus]
 
+	const buildType = config?.build_type || 'client'
+
 	const run = async () => {
 		if (!selectedInstance || selectedInstance.releases.length < 1) return
-		await startRun(selectedInstance.releases[0], selectedProfile)
+		await startRun(selectedInstance.releases[0], selectedProfile, buildType)
 	}
 
 	const runDev = async () => {
@@ -245,7 +248,7 @@ export function AppSidebar() {
 			body: '',
 			Meta: freshMeta,
 		})
-		await startRun(devRelease, selectedProfile)
+		await startRun(devRelease, selectedProfile, buildType)
 	}
 
 	const buttonLabel =

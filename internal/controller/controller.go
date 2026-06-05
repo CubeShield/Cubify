@@ -81,7 +81,7 @@ func (c *Controller) Fetch() ([]instance.Instance, error) {
 	return instances, nil
 }
 
-func (c *Controller) Run(ctx context.Context, release instance.Release, profileName string, onProgress func(step, total int, label string)) error {
+func (c *Controller) Run(ctx context.Context, release instance.Release, profileName string, buildType string, onProgress func(step, total int, label string)) error {
 	const totalSteps = 4
 
 	onProgress(1, totalSteps, "Загрузка PortableMC...")
@@ -109,7 +109,9 @@ func (c *Controller) Run(ctx context.Context, release instance.Release, profileN
 	onProgress(3, totalSteps, "Обновление контента...")
 	c.l.Info("Checking for updates...")
 	instanceDirectory := utils.InstanceSlug(release.Meta.Name)
-	buildType := c.cfg.BuildType
+	if buildType == "" {
+		buildType = c.cfg.BuildType
+	}
 	if buildType == "" {
 		buildType = "client"
 	}

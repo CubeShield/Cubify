@@ -4,7 +4,7 @@ import { Switch } from './ui/switch'
 import { Label } from './ui/label'
 import { Button } from './ui/button'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { GetConfig, GetVersion, SaveConfig } from 'wailsjs/go/main/App'
+import { GetConfig, GetVersion } from 'wailsjs/go/main/App'
 import {
 	CodeIcon,
 	FolderIcon,
@@ -74,7 +74,7 @@ function SettingsField({
 }
 
 export function Settings() {
-	const { setDevMode } = useApp()
+	const { setDevMode, saveConfig } = useApp()
 	const [cfgData, setConfigData] = useState<ConfigModels.Config | null>(null)
 	const [savedData, setSavedData] = useState<ConfigModels.Config | null>(null)
 	const [isLoading, setLoading] = useState(false)
@@ -115,7 +115,7 @@ export function Settings() {
 	const handleSave = async () => {
 		if (!cfgData) return
 		setLoading(true)
-		await SaveConfig(cfgData)
+		await saveConfig(cfgData)
 		setSavedData(cfgData)
 		setLoading(false)
 	}
