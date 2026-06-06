@@ -102,6 +102,10 @@ export function LoadProjectMeta(arg1) {
   return window['go']['main']['App']['LoadProjectMeta'](arg1);
 }
 
+export function OpenEditorTerminal(arg1) {
+  return window['go']['main']['App']['OpenEditorTerminal'](arg1);
+}
+
 export function OpenInstanceFolder(arg1) {
   return window['go']['main']['App']['OpenInstanceFolder'](arg1);
 }

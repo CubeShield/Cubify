@@ -430,3 +430,33 @@ func (a *App) OpenInstanceFolder(slug string) error {
 	}
 	return cmd.Start()
 }
+
+func (a *App) OpenEditorTerminal(slug string) error {
+	path := a.fm.Sub("instances").Sub(slug).Sub("editor").BasePath()
+	var cmd *exec.Cmd
+	switch runtime.GOOS {
+	case "windows":
+		cmd = exec.Command("cmd", "/c", "start", "cmd.exe", "/k", "cd /d "+path)
+	case "darwin":
+		cmd = exec.Command("open", "-a", "Terminal", path)
+	default:
+		for _, term := range []string{"gnome-terminal", "konsole", "xfce4-terminal", "xterm"} {
+			if _, err := exec.LookPath(term); err == nil {
+				switch term {
+				case "gnome-terminal":
+					cmd = exec.Command(term, "--working-directory="+path)
+				case "konsole":
+					cmd = exec.Command(term, "--workdir", path)
+				default:
+					cmd = exec.Command(term)
+					cmd.Dir = path
+				}
+				break
+			}
+		}
+		if cmd == nil {
+			return fmt.Errorf("no terminal emulator found")
+		}
+	}
+	return cmd.Start()
+}

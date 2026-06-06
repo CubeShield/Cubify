@@ -22,6 +22,7 @@ import {
 	CheckProjectStatus,
 	GetContentFromURL,
 	AddProjectContentFromFile,
+	OpenEditorTerminal,
 } from '../../../wailsjs/go/main/App'
 import { git, instance } from '../../../wailsjs/go/models'
 import { useApp } from '../../context/app-context'
@@ -32,7 +33,7 @@ import {
 	GitCommitVertical,
 	SaveIcon,
 	Tag,
-	HistoryIcon,
+	TerminalIcon,
 	PackageIcon,
 	PaletteIcon,
 	PlusIcon,
@@ -196,6 +197,16 @@ export function EditorPage({ slug, initialMeta, onRefresh }: EditorPageProps) {
 					</div>
 
 					<div className='flex items-center gap-2 shrink-0'>
+						<Button
+							variant='outline'
+							size='sm'
+							className='rounded-lg cursor-pointer'
+							onClick={() => OpenEditorTerminal(slug)}
+						>
+							<TerminalIcon className='size-3.5' />
+							Терминал
+						</Button>
+
 						<Dialog>
 							<DialogTrigger asChild>
 								<Button
@@ -233,16 +244,17 @@ export function EditorPage({ slug, initialMeta, onRefresh }: EditorPageProps) {
 						<Dialog>
 							<DialogTrigger asChild>
 								<Button
-									variant='ghost'
-									size='icon'
-									className='rounded-lg size-8 cursor-pointer'
+									variant='outline'
+									size='sm'
+									className='rounded-lg cursor-pointer'
 								>
-									<HistoryIcon className='size-4' />
+									<Tag className='size-3.5' />
+									Релизы
 								</Button>
 							</DialogTrigger>
 							<DialogContent className='max-w-2xl max-h-[80vh] overflow-auto'>
 								<DialogHeader>
-									<DialogTitle>История проекта</DialogTitle>
+									<DialogTitle>Релизы проекта</DialogTitle>
 								</DialogHeader>
 								<div className='grid gap-6'>
 									<div className='flex flex-col gap-3 p-4 rounded-xl border bg-muted/20'>
