@@ -17,6 +17,7 @@ export namespace config {
 	    }
 	}
 	export class FTPSettings {
+	    protocol: string;
 	    host: string;
 	    port: number;
 	    user: string;
@@ -29,6 +30,7 @@ export namespace config {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.protocol = source["protocol"];
 	        this.host = source["host"];
 	        this.port = source["port"];
 	        this.user = source["user"];

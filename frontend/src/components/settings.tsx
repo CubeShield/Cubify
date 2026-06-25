@@ -320,13 +320,35 @@ export function Settings() {
 					</div>
 				</SectionCard>
 
-				{/* FTP (dev only) */}
+				{/* Deploy (dev only) */}
 				{cfgData.dev_mode && (
-					<SectionCard icon={ServerIcon} title='FTP'>
+					<SectionCard icon={ServerIcon} title='Деплой (FTP / SFTP)'>
+						<SettingsField
+							label='Протокол'
+							description='FTP или SFTP (поверх SSH)'
+						>
+							<Select
+								value={cfgData.ftp?.protocol || 'ftp'}
+								onValueChange={v =>
+									handleUpdate('ftp', {
+										...(cfgData.ftp ?? {}),
+										protocol: v,
+									})
+								}
+							>
+								<SelectTrigger className='h-9'>
+									<SelectValue placeholder='Выберите протокол' />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value='ftp'>FTP</SelectItem>
+									<SelectItem value='sftp'>SFTP</SelectItem>
+								</SelectContent>
+							</Select>
+						</SettingsField>
 						<div className='grid grid-cols-2 gap-3'>
 							<SettingsField label='Хост'>
 								<Input
-									placeholder='ftp.example.com'
+									placeholder='example.com'
 									value={cfgData.ftp?.host ?? ''}
 									onChange={e =>
 										handleUpdate('ftp', {
@@ -340,7 +362,9 @@ export function Settings() {
 							<SettingsField label='Порт'>
 								<Input
 									type='number'
-									placeholder='21'
+									placeholder={
+										cfgData.ftp?.protocol === 'sftp' ? '22' : '21'
+									}
 									value={cfgData.ftp?.port ?? 21}
 									onChange={e =>
 										handleUpdate('ftp', {
@@ -383,7 +407,7 @@ export function Settings() {
 						</div>
 						<SettingsField
 							label='Корневой путь'
-							description='Путь на FTP сервере, куда будет загружаться контент'
+							description='Путь на сервере, куда будет загружаться контент'
 						>
 							<Input
 								placeholder='/server/mods'

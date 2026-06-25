@@ -12,6 +12,7 @@ type User struct {
 }
 
 type FTPSettings struct {
+	Protocol string `json:"protocol"`
 	Host     string `json:"host"`
 	Port     int    `json:"port"`
 	User     string `json:"user"`
@@ -51,7 +52,8 @@ func defaultConfig() *Config {
 			JVMMinRAM: 512,
 			JVMMaxRAM: 2048,
 			FTP: FTPSettings{
-				Port: 21,
+				Protocol: "ftp",
+				Port:     21,
 			},
 		}
 }

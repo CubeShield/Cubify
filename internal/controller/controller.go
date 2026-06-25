@@ -13,10 +13,13 @@ import (
 	"Cubify/internal/utils"
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/jlaffaye/ftp"
+	"github.com/pkg/sftp"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
+	"golang.org/x/crypto/ssh"
 )
 
 
@@ -341,25 +344,85 @@ func (c *Controller) ConnectFTP() (*ftp.ServerConn, error) {
 	return conn, nil
 }
 
-func (c *Controller) DeployToServer(ctx context.Context, release instance.Release, onProgress func(step, total int, label string)) error {
-	const totalSteps = 3
-
-	onProgress(1, totalSteps, "Подключение к FTP серверу...")
-	c.l.Info("Connecting to FTP server...")
-
-	conn, err := c.ConnectFTP()
-	if err != nil {
-		return fmt.Errorf("FTP connection failed: %w", err)
+func (c *Controller) ConnectSFTP() (*ssh.Client, *sftp.Client, error) {
+	sftpCfg := c.cfg.FTP
+	if sftpCfg.Host == "" {
+		return nil, nil, fmt.Errorf("SFTP host is not configured")
 	}
-	defer conn.Quit()
+	port := sftpCfg.Port
+	if port == 0 {
+		port = 22
+	}
 
+	addr := fmt.Sprintf("%s:%d", sftpCfg.Host, port)
+	c.l.Info("Dialing SFTP %s...", addr)
+
+	sshCfg := &ssh.ClientConfig{
+		User: sftpCfg.User,
+		Auth: []ssh.AuthMethod{
+			ssh.Password(sftpCfg.Password),
+		},
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+		Timeout:         15 * time.Second,
+	}
+
+	sshConn, err := ssh.Dial("tcp", addr, sshCfg)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to connect to SFTP %s: %w", addr, err)
+	}
+
+	client, err := sftp.NewClient(sshConn)
+	if err != nil {
+		sshConn.Close()
+		return nil, nil, fmt.Errorf("failed to start SFTP session: %w", err)
+	}
+
+	return sshConn, client, nil
+}
+
+// connectDeployBackend opens a connection to the configured deploy server
+// (FTP or SFTP) and returns a storage backend plus a cleanup function that
+// must be called when the deploy finishes.
+func (c *Controller) connectDeployBackend() (file.StorageBackend, func(), error) {
 	rootPath := c.cfg.FTP.RootPath
 	if rootPath == "" {
 		rootPath = "/"
 	}
 
-	ftpBackend := file.NewFtpBackend(rootPath, conn)
-	fm := file.NewManager(ftpBackend)
+	switch strings.ToLower(c.cfg.FTP.Protocol) {
+	case "sftp":
+		sshConn, client, err := c.ConnectSFTP()
+		if err != nil {
+			return nil, nil, err
+		}
+		cleanup := func() {
+			client.Close()
+			sshConn.Close()
+		}
+		return file.NewSftpBackend(rootPath, client), cleanup, nil
+	default:
+		conn, err := c.ConnectFTP()
+		if err != nil {
+			return nil, nil, err
+		}
+		cleanup := func() { conn.Quit() }
+		return file.NewFtpBackend(rootPath, conn), cleanup, nil
+	}
+}
+
+func (c *Controller) DeployToServer(ctx context.Context, release instance.Release, onProgress func(step, total int, label string)) error {
+	const totalSteps = 3
+
+	onProgress(1, totalSteps, "Подключение к серверу...")
+	c.l.Info("Connecting to deploy server (%s)...", c.cfg.FTP.Protocol)
+
+	backend, cleanup, err := c.connectDeployBackend()
+	if err != nil {
+		return fmt.Errorf("server connection failed: %w", err)
+	}
+	defer cleanup()
+
+	fm := file.NewManager(backend)
 
 	onProgress(2, totalSteps, "Обновление контента на сервере...")
 	c.l.Info("Deploying server content...")
