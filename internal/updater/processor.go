@@ -35,6 +35,12 @@ type ContentProcessor struct {
 
 	httpClient *http.Client
 	fm         file.Manager
+
+	// installedFiles tracks, by content File key, what is actually present after
+	// processing (successful downloads/writes or already-installed items kept).
+	installedFiles map[string]bool
+	// installedNow is the resulting installed content for this container, in API order.
+	installedNow []instance.Content
 }
 
 func NewContentProcessor(
@@ -54,7 +60,8 @@ func NewContentProcessor(
 		httpClient: &http.Client{
 			Timeout: 15 * time.Second,
 		},
-		fm: fm,
+		fm:             fm,
+		installedFiles: make(map[string]bool),
 	}
 }
 
@@ -76,7 +83,8 @@ func NewContentProcessorWithPrefix(
 		httpClient: &http.Client{
 			Timeout: 15 * time.Second,
 		},
-		fm: fm,
+		fm:             fm,
+		installedFiles: make(map[string]bool),
 	}
 }
 
@@ -162,8 +170,25 @@ func (p *ContentProcessor) Process(ctx context.Context) error {
 		}
 	}
 
+	// Build the actually-installed content list, preserving API order. Items that
+	// failed to download/write are intentionally left out so they are retried on
+	// the next run.
+	p.installedNow = p.installedNow[:0]
+	for _, item := range filtered {
+		if p.installedFiles[item.File] {
+			p.installedNow = append(p.installedNow, item)
+		}
+	}
+
 	p.l.Info("Done processing %s", p.pathPrefix)
 	return nil
+}
+
+// InstalledContent returns the content that is actually installed after Process
+// has run (successful downloads/writes plus retained items). Failed items are
+// excluded so installed.json reflects the real state on disk/server.
+func (p *ContentProcessor) InstalledContent() []instance.Content {
+	return p.installedNow
 }
 
 func (p *ContentProcessor) processExternal(ctx context.Context, apiItems []instance.Content) error {
@@ -193,11 +218,17 @@ func (p *ContentProcessor) processExternal(ctx context.Context, apiItems []insta
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
-		if _, exists := installedSet[fileName]; !exists {
-			if err := p.install(ctx, apiSet[fileName]); err != nil {
-				p.l.Error("Failed while downloading %s: %v", fileName, err)
-			}
+		if _, exists := installedSet[fileName]; exists {
+			// Already installed from a previous run and still required — keep it.
+			p.installedFiles[fileName] = true
+			continue
 		}
+		if err := p.install(ctx, apiSet[fileName]); err != nil {
+			p.l.Error("Failed while downloading %s: %v", fileName, err)
+			continue
+		}
+		// Download succeeded (or local file already in place).
+		p.installedFiles[fileName] = true
 	}
 	return nil
 }
@@ -249,6 +280,11 @@ func (p *ContentProcessor) processConfigItems(ctx context.Context, items []insta
 			record.Written = true
 			record.Hash = hash
 			dirty = true
+		}
+
+		// File is present (written now or in a previous run) — count as installed.
+		if record.Written {
+			p.installedFiles[item.File] = true
 		}
 	}
 

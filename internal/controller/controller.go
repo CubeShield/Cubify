@@ -160,17 +160,22 @@ func (c *Controller) updateInstanceContent(ctx context.Context, instanceFm file.
 
 	instanceFm.ReadJson("installed.json", &installedContainers)
 
-	if err := c.processContainers(ctx, instanceFm, releaseContainers, installedContainers, buildType, ""); err != nil {
+	actuallyInstalled, err := c.processContainers(ctx, instanceFm, releaseContainers, installedContainers, buildType, "")
+	if err != nil {
 		return err
 	}
 
-	if err := instanceFm.SaveJson("installed.json", releaseContainers); err != nil {
+	if err := instanceFm.SaveJson("installed.json", actuallyInstalled); err != nil {
 		return err
 	}
 
 	return nil
 }
 
+// processContainers downloads/updates the given containers and returns the set
+// of containers that are actually installed afterwards (only successfully
+// downloaded/written content). Failed items are omitted so they can be retried
+// on the next run and installed.json reflects the real state.
 func (c *Controller) processContainers(
 	ctx context.Context,
 	instanceFm file.Manager,
@@ -178,7 +183,7 @@ func (c *Controller) processContainers(
 	installedContainers []instance.Container,
 	buildType string,
 	pathPrefix string,
-) error {
+) ([]instance.Container, error) {
 	findInstalled := func(contentType string) instance.Container {
 		for _, cont := range installedContainers {
 			if cont.ContentType == contentType {
@@ -188,9 +193,11 @@ func (c *Controller) processContainers(
 		return instance.Container{ContentType: contentType, Content: []instance.Content{}}
 	}
 
+	var result []instance.Container
+
 	for _, newContainer := range containers {
 		if ctx.Err() != nil {
-			return ctx.Err()
+			return nil, ctx.Err()
 		}
 
 		var containerPath string
@@ -204,7 +211,12 @@ func (c *Controller) processContainers(
 
 		processor := updater.NewContentProcessorWithPrefix(newContainer, oldContainer, instanceFm, buildType, containerPath, c.l)
 		if err := processor.Process(ctx); err != nil {
-			return err
+			return nil, err
+		}
+
+		installedContainer := instance.Container{
+			ContentType: newContainer.ContentType,
+			Content:     processor.InstalledContent(),
 		}
 
 		if len(newContainer.SubContainers) > 0 {
@@ -212,13 +224,17 @@ func (c *Controller) processContainers(
 			if len(oldContainer.SubContainers) > 0 {
 				installedSubs = oldContainer.SubContainers
 			}
-			if err := c.processContainers(ctx, instanceFm, newContainer.SubContainers, installedSubs, buildType, containerPath); err != nil {
-				return err
+			subs, err := c.processContainers(ctx, instanceFm, newContainer.SubContainers, installedSubs, buildType, containerPath)
+			if err != nil {
+				return nil, err
 			}
+			installedContainer.SubContainers = subs
 		}
+
+		result = append(result, installedContainer)
 	}
 
-	return nil
+	return result, nil
 }
 
 func (c *Controller) ImportInstance(repo string) (instance.LocalInstance, error) {
@@ -442,6 +458,7 @@ func (c *Controller) DeployToServer(ctx context.Context, release instance.Releas
 	heavyProfile := instance.FindHeaviestProfile(release.Meta.Profiles)
 	deployContainers := instance.FilterContainersByProfile(release.Meta.Containers, release.Meta.Profiles, heavyProfile)
 
+	var installedNow []instance.Container
 	for _, newContainer := range deployContainers {
 		if ctx.Err() != nil {
 			return ctx.Err()
@@ -451,10 +468,14 @@ func (c *Controller) DeployToServer(ctx context.Context, release instance.Releas
 		if err := processor.Process(ctx); err != nil {
 			return fmt.Errorf("deploy failed for %s: %w", newContainer.ContentType, err)
 		}
+		installedNow = append(installedNow, instance.Container{
+			ContentType: newContainer.ContentType,
+			Content:     processor.InstalledContent(),
+		})
 	}
 
 	onProgress(3, totalSteps, "Сохранение информации...")
-	if err := fm.SaveJson("installed.json", deployContainers); err != nil {
+	if err := fm.SaveJson("installed.json", installedNow); err != nil {
 		return fmt.Errorf("failed to save installed.json on server: %w", err)
 	}
 
